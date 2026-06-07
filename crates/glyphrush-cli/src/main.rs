@@ -336,6 +336,7 @@ struct BackendSmokeOutput {
     failed_documents: Option<usize>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     documents: Vec<BackendSmokeOutput>,
+    error_kind: Option<&'static str>,
     error: Option<String>,
 }
 
@@ -1823,6 +1824,7 @@ fn backend_smoke_directory_output<B: PdfBackend + Sync>(
                 failed_documents: Some(failed_documents),
                 error: (failed_documents > 0)
                     .then(|| format!("{failed_documents} backend smoke document(s) failed")),
+                error_kind: None,
                 documents,
             }
         }
@@ -1845,6 +1847,7 @@ fn backend_smoke_directory_output<B: PdfBackend + Sync>(
             successful_documents: Some(0),
             failed_documents: Some(0),
             documents: Vec::new(),
+            error_kind: Some("pdf_discovery_failed"),
             error: Some(format!("{error:#}")),
         },
     }
@@ -1895,9 +1898,13 @@ fn backend_smoke_pdf_output<B: PdfBackend>(
     output_path: String,
 ) -> BackendSmokeOutput {
     let started = Instant::now();
+    let source_size_bytes = source_size_bytes(path);
+    let source_size_for_failure = source_size_bytes.as_ref().ok().copied();
+    let fingerprint = document_fingerprint(path);
+    let fingerprint_for_failure = fingerprint.as_ref().ok().cloned();
     let result = (|| -> Result<_> {
-        let source_size_bytes = source_size_bytes(path)?;
-        let fingerprint = document_fingerprint(path)?;
+        let source_size_bytes = source_size_bytes?;
+        let fingerprint = fingerprint?;
         let document = backend.load_document(path)?;
         let page_count = backend.page_count(&document);
         let pages = backend.extract_pages(
@@ -1965,6 +1972,7 @@ fn backend_smoke_pdf_output<B: PdfBackend>(
             successful_documents: None,
             failed_documents: None,
             documents: Vec::new(),
+            error_kind: None,
             error: None,
         },
         Err(error) => BackendSmokeOutput {
@@ -1973,8 +1981,8 @@ fn backend_smoke_pdf_output<B: PdfBackend>(
             backend: backend.name(),
             success: false,
             wall_us,
-            source_size_bytes: None,
-            document_fingerprint: None,
+            source_size_bytes: source_size_for_failure,
+            document_fingerprint: fingerprint_for_failure,
             page_count: None,
             extracted_page_count: None,
             native_text_bytes: None,
@@ -1986,8 +1994,18 @@ fn backend_smoke_pdf_output<B: PdfBackend>(
             successful_documents: None,
             failed_documents: None,
             documents: Vec::new(),
+            error_kind: backend_smoke_error_kind(&error),
             error: Some(format!("{error:#}")),
         },
+    }
+}
+
+fn backend_smoke_error_kind(error: &anyhow::Error) -> Option<&'static str> {
+    let error = format!("{error:#}");
+    if error.contains("encrypted PDFs are not supported") {
+        Some("encrypted_pdf_requires_password")
+    } else {
+        None
     }
 }
 

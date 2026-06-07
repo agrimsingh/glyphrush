@@ -149,6 +149,42 @@ fn backend_check_smoke_pdf_reports_selected_backend_extraction_summary() {
 }
 
 #[test]
+fn backend_check_smoke_pdf_classifies_encrypted_input_without_losing_source_identity() {
+    let dir = temp_dir("backend-check-encrypted");
+    let pdf_path = dir.join("encrypted.pdf");
+    fs::write(&pdf_path, minimal_encrypted_pdf("Encrypted smoke text")).unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["backend-check", "--pdf", pdf_path.to_str().unwrap()])
+        .output()
+        .expect("run glyphrush backend-check --pdf encrypted");
+
+    assert!(
+        !output.status.success(),
+        "encrypted smoke should fail the command after writing JSON"
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("backend-check output is json");
+    let smoke = &json["smoke"];
+
+    assert_eq!(smoke["mode"], "single_pdf");
+    assert_eq!(smoke["success"], false);
+    assert_eq!(smoke["error_kind"], "encrypted_pdf_requires_password");
+    assert!(
+        smoke["error"]
+            .as_str()
+            .unwrap()
+            .contains("encrypted PDFs are not supported"),
+        "error should explain encrypted unsupported input: {smoke}"
+    );
+    assert_eq!(
+        smoke["source_size_bytes"],
+        fs::metadata(&pdf_path).unwrap().len()
+    );
+    assert_eq!(smoke["document_fingerprint"].as_str().unwrap().len(), 64);
+    assert_eq!(smoke["page_count"], Value::Null);
+}
+
+#[test]
 fn backend_check_smoke_directory_reports_sorted_corpus_summary() {
     let dir = temp_dir("backend-check-smoke-dir");
     fs::write(dir.join("b.pdf"), minimal_pdf("Second backend smoke")).unwrap();
@@ -9583,6 +9619,53 @@ fn minimal_pdf_with_stream(stream: &str) -> Vec<u8> {
     }
     writeln!(&mut pdf, "trailer").unwrap();
     writeln!(&mut pdf, "<< /Size {} /Root 1 0 R >>", objects.len() + 1).unwrap();
+    writeln!(&mut pdf, "startxref").unwrap();
+    writeln!(&mut pdf, "{xref_start}").unwrap();
+    writeln!(&mut pdf, "%%EOF").unwrap();
+
+    pdf
+}
+
+fn minimal_encrypted_pdf(text: &str) -> Vec<u8> {
+    let escaped_text = text
+        .replace('\\', "\\\\")
+        .replace('(', "\\(")
+        .replace(')', "\\)");
+    let stream = format!("BT /F1 24 Tf 72 720 Td ({escaped_text}) Tj ET");
+    let objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>".to_string(),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_string(),
+        format!("<< /Length {} >>\nstream\n{stream}\nendstream", stream.len()),
+        "<< /Filter /Standard /V 1 /R 2 /O <> /U <> /P -4 >>".to_string(),
+    ];
+
+    let mut pdf = Vec::new();
+    writeln!(&mut pdf, "%PDF-1.4").unwrap();
+
+    let mut offsets = vec![0usize];
+    for (index, object) in objects.iter().enumerate() {
+        offsets.push(pdf.len());
+        writeln!(&mut pdf, "{} 0 obj", index + 1).unwrap();
+        writeln!(&mut pdf, "{object}").unwrap();
+        writeln!(&mut pdf, "endobj").unwrap();
+    }
+
+    let xref_start = pdf.len();
+    writeln!(&mut pdf, "xref").unwrap();
+    writeln!(&mut pdf, "0 {}", objects.len() + 1).unwrap();
+    writeln!(&mut pdf, "0000000000 65535 f ").unwrap();
+    for offset in offsets.iter().skip(1) {
+        writeln!(&mut pdf, "{offset:010} 00000 n ").unwrap();
+    }
+    writeln!(&mut pdf, "trailer").unwrap();
+    writeln!(
+        &mut pdf,
+        "<< /Size {} /Root 1 0 R /Encrypt 6 0 R >>",
+        objects.len() + 1
+    )
+    .unwrap();
     writeln!(&mut pdf, "startxref").unwrap();
     writeln!(&mut pdf, "{xref_start}").unwrap();
     writeln!(&mut pdf, "%%EOF").unwrap();
