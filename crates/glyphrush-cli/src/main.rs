@@ -1390,6 +1390,8 @@ struct EvalPageExpectation {
     image_artifact_count: Option<u32>,
     layout_block_counts: Option<DebugLayoutSummary>,
     #[serde(default)]
+    required_text: Vec<String>,
+    #[serde(default)]
     required_flags: Vec<PageQuality>,
     #[serde(default)]
     required_reasons: Vec<String>,
@@ -6520,6 +6522,24 @@ fn insert_page_expectation_checks(
             json!(expected_layout_block_counts),
             page.map(|page| json!(layout_summary_from_page(page)))
                 .unwrap_or(serde_json::Value::Null),
+        );
+    }
+
+    if !expectation.required_text.is_empty() {
+        let page_text = page.map(quality_text_from_page).unwrap_or_default();
+        let missing = expectation
+            .required_text
+            .iter()
+            .filter(|text| !page_text.contains(text.as_str()))
+            .cloned()
+            .collect::<Vec<_>>();
+        checks.insert(
+            format!("{prefix}.required_text"),
+            EvalCheckOutput {
+                passed: missing.is_empty(),
+                expected: json!(expectation.required_text),
+                actual: json!({ "missing": missing }),
+            },
         );
     }
 

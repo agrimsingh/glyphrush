@@ -162,7 +162,7 @@ Supported v0 expectations:
 - `quality_flag_classification`: expected page indices for any quality flag plus optional minimum precision and recall thresholds.
 - `table_structure`: expected table rows per page plus optional row/cell precision, recall, and F1 thresholds.
 - `span_bbox`: sample span text/provenance plus optional x0/y0/x1/y1 bounding-box ranges.
-- `pages`: page-level expectations with zero-based `index`, optional `artifact_id`, `page_fingerprint`, `route`, `empty_text_output`, `image_artifact_count`, `layout_block_counts`, `required_flags`, and `required_reasons`.
+- `pages`: page-level expectations with zero-based `index`, optional `artifact_id`, `page_fingerprint`, `route`, `empty_text_output`, `required_text`, `image_artifact_count`, `layout_block_counts`, `required_flags`, and `required_reasons`.
 
 Table checks score rows recovered from table layout blocks. In v0 those blocks can come from pipe/tab text, table-routed whitespace rows, or table-routed positioned spans that form aligned multi-column rows when `--span-geometry` is enabled.
 
@@ -249,6 +249,7 @@ Example:
             "page_fingerprint": "64-character-page-fingerprint",
             "route": "native_fast_path",
             "empty_text_output": false,
+            "required_text": ["Invoice"],
             "image_artifact_count": 0,
             "layout_block_counts": {
               "block_count": 1,

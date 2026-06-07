@@ -70,6 +70,7 @@ Use `--coverage-preset glyphrush-v0` when building the broader benchmark corpus 
 	            "artifact_id": "example-document-fingerprint:p000000:pagehashprefix",
 	            "page_fingerprint": "64-character-page-fingerprint",
 	            "route": "native_fast_path",
+	            "required_text": ["known text"],
 	            "image_artifact_count": 0,
 	            "layout_block_counts": {
 	              "block_count": 1,
