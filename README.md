@@ -1,5 +1,7 @@
 # Glyphrush
 
+[![CI](https://github.com/agrimsingh/glyphrush/actions/workflows/ci.yml/badge.svg)](https://github.com/agrimsingh/glyphrush/actions/workflows/ci.yml)
+
 Glyphrush is a native PDF parsing experiment focused on fast native-text extraction with explicit quality and fallback signals. The v0 implementation is a Rust workspace with:
 
 - `glyphrush-core`: deterministic artifacts, page signals, classifier decisions, and extracted-page parsing.
@@ -8,6 +10,13 @@ Glyphrush is a native PDF parsing experiment focused on fast native-text extract
 The current backend is intentionally small. It extracts native text through `lopdf`, can preserve simple positioned text spans with approximate boxes when explicitly requested, records cheap drawn-image metadata for direct image XObjects, image-backed form XObjects, and detected inline images without copying pixels, follows nested form image transforms for image coverage, and emits structured artifacts with parser/backend/source size and modified-time metadata. OCR, full table reconstruction, richer geometry-aware layout recovery, and PDFium/MuPDF comparison are later milestones. Use `backend-check` to inspect the enabled backend and the pending PDFium/MuPDF adapter candidates.
 
 ## Commands
+
+```sh
+cargo run -p glyphrush-cli -- eval test/corpus.datasheets.json --category datasheet --jobs 2
+bash scripts/verify.sh
+```
+
+`scripts/verify.sh` is the shared local/GitHub CI gate. It runs formatting, the full workspace test suite, clippy with warnings denied, and the datasheet eval gate when ignored local PDFs exist under `test/`. In a fresh GitHub checkout those PDFs are absent by design, so CI skips only that local corpus gate rather than failing on non-committed benchmark files.
 
 ```sh
 cargo run -p glyphrush-cli -- inspect test/example.pdf

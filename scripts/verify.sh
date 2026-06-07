@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cargo fmt --all -- --check
+cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+
+shopt -s nullglob nocaseglob
+local_corpus=(test/*.pdf)
+shopt -u nullglob nocaseglob
+
+if ((${#local_corpus[@]} > 0)); then
+  cargo run -q -p glyphrush-cli -- eval test/corpus.datasheets.json --category datasheet --jobs 2
+else
+  echo "Skipping datasheet eval: no local PDFs found under test/."
+fi
