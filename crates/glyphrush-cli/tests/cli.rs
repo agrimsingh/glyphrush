@@ -3548,6 +3548,7 @@ fn bench_reports_failed_external_baseline_without_hiding_glyphrush_metrics() {
     assert_eq!(json["baselines"][0]["name"], "broken");
     assert_eq!(json["baselines"][0]["success"], false);
     assert_eq!(json["baselines"][0]["exit_status"], 7);
+    assert_eq!(json["baselines"][0]["error_kind"], "execution_failed");
     assert_eq!(json["baselines"][0]["output_bytes"], 0);
     assert!(json["baselines"][0]["stderr_bytes"].as_u64().unwrap() > 0);
     assert!(
@@ -3562,6 +3563,47 @@ fn bench_reports_failed_external_baseline_without_hiding_glyphrush_metrics() {
     );
     assert_eq!(json["baselines"][0]["comparison"]["glyphrush_speedup"], 0.0);
     assert_eq!(json["baselines"][0]["comparison"]["baseline_speedup"], 0.0);
+}
+
+#[test]
+fn bench_reports_missing_dependency_external_baseline_kind() {
+    let pdf_path = write_test_pdf(
+        "bench-baseline-missing-dependency",
+        "Hello Missing Dependency",
+    );
+    let baseline = write_baseline_script(
+        "baseline-missing-dependency",
+        "printf 'parser dependency missing' >&2\nexit 127",
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("missing={}", baseline.display()),
+        ])
+        .output()
+        .expect("run glyphrush bench with missing dependency baseline");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+    let baseline = &json["baselines"][0];
+
+    assert_eq!(baseline["success"], false);
+    assert_eq!(baseline["exit_status"], 127);
+    assert_eq!(baseline["error_kind"], "missing_dependency");
+    assert!(
+        baseline["stderr_preview"]
+            .as_str()
+            .unwrap()
+            .contains("parser dependency missing")
+    );
+    assert_eq!(baseline["comparison"]["speed_comparable"], false);
 }
 
 #[test]
@@ -3694,6 +3736,7 @@ fn bench_reports_timed_out_external_baseline_without_hanging() {
     assert_eq!(baseline["name"], "slow");
     assert_eq!(baseline["success"], false);
     assert_eq!(baseline["timed_out"], true);
+    assert_eq!(baseline["error_kind"], "timeout");
     assert_eq!(baseline["quality_status"], "not_checked_timed_out");
     assert_eq!(baseline["quality"], Value::Null);
     assert_eq!(baseline["timeout_ms"], 50);
@@ -5899,6 +5942,14 @@ fn bench_directory_baseline_summary_separates_successful_and_failed_pages() {
     assert_eq!(baseline_summary["comparison"]["speed_comparable"], false);
     assert_eq!(baseline_summary["comparison"]["glyphrush_speedup"], 0.0);
     assert_eq!(baseline_summary["failure_samples"][0]["path"], "b.pdf");
+    assert_eq!(
+        baseline_summary["failure_samples"][0]["error_kind"],
+        "execution_failed"
+    );
+    assert_eq!(
+        json["documents"][1]["baselines"][0]["error_kind"],
+        "execution_failed"
+    );
     assert!(
         baseline_summary["failure_samples"][0]["stderr_preview"]
             .as_str()
@@ -5990,6 +6041,10 @@ fn bench_directory_baseline_summary_counts_timed_out_documents() {
     assert_eq!(baseline_summary["failed_pages"], 1);
     assert_eq!(baseline_summary["comparison"]["speed_comparable"], false);
     assert_eq!(baseline_summary["failure_samples"][0]["path"], "b.pdf");
+    assert_eq!(
+        baseline_summary["failure_samples"][0]["error_kind"],
+        "timeout"
+    );
     assert!(
         baseline_summary["failure_samples"][0]["error"]
             .as_str()
@@ -5998,6 +6053,10 @@ fn bench_directory_baseline_summary_counts_timed_out_documents() {
     );
     assert_eq!(json["documents"][0]["baselines"][0]["timed_out"], false);
     assert_eq!(json["documents"][1]["baselines"][0]["timed_out"], true);
+    assert_eq!(
+        json["documents"][1]["baselines"][0]["error_kind"],
+        "timeout"
+    );
 }
 
 #[test]

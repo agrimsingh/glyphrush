@@ -1009,6 +1009,8 @@ struct BaselineBenchOutput {
     empty_output: bool,
     stderr_preview: Option<String>,
     error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error_kind: Option<&'static str>,
     quality_status: BaselineQualityStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     quality: Option<BaselineQualityOutput>,
@@ -1162,6 +1164,8 @@ enum CorpusBaselineQualityStatus {
 struct CorpusBaselineFailureSample {
     path: String,
     exit_status: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error_kind: Option<&'static str>,
     error: Option<String>,
     stderr_preview: Option<String>,
 }
@@ -4160,7 +4164,7 @@ fn smoke_external_baseline_document_probe(
                 empty_output: output.status.success() && output.stdout.is_empty(),
                 stderr_preview: stderr_preview(&output.stderr),
                 error: baseline_smoke_error(&output, timed_output.timed_out),
-                error_kind: baseline_smoke_error_kind(&output, timed_output.timed_out),
+                error_kind: baseline_process_error_kind(&output, timed_output.timed_out),
             }
         }
         Err(error) => BaselineSmokeDocument {
@@ -4220,7 +4224,7 @@ fn baseline_smoke_error(output: &ProcessOutput, timed_out: bool) -> Option<Strin
     }
 }
 
-fn baseline_smoke_error_kind(output: &ProcessOutput, timed_out: bool) -> Option<&'static str> {
+fn baseline_process_error_kind(output: &ProcessOutput, timed_out: bool) -> Option<&'static str> {
     if timed_out {
         Some("timeout")
     } else if output.status.code() == Some(127) {
@@ -4287,6 +4291,7 @@ fn run_external_baseline(
                 error: timed_output
                     .timed_out
                     .then(|| format!("baseline timed out after {} ms", timeout.as_millis())),
+                error_kind: baseline_process_error_kind(&output, timed_output.timed_out),
                 quality_status,
                 quality,
             }
@@ -4315,6 +4320,7 @@ fn run_external_baseline(
             empty_output: false,
             stderr_preview: None,
             error: Some(error.to_string()),
+            error_kind: Some("spawn_failed"),
             quality_status: baseline_quality
                 .map(|_| BaselineQualityStatus::NotCheckedExecutionFailed)
                 .unwrap_or(BaselineQualityStatus::NotCheckedNoExpectations),
@@ -5132,6 +5138,7 @@ fn aggregate_corpus_baselines(
                 .map(|(document, run)| CorpusBaselineFailureSample {
                     path: document.path.clone(),
                     exit_status: run.exit_status,
+                    error_kind: run.error_kind,
                     error: run.error.clone(),
                     stderr_preview: run.stderr_preview.clone(),
                 })
