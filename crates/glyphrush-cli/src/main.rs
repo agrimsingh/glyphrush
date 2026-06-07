@@ -39,7 +39,7 @@ const BACKEND_CHECK_REPORT_VERSION: &str = "glyphrush-backend-check-report-v1";
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
-const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v36";
+const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v37";
 const DEFAULT_BASELINE_TIMEOUT_MS: u64 = 120_000;
 const DEFAULT_OCR_TIMEOUT_MS: u64 = 120_000;
 
