@@ -509,7 +509,7 @@ pub fn classify_page(signals: &PageSignals) -> RouteDecision {
         reasons.push("annotation_or_form".to_string());
     }
 
-    if signals.huge_object_count > 64 {
+    if signals.huge_object_count > 0 {
         flags.push(PageQuality::UnsupportedFeature);
         reasons.push("huge_object_count".to_string());
     }

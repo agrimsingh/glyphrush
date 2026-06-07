@@ -246,3 +246,29 @@ fn page_annotations_are_unsupported_instead_of_silent_success() {
     assert!(decision.flags.contains(&PageQuality::UnsupportedFeature));
     assert_eq!(decision.reasons, ["annotation_or_form"]);
 }
+
+#[test]
+fn single_huge_object_is_unsupported_instead_of_silent_success() {
+    let decision = classify_page(&PageSignals {
+        page_index: 6,
+        dimensions: PageDimensions::new(612.0, 792.0),
+        native_span_count: 24,
+        native_text_bytes: 2_400,
+        glyph_count: 2_200,
+        image_area_ratio: 0.02,
+        duplicate_char_ratio: 0.01,
+        bbox_overlap_ratio: 0.01,
+        broken_encoding_ratio: 0.0,
+        rotation_degrees: 0,
+        table_line_density: 0.0,
+        annotation_count: 0,
+        form_field_count: 0,
+        huge_object_count: 1,
+        span_geometry_capped: false,
+    });
+
+    assert_eq!(decision.route, PageRoute::Unsupported);
+    assert!(!decision.run_ocr);
+    assert!(decision.flags.contains(&PageQuality::UnsupportedFeature));
+    assert_eq!(decision.reasons, ["huge_object_count"]);
+}
