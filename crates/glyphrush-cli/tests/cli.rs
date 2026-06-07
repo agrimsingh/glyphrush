@@ -3719,6 +3719,74 @@ fn bench_with_eval_manifest_scores_baseline_output_quality() {
 }
 
 #[test]
+fn bench_with_eval_manifest_scores_baseline_page_required_text() {
+    let dir = temp_dir("bench-eval-baseline-page-required-text");
+    let pdf_path = dir.join("sample.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_streams(&[
+            "BT /F1 24 Tf 72 720 Td (Page One Anchor) Tj ET",
+            "BT /F1 24 Tf 72 720 Td (Page Two Anchor) Tj ET",
+        ]),
+    )
+    .unwrap();
+    let baseline = write_baseline_script(
+        "baseline-page-required-text",
+        "printf 'Page One Anchor only'",
+    );
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "sample.pdf",
+              "expect": {
+                "pages": [
+                  {
+                    "index": 0,
+                    "required_text": ["Page One Anchor"]
+                  },
+                  {
+                    "index": 1,
+                    "required_text": ["Page Two Anchor"]
+                  }
+                ]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush bench with page-required baseline quality");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+
+    assert_eq!(json["quality"]["passed"], true);
+    assert_eq!(json["baselines"][0]["quality_status"], "checked");
+    assert_eq!(
+        json["baselines"][0]["quality"]["required_text"]["missing"],
+        serde_json::json!(["Page Two Anchor"])
+    );
+}
+
+#[test]
 fn bench_with_eval_manifest_scores_baseline_reading_order() {
     let dir = temp_dir("bench-eval-baseline-reading-order");
     let pdf_path = dir.join("sample.pdf");

@@ -4121,7 +4121,8 @@ fn load_baseline_quality_expectations(
         {
             continue;
         }
-        if document.expect.required_text.is_empty()
+        let required_text = baseline_required_text_expectations(&document.expect);
+        if required_text.is_empty()
             && document.expect.text_recall.is_none()
             && document.expect.reading_order.is_none()
             && document.expect.table_structure.is_empty()
@@ -4134,7 +4135,7 @@ fn load_baseline_quality_expectations(
             manifest_path_key(&resolve_manifest_path(manifest_dir, &document.path)),
             BaselineQualityExpectations {
                 category,
-                required_text: document.expect.required_text,
+                required_text,
                 text_recall: document.expect.text_recall,
                 reading_order: document.expect.reading_order,
                 table_structure: document.expect.table_structure,
@@ -4143,6 +4144,24 @@ fn load_baseline_quality_expectations(
     }
 
     Ok(expectations_by_path)
+}
+
+fn baseline_required_text_expectations(expectations: &EvalExpectations) -> Vec<String> {
+    let mut required_text = Vec::new();
+    for text in &expectations.required_text {
+        if !required_text.contains(text) {
+            required_text.push(text.clone());
+        }
+    }
+    for page in &expectations.pages {
+        for text in &page.required_text {
+            if !required_text.contains(text) {
+                required_text.push(text.clone());
+            }
+        }
+    }
+
+    required_text
 }
 
 fn generate_eval_manifest<B: PdfBackend + Sync>(
