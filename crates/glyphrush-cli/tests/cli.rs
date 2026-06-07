@@ -3102,6 +3102,26 @@ fn bench_reports_timing_and_fallback_counts() {
 }
 
 #[test]
+fn bench_require_quality_rejects_speed_only_reports_after_writing_json() {
+    let pdf_path = write_test_pdf("bench-require-quality", "Speed only");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["bench", pdf_path.to_str().unwrap(), "--require-quality"])
+        .output()
+        .expect("run glyphrush bench requiring quality");
+
+    assert!(!output.status.success());
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+    assert_eq!(json["quality_status"], "not_checked_no_eval_manifest");
+    assert!(json.get("quality").is_none());
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("bench quality required"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn bench_single_pdf_jobs_preserve_page_order_for_quality_checks() {
     let dir = temp_dir("bench-single-page-jobs");
     let pdf_path = dir.join("multi.pdf");

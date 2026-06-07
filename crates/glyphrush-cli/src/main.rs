@@ -193,6 +193,8 @@ enum Commands {
         #[arg(long)]
         eval_category: Option<String>,
         #[arg(long)]
+        require_quality: bool,
+        #[arg(long)]
         cache_probe: bool,
         #[arg(long)]
         span_geometry: bool,
@@ -2059,6 +2061,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             cache_dir,
             eval_manifest: eval_manifest_path,
             eval_category,
+            require_quality,
             cache_probe,
             span_geometry,
             baseline,
@@ -2130,6 +2133,10 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 if failed_checks > 0 {
                     bail!("bench quality failed: {failed_checks} check(s) failed");
                 }
+                if require_quality && !matches!(output.quality_status, BenchQualityStatus::Checked)
+                {
+                    bail!("bench quality required: no eval manifest quality report was checked");
+                }
             } else {
                 let mut output = bench_pdf(
                     backend,
@@ -2163,6 +2170,10 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 write_json(&output)?;
                 if failed_checks > 0 {
                     bail!("bench quality failed: {failed_checks} check(s) failed");
+                }
+                if require_quality && !matches!(output.quality_status, BenchQualityStatus::Checked)
+                {
+                    bail!("bench quality required: no eval manifest quality report was checked");
                 }
             }
         }
