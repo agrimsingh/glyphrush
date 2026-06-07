@@ -195,6 +195,8 @@ enum Commands {
         #[arg(long)]
         require_quality: bool,
         #[arg(long)]
+        require_baselines: bool,
+        #[arg(long)]
         cache_probe: bool,
         #[arg(long)]
         span_geometry: bool,
@@ -2062,6 +2064,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             eval_manifest: eval_manifest_path,
             eval_category,
             require_quality,
+            require_baselines,
             cache_probe,
             span_geometry,
             baseline,
@@ -2137,6 +2140,11 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 {
                     bail!("bench quality required: no eval manifest quality report was checked");
                 }
+                if require_baselines
+                    && let Some(error) = corpus_baseline_requirement_error(&output.baselines)
+                {
+                    bail!("{error}");
+                }
             } else {
                 let mut output = bench_pdf(
                     backend,
@@ -2174,6 +2182,11 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 if require_quality && !matches!(output.quality_status, BenchQualityStatus::Checked)
                 {
                     bail!("bench quality required: no eval manifest quality report was checked");
+                }
+                if require_baselines
+                    && let Some(error) = baseline_requirement_error(&output.baselines)
+                {
+                    bail!("{error}");
                 }
             }
         }
@@ -3614,6 +3627,31 @@ fn run_external_baselines(
             )
         })
         .collect()
+}
+
+fn baseline_requirement_error(baselines: &[BaselineBenchOutput]) -> Option<String> {
+    if baselines.is_empty() {
+        return Some("bench baselines required: no baselines were requested".to_string());
+    }
+
+    let failed = baselines
+        .iter()
+        .filter(|baseline| !baseline.success)
+        .count();
+    (failed > 0).then(|| format!("bench baselines required: {failed} baseline run(s) failed"))
+}
+
+fn corpus_baseline_requirement_error(baselines: &[CorpusBaselineBenchOutput]) -> Option<String> {
+    if baselines.is_empty() {
+        return Some("bench baselines required: no baselines were requested".to_string());
+    }
+
+    let failed = baselines
+        .iter()
+        .map(|baseline| baseline.failed_documents)
+        .sum::<usize>();
+    (failed > 0)
+        .then(|| format!("bench baselines required: {failed} baseline document run(s) failed"))
 }
 
 fn baseline_check<B: PdfBackend>(

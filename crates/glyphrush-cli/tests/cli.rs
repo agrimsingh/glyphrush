@@ -3379,6 +3379,39 @@ fn bench_reports_failed_external_baseline_without_hiding_glyphrush_metrics() {
 }
 
 #[test]
+fn bench_require_baselines_rejects_failed_baseline_after_writing_json() {
+    let pdf_path = write_test_pdf("bench-require-baseline-fail", "Hello Failed Baseline");
+    let baseline = write_baseline_script(
+        "require-baseline-fail",
+        "printf 'strict baseline failed' >&2\nexit 7",
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("broken={}", baseline.display()),
+            "--require-baselines",
+        ])
+        .output()
+        .expect("run glyphrush bench requiring baselines");
+
+    assert!(!output.status.success());
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+
+    assert_eq!(json["page_count"], 1);
+    assert_eq!(json["baselines"][0]["name"], "broken");
+    assert_eq!(json["baselines"][0]["success"], false);
+    assert_eq!(json["baselines"][0]["exit_status"], 7);
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("bench baselines required"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn bench_does_not_quality_score_failed_external_baseline() {
     let dir = temp_dir("bench-baseline-quality-fail");
     let pdf_path = dir.join("sample.pdf");
@@ -5459,6 +5492,43 @@ fn bench_directory_baseline_summary_separates_successful_and_failed_pages() {
             .as_f64()
             .unwrap()
             > 0.0
+    );
+}
+
+#[test]
+fn bench_directory_require_baselines_rejects_partial_failures_after_writing_json() {
+    let dir = temp_dir("bench-dir-require-baseline-partial");
+    fs::write(dir.join("b.pdf"), minimal_pdf("Second baseline")).unwrap();
+    fs::write(dir.join("a.pdf"), minimal_pdf("First baseline")).unwrap();
+    let baseline = write_baseline_script(
+        "require-baseline-dir-partial",
+        "case \"$1\" in *b.pdf) printf 'strict corpus baseline failed' >&2; exit 9;; *) printf 'ok';; esac",
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            dir.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--require-baselines",
+        ])
+        .output()
+        .expect("run glyphrush bench directory requiring baselines");
+
+    assert!(!output.status.success());
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+    let baseline_summary = &json["baselines"][0];
+
+    assert_eq!(baseline_summary["document_count"], 2);
+    assert_eq!(baseline_summary["successful_documents"], 1);
+    assert_eq!(baseline_summary["failed_documents"], 1);
+    assert_eq!(baseline_summary["failure_samples"][0]["path"], "b.pdf");
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("bench baselines required"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
     );
 }
 
