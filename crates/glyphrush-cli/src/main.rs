@@ -946,6 +946,8 @@ struct BaselineSmokeCheck {
     stderr_preview: Option<String>,
     error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    error_kind: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     document_count: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     successful_documents: Option<usize>,
@@ -961,6 +963,8 @@ struct BaselineSmokeCheck {
 struct BaselineSmokeFailureSample {
     path: String,
     exit_status: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error_kind: Option<&'static str>,
     error: Option<String>,
     stderr_preview: Option<String>,
 }
@@ -981,6 +985,8 @@ struct BaselineSmokeDocument {
     empty_output: bool,
     stderr_preview: Option<String>,
     error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error_kind: Option<&'static str>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -4040,6 +4046,7 @@ fn smoke_external_baseline_probe(
                 empty_output: false,
                 stderr_preview: None,
                 error: Some(error.to_string()),
+                error_kind: Some("invalid_smoke_target"),
                 document_count: Some(0),
                 successful_documents: Some(0),
                 failed_documents: Some(0),
@@ -4081,6 +4088,7 @@ fn smoke_external_baseline_probe(
         .iter()
         .find_map(|document| document.stderr_preview.clone());
     let error = documents.iter().find_map(|document| document.error.clone());
+    let error_kind = documents.iter().find_map(|document| document.error_kind);
     let failure_samples = baseline_smoke_failure_samples(&documents);
 
     BaselineSmokeCheck {
@@ -4097,6 +4105,7 @@ fn smoke_external_baseline_probe(
         empty_output,
         stderr_preview,
         error,
+        error_kind,
         document_count: Some(documents.len()),
         successful_documents: Some(successful_documents),
         failed_documents: Some(failed_documents),
@@ -4115,6 +4124,7 @@ fn baseline_smoke_failure_samples(
         .map(|document| BaselineSmokeFailureSample {
             path: document.path.clone(),
             exit_status: document.exit_status,
+            error_kind: document.error_kind,
             error: document.error.clone(),
             stderr_preview: document.stderr_preview.clone(),
         })
@@ -4150,6 +4160,7 @@ fn smoke_external_baseline_document_probe(
                 empty_output: output.status.success() && output.stdout.is_empty(),
                 stderr_preview: stderr_preview(&output.stderr),
                 error: baseline_smoke_error(&output, timed_output.timed_out),
+                error_kind: baseline_smoke_error_kind(&output, timed_output.timed_out),
             }
         }
         Err(error) => BaselineSmokeDocument {
@@ -4167,6 +4178,7 @@ fn smoke_external_baseline_document_probe(
             empty_output: false,
             stderr_preview: None,
             error: Some(format!("{}: {error}", baseline.command.display())),
+            error_kind: Some("spawn_failed"),
         },
     }
 }
@@ -4186,6 +4198,7 @@ fn baseline_smoke_check_from_document(document: &BaselineSmokeDocument) -> Basel
         empty_output: document.empty_output,
         stderr_preview: document.stderr_preview.clone(),
         error: document.error.clone(),
+        error_kind: document.error_kind,
         document_count: None,
         successful_documents: None,
         failed_documents: None,
@@ -4202,6 +4215,18 @@ fn baseline_smoke_error(output: &ProcessOutput, timed_out: bool) -> Option<Strin
             "baseline smoke exited with status {:?}",
             output.status.code()
         ))
+    } else {
+        None
+    }
+}
+
+fn baseline_smoke_error_kind(output: &ProcessOutput, timed_out: bool) -> Option<&'static str> {
+    if timed_out {
+        Some("timeout")
+    } else if output.status.code() == Some(127) {
+        Some("missing_dependency")
+    } else if !output.status.success() {
+        Some("execution_failed")
     } else {
         None
     }

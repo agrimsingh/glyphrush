@@ -6272,6 +6272,10 @@ exit 127"#,
     assert_eq!(json["baselines"][1]["name"], "failing");
     assert_eq!(json["baselines"][1]["smoke"]["success"], false);
     assert_eq!(json["baselines"][1]["smoke"]["exit_status"], 127);
+    assert_eq!(
+        json["baselines"][1]["smoke"]["error_kind"],
+        "missing_dependency"
+    );
     assert!(
         json["baselines"][1]["smoke"]["stderr_preview"]
             .as_str()
@@ -6374,6 +6378,10 @@ printf 'partial smoke %s\n' "$(basename "$1")""#,
             .unwrap()
             .contains("parser dependency missing for b.pdf")
     );
+    assert_eq!(
+        json["baselines"][1]["smoke"]["documents"][1]["error_kind"],
+        "missing_dependency"
+    );
 
     let failure_samples = json["baselines"][1]["smoke"]["failure_samples"]
         .as_array()
@@ -6381,6 +6389,7 @@ printf 'partial smoke %s\n' "$(basename "$1")""#,
     assert_eq!(failure_samples.len(), 1);
     assert_eq!(failure_samples[0]["path"], "b.pdf");
     assert_eq!(failure_samples[0]["exit_status"], 127);
+    assert_eq!(failure_samples[0]["error_kind"], "missing_dependency");
     assert!(
         failure_samples[0]["stderr_preview"]
             .as_str()
