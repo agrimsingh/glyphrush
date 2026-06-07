@@ -3467,6 +3467,97 @@ fn bench_includes_external_baseline_description_when_available() {
     assert_eq!(baseline["success"], true);
     assert_eq!(baseline["description"]["target"], "MockParse");
     assert_eq!(baseline["description"]["ocr"], "none");
+    assert_eq!(baseline["description_status"]["success"], true);
+    assert_eq!(baseline["description_status"]["valid_json_object"], true);
+    assert_eq!(baseline["description_status"]["error"], Value::Null);
+}
+
+#[test]
+fn bench_reports_external_baseline_description_probe_failures() {
+    let pdf_path = write_test_pdf(
+        "bench-baseline-describe-failure",
+        "Hello Baseline Describe Failure",
+    );
+    let baseline = write_baseline_script(
+        "baseline-describe-failure",
+        "if [ \"${1:-}\" = \"--describe\" ]; then printf 'lit missing' >&2; exit 127; fi\nprintf 'baseline output'",
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+        ])
+        .output()
+        .expect("run glyphrush bench with failed describing baseline");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+    let baseline = &json["baselines"][0];
+
+    assert_eq!(baseline["success"], true);
+    assert_eq!(baseline["description"], Value::Null);
+    assert_eq!(baseline["description_status"]["success"], false);
+    assert_eq!(
+        baseline["description_status"]["error_kind"],
+        "missing_dependency"
+    );
+    assert!(
+        baseline["description_status"]["stderr_preview"]
+            .as_str()
+            .unwrap()
+            .contains("lit missing")
+    );
+}
+
+#[test]
+fn bench_directory_summary_reports_external_baseline_description_probe_status() {
+    let dir = temp_dir("bench-dir-baseline-describe-failure");
+    fs::write(dir.join("b.pdf"), minimal_pdf("Second describe failure")).unwrap();
+    fs::write(dir.join("a.pdf"), minimal_pdf("First describe failure")).unwrap();
+    let baseline = write_baseline_script(
+        "baseline-dir-describe-failure",
+        "if [ \"${1:-}\" = \"--describe\" ]; then printf 'not json'; exit 0; fi\nprintf 'baseline output'",
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            dir.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+        ])
+        .output()
+        .expect("run glyphrush bench directory with failed describing baseline");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+    let baseline_summary = &json["baselines"][0];
+
+    assert_eq!(baseline_summary["description"], Value::Null);
+    assert_eq!(
+        baseline_summary["description_status"]["error_kind"],
+        "invalid_describe_output"
+    );
+    assert_eq!(
+        json["documents"][0]["baselines"][0]["description_status"]["error_kind"],
+        "invalid_describe_output"
+    );
+    assert_eq!(
+        json["documents"][1]["baselines"][0]["description_status"]["error_kind"],
+        "invalid_describe_output"
+    );
 }
 
 #[test]

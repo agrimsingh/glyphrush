@@ -916,7 +916,7 @@ struct BaselineCheckResult {
     smoke: Option<BaselineSmokeCheck>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct BaselineDescribeCheck {
     success: bool,
     exit_status: Option<i32>,
@@ -997,6 +997,7 @@ struct BaselineBenchOutput {
     command: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     description: Option<Value>,
+    description_status: BaselineDescribeCheck,
     comparison: BaselineComparisonOutput,
     success: bool,
     exit_status: Option<i32>,
@@ -1121,6 +1122,8 @@ struct CorpusBaselineBenchOutput {
     command: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     description: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    description_status: Option<BaselineDescribeCheck>,
     comparison: BaselineComparisonOutput,
     document_count: usize,
     successful_documents: usize,
@@ -4270,7 +4273,7 @@ fn run_external_baseline(
     glyphrush_text_output_bytes: u64,
     timeout: Duration,
 ) -> BaselineBenchOutput {
-    let description = describe_external_baseline(baseline, timeout);
+    let (description, description_status) = describe_external_baseline_probe(baseline, timeout);
     let mut command_process = ProcessCommand::new(&baseline.command);
     command_process.arg(path);
     let result = command_output_with_timeout(command_process, timeout);
@@ -4291,6 +4294,7 @@ fn run_external_baseline(
                 name: baseline.name.clone(),
                 command,
                 description,
+                description_status,
                 comparison: baseline_comparison(
                     glyphrush_wall_us,
                     wall_us,
@@ -4322,6 +4326,7 @@ fn run_external_baseline(
             name: baseline.name.clone(),
             command,
             description,
+            description_status,
             comparison: baseline_comparison(
                 glyphrush_wall_us,
                 0,
@@ -4434,10 +4439,6 @@ fn kill_timed_out_child(child: &mut std::process::Child) {
     }
 
     let _ = child.kill();
-}
-
-fn describe_external_baseline(baseline: &BaselineSpec, timeout: Duration) -> Option<Value> {
-    describe_external_baseline_probe(baseline, timeout).0
 }
 
 fn load_baseline_quality_expectations(
@@ -5178,11 +5179,13 @@ fn aggregate_corpus_baselines(
                 .take(3)
                 .collect();
             let description = runs.iter().find_map(|(_, run)| run.description.clone());
+            let description_status = runs.first().map(|(_, run)| run.description_status.clone());
 
             CorpusBaselineBenchOutput {
                 name: baseline.name.clone(),
                 command: baseline_command,
                 description,
+                description_status,
                 comparison: baseline_comparison(
                     glyphrush_wall_us,
                     wall_us,
