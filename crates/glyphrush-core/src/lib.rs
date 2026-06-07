@@ -624,12 +624,13 @@ pub fn parse_extracted_pages(
                         provenance: SpanProvenance::Native,
                     }));
             }
-            let mut layout_text = artifact
+            let native_layout_text = artifact
                 .native_spans
                 .iter()
                 .map(|span| span.text.as_str())
                 .collect::<Vec<_>>()
                 .join("\n");
+            let mut ocr_layout_text = None;
             if run_ocr
                 && let Some(ocr_text) = page.ocr_text
                 && !ocr_text.trim().is_empty()
@@ -645,12 +646,17 @@ pub fn parse_extracted_pages(
                     confidence: 70,
                     provenance: SpanProvenance::Ocr,
                 });
-                if layout_text.trim().is_empty() {
-                    layout_text = ocr_text;
-                }
+                ocr_layout_text = Some(ocr_text);
             }
             let run_table_recovery = artifact.route.run_table_recovery;
-            artifact.layout_blocks = if !artifact.native_spans.is_empty() {
+            artifact.layout_blocks = if let Some(layout_text) = ocr_layout_text.as_deref() {
+                layout_blocks_from_text(
+                    page.page_index,
+                    page.dimensions,
+                    layout_text,
+                    run_table_recovery,
+                )
+            } else if !artifact.native_spans.is_empty() {
                 layout_blocks_from_native_spans(
                     page.page_index,
                     page.dimensions,
@@ -661,7 +667,7 @@ pub fn parse_extracted_pages(
                 layout_blocks_from_text(
                     page.page_index,
                     page.dimensions,
-                    &layout_text,
+                    &native_layout_text,
                     run_table_recovery,
                 )
             };

@@ -74,6 +74,39 @@ fn ocr_text_can_produce_layout_blocks_when_native_text_is_missing() {
 }
 
 #[test]
+fn applied_ocr_replaces_low_confidence_native_text_for_layout() {
+    let artifact = parse_extracted_pages(
+        "doc-ocr-over-native-layout".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: "x".to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                native_span_count: 1,
+                native_text_bytes: 1,
+                glyph_count: 1,
+                image_area_ratio: 0.95,
+                ..native_signals(0)
+            },
+            ocr_text: Some("OCR HEADING\n\nRecovered OCR paragraph.".to_string()),
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.native_spans.len(), 1);
+    assert_eq!(page.native_spans[0].text, "x");
+    assert_eq!(page.ocr_spans.len(), 1);
+    assert_eq!(page.layout_blocks.len(), 2);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Heading);
+    assert_eq!(page.layout_blocks[0].text, "OCR HEADING");
+    assert_eq!(page.layout_blocks[1].kind, LayoutBlockKind::Paragraph);
+    assert_eq!(page.layout_blocks[1].text, "Recovered OCR paragraph.");
+}
+
+#[test]
 fn layout_reflows_short_pdf_fragments_inside_paragraph_blocks() {
     let artifact = parse_extracted_pages(
         "doc-fragments".to_string(),
