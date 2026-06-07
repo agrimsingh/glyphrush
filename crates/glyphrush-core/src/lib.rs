@@ -472,6 +472,13 @@ pub fn classify_page(signals: &PageSignals) -> RouteDecision {
         flags.push(PageQuality::LowConfidenceText);
         reasons.push("broken_encoding".to_string());
         run_heavy_layout = true;
+        if signals.image_area_ratio >= 0.70 {
+            flags.push(PageQuality::RequiresOcr);
+            if !run_ocr {
+                reasons.push("broken_encoding_with_image_coverage".to_string());
+            }
+            run_ocr = true;
+        }
     }
 
     let layout_uncertain = signals.bbox_overlap_ratio >= 0.25

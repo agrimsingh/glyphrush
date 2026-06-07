@@ -137,6 +137,38 @@ fn broken_encoding_is_flagged_and_avoids_fast_path() {
 }
 
 #[test]
+fn image_backed_broken_encoding_requires_ocr_fallback() {
+    let decision = classify_page(&PageSignals {
+        page_index: 2,
+        dimensions: PageDimensions::new(612.0, 792.0),
+        native_span_count: 15,
+        native_text_bytes: 520,
+        glyph_count: 1_100,
+        image_area_ratio: 0.76,
+        duplicate_char_ratio: 0.04,
+        bbox_overlap_ratio: 0.08,
+        broken_encoding_ratio: 0.42,
+        rotation_degrees: 0,
+        table_line_density: 0.01,
+        annotation_count: 0,
+        form_field_count: 0,
+        huge_object_count: 0,
+        span_geometry_capped: false,
+    });
+
+    assert_eq!(decision.route, PageRoute::OcrFallback);
+    assert!(decision.run_ocr);
+    assert!(decision.run_heavy_layout);
+    assert!(decision.flags.contains(&PageQuality::RequiresOcr));
+    assert!(decision.flags.contains(&PageQuality::BrokenEncoding));
+    assert!(decision.flags.contains(&PageQuality::LowConfidenceText));
+    assert_eq!(
+        decision.reasons,
+        ["broken_encoding", "broken_encoding_with_image_coverage"]
+    );
+}
+
+#[test]
 fn table_dense_pages_request_table_recovery_without_ocr() {
     let decision = classify_page(&PageSignals {
         page_index: 3,
