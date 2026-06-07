@@ -154,7 +154,7 @@ Supported v0 expectations:
 - `route_reason_counts`: exact document-level classifier reason counts.
 - `quality_flag_counts`: exact document-level page counts by quality flag.
 - `required_warnings`: exact warning strings that must appear in artifact diagnostics.
-- `required_text`: substrings that must appear in merged native/OCR text.
+- `required_text`: substrings that must appear in derived eval quality text, using layout-block order when available and appending distinct OCR text.
 - `text_recall`: expected text plus optional minimum normalized word and character recall thresholds.
 - `reading_order`: expected text snippet sequence plus optional minimum pairwise order score.
 - `ocr_required_classification`: expected OCR-required page indices plus optional minimum precision and recall thresholds.
@@ -278,9 +278,9 @@ Page-level `image_artifact_count` checks the exact drawn-image count on a specif
 
 `required_warnings` checks exact document-level warning strings such as `p000000: requires_ocr_without_ocr_output`, `p000000: unsupported_feature: span_geometry_capped`, or `p000000: unsupported_feature: annotation_or_form`. Use it with `warnings_count` when a corpus fixture should prove an OCR-required or unsupported-feature diagnostic remains visible.
 
-`text_recall` compares normalized expected text against merged native/OCR output. Word recall uses a lowercase alphanumeric-token multiset; character recall uses a lowercase alphanumeric-character multiset. This catches missing text without requiring exact whitespace or line-break preservation.
+`text_recall` compares normalized expected text against derived eval quality text. Word recall uses a lowercase alphanumeric-token multiset; character recall uses a lowercase alphanumeric-character multiset. This catches missing text without requiring exact whitespace or line-break preservation.
 
-`reading_order` finds the first occurrence of each expected snippet in merged native/OCR output and scores all expected snippet pairs. Missing snippets and inverted pairs lower the score; the report includes matched positions, missing snippets, inversion count, and inversion pairs.
+`reading_order` finds the first occurrence of each expected snippet in derived eval quality text and scores all expected snippet pairs. Missing snippets and inverted pairs lower the score; the report includes matched positions, missing snippets, inversion count, and inversion pairs.
 
 `ocr_required_classification` compares zero-based expected page indices against pages where Glyphrush emitted `requires_ocr`. The report includes precision, recall, true positives, false positives, and false negatives so scanned/hybrid page detection can be tracked as an explicit quality metric.
 

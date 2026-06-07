@@ -5640,13 +5640,7 @@ fn insert_required_text_check(
     required_text: &[String],
     artifact: &DocumentArtifact,
 ) {
-    let document_text = artifact
-        .pages
-        .iter()
-        .flat_map(|page| page.native_spans.iter().chain(page.ocr_spans.iter()))
-        .map(|span| span.text.as_str())
-        .collect::<Vec<_>>()
-        .join("\n");
+    let document_text = document_text(artifact);
     let missing = required_text
         .iter()
         .filter(|text| !document_text.contains(text.as_str()))

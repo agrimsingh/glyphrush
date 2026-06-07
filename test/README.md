@@ -40,7 +40,7 @@ OCR command adapters are invoked only for pages routed to OCR fallback. The comm
 
 Eval manifests are JSON files. Paths are relative to the manifest file, so `test/corpus.json` can refer to `"your-file.pdf"` directly:
 
-Use `manifest` to bootstrap a passing structural manifest after adding PDFs. The generated file records generator provenance, a corpus fingerprint, and per-document source fingerprints that `eval` checks for source drift, then pins OCR-needed classification, non-empty quality-flag classification gates, page layout block counts, and exact warning pins for OCR-required or unsupported pages. Then add human/labeled text, reading-order, table, or bbox expectations before using it for quality claims:
+Use `manifest` to bootstrap a passing structural manifest after adding PDFs. The generated file records generator provenance, a corpus fingerprint, and per-document source fingerprints that `eval` checks for source drift, then pins OCR-needed classification, non-empty quality-flag classification gates, page layout block counts, and exact warning pins for OCR-required or unsupported pages. Then add human/labeled text, reading-order, table, or bbox expectations before using it for quality claims. Text gates such as `required_text` use the derived layout-aware eval text, not the raw native span list:
 
 ```sh
 cargo run -p glyphrush-cli -- manifest test/ > test/corpus.generated.json

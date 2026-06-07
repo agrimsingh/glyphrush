@@ -6402,6 +6402,51 @@ fn eval_manifest_passes_when_counts_and_required_text_match() {
 }
 
 #[test]
+fn eval_manifest_required_text_uses_layout_reflowed_text() {
+    let dir = temp_dir("eval-required-text-layout-reflow");
+    let pdf_path = dir.join("fragmented.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream("BT /F1 12 Tf 72 720 Td 24 TL (AP735) Tj T* (4) Tj ET"),
+    )
+    .unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "fragmented.pdf",
+              "expect": {
+                "required_text": ["AP7354"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["eval", manifest_path.to_str().unwrap()])
+        .output()
+        .expect("run glyphrush eval with layout-reflowed required text");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("eval output is json");
+
+    assert_eq!(json["passed"], true);
+    assert_eq!(
+        json["documents"][0]["checks"]["required_text"]["actual"]["missing"],
+        Value::Array(vec![])
+    );
+}
+
+#[test]
 fn eval_manifest_reports_category_counts_and_document_categories() {
     let dir = temp_dir("eval-category-counts");
     fs::write(dir.join("clean.pdf"), minimal_pdf("Clean category text")).unwrap();
