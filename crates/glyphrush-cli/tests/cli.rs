@@ -2402,6 +2402,88 @@ fn parse_with_ocr_sidecar_populates_ocr_span_for_required_page() {
 }
 
 #[test]
+fn parse_with_ocr_sidecar_escalates_image_backed_broken_native_text() {
+    let dir = temp_dir("parse-ocr-broken-native");
+    let pdf_path = dir.join("broken.pdf");
+    let broken_native = format!(
+        "{}{}",
+        "\u{fffd}".repeat(80),
+        " native fallback text".repeat(8)
+    );
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_full_page_image_and_text(&broken_native),
+    )
+    .unwrap();
+    let sidecar_dir = dir.join("ocr");
+    fs::create_dir_all(&sidecar_dir).unwrap();
+    fs::write(
+        sidecar_dir.join("broken.p000000.txt"),
+        "OCR RECOVERED\n\nRecovered OCR paragraph.",
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+            "--ocr-sidecar",
+            sidecar_dir.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush parse with broken native text and ocr sidecar");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("parse output is json");
+    let page = &json["pages"][0];
+
+    assert_eq!(page["route"]["route"], "ocr_fallback");
+    assert_eq!(page["route"]["run_ocr"], true);
+    assert!(
+        page["signals"]["broken_encoding_ratio"].as_f64().unwrap() >= 0.20,
+        "signals: {}",
+        page["signals"]
+    );
+    assert!(
+        page["signals"]["image_area_ratio"].as_f64().unwrap() >= 0.95,
+        "signals: {}",
+        page["signals"]
+    );
+    assert_eq!(
+        page["route"]["reasons"],
+        serde_json::json!([
+            "image_text_overlay",
+            "broken_encoding",
+            "broken_encoding_with_image_coverage"
+        ])
+    );
+    assert_eq!(
+        page["quality"]["flags"],
+        serde_json::json!([
+            "layout_uncertain",
+            "broken_encoding",
+            "low_confidence_text",
+            "requires_ocr"
+        ])
+    );
+    assert_eq!(
+        page["ocr_spans"][0]["text"],
+        "OCR RECOVERED\n\nRecovered OCR paragraph."
+    );
+    assert_eq!(page["layout_blocks"][0]["text"], "OCR RECOVERED");
+    assert_eq!(page["layout_blocks"][1]["text"], "Recovered OCR paragraph.");
+    assert_eq!(json["global_diagnostics"]["ocr_required_pages"], 1);
+    assert_eq!(json["global_diagnostics"]["ocr_applied_pages"], 1);
+    assert_eq!(json["global_diagnostics"]["warnings"], Value::Array(vec![]));
+}
+
+#[test]
 fn parse_with_ocr_command_invokes_adapter_only_for_ocr_pages() {
     let dir = temp_dir("parse-ocr-command");
     let native_path = dir.join("native.pdf");
@@ -2729,8 +2811,12 @@ fn cache_key_does_not_reuse_prior_schema_artifacts() {
         "glyphrush-cache-v36:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
         env!("CARGO_PKG_VERSION")
     ));
-    let expected_current_key = sha256_hex(format!(
+    let old_v37_key = sha256_hex(format!(
         "glyphrush-cache-v37:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
+        env!("CARGO_PKG_VERSION")
+    ));
+    let expected_current_key = sha256_hex(format!(
+        "glyphrush-cache-v38:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
         env!("CARGO_PKG_VERSION")
     ));
 
@@ -2949,6 +3035,12 @@ fn cache_key_does_not_reuse_prior_schema_artifacts() {
             .as_str()
             .expect("cache key is present"),
         old_v36_key
+    );
+    assert_ne!(
+        json["global_diagnostics"]["cache_key"]
+            .as_str()
+            .expect("cache key is present"),
+        old_v37_key
     );
     assert_eq!(
         json["global_diagnostics"]["cache_key"]

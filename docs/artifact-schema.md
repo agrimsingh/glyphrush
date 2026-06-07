@@ -60,7 +60,7 @@ Route reasons are stable machine-readable strings attached to each page route de
 
 ## Page Signals
 
-Page signals are included in each page artifact so downstream agents can inspect the evidence behind `route`, `quality`, and warning decisions without rerunning `debug-page`. They are cheap diagnostics, not expensive rendered analysis. Current signals include text density, glyph count, image area ratio, duplicate-character and broken-encoding ratios, measured bbox-overlap ratio for accepted positioned spans, rotation, table-line density, `annotation_count` for page annotations, `form_field_count` for catalog AcroForm fields and page widget annotations, huge-object count, span-geometry cap state, and effective dimensions.
+Page signals are included in each page artifact so downstream agents can inspect the evidence behind `route`, `quality`, and warning decisions without rerunning `debug-page`. They are cheap diagnostics, not expensive rendered analysis. Current signals include text density, glyph count, image area ratio, duplicate-character and broken-encoding ratios, measured bbox-overlap ratio for accepted positioned spans, rotation, table-line density, `annotation_count` for page annotations, `form_field_count` for catalog AcroForm fields and page widget annotations, huge-object count, span-geometry cap state, and effective dimensions. The broken-encoding ratio counts replacement/control characters and repeated `¿‰` mojibake pairs so damaged native text can route to OCR when image evidence is available.
 
 ## Layout Blocks
 
