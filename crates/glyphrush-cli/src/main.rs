@@ -930,7 +930,17 @@ struct BaselineSmokeCheck {
     #[serde(skip_serializing_if = "Option::is_none")]
     failed_documents: Option<usize>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
+    failure_samples: Vec<BaselineSmokeFailureSample>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     documents: Vec<BaselineSmokeDocument>,
+}
+
+#[derive(Debug, Serialize)]
+struct BaselineSmokeFailureSample {
+    path: String,
+    exit_status: Option<i32>,
+    error: Option<String>,
+    stderr_preview: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -3999,6 +4009,7 @@ fn smoke_external_baseline_probe(
                 document_count: Some(0),
                 successful_documents: Some(0),
                 failed_documents: Some(0),
+                failure_samples: Vec::new(),
                 documents: Vec::new(),
             };
         }
@@ -4036,6 +4047,7 @@ fn smoke_external_baseline_probe(
         .iter()
         .find_map(|document| document.stderr_preview.clone());
     let error = documents.iter().find_map(|document| document.error.clone());
+    let failure_samples = baseline_smoke_failure_samples(&documents);
 
     BaselineSmokeCheck {
         success: failed_documents == 0,
@@ -4054,8 +4066,25 @@ fn smoke_external_baseline_probe(
         document_count: Some(documents.len()),
         successful_documents: Some(successful_documents),
         failed_documents: Some(failed_documents),
+        failure_samples,
         documents,
     }
+}
+
+fn baseline_smoke_failure_samples(
+    documents: &[BaselineSmokeDocument],
+) -> Vec<BaselineSmokeFailureSample> {
+    documents
+        .iter()
+        .filter(|document| !document.success)
+        .take(3)
+        .map(|document| BaselineSmokeFailureSample {
+            path: document.path.clone(),
+            exit_status: document.exit_status,
+            error: document.error.clone(),
+            stderr_preview: document.stderr_preview.clone(),
+        })
+        .collect()
 }
 
 fn smoke_external_baseline_document_probe(
@@ -4126,6 +4155,7 @@ fn baseline_smoke_check_from_document(document: &BaselineSmokeDocument) -> Basel
         document_count: None,
         successful_documents: None,
         failed_documents: None,
+        failure_samples: Vec::new(),
         documents: Vec::new(),
     }
 }

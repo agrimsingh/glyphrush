@@ -6155,6 +6155,25 @@ printf 'partial smoke %s\n' "$(basename "$1")""#,
             .unwrap()
             .contains("parser dependency missing for b.pdf")
     );
+
+    let failure_samples = json["baselines"][1]["smoke"]["failure_samples"]
+        .as_array()
+        .unwrap();
+    assert_eq!(failure_samples.len(), 1);
+    assert_eq!(failure_samples[0]["path"], "b.pdf");
+    assert_eq!(failure_samples[0]["exit_status"], 127);
+    assert!(
+        failure_samples[0]["stderr_preview"]
+            .as_str()
+            .unwrap()
+            .contains("parser dependency missing for b.pdf")
+    );
+    assert!(
+        failure_samples[0]["error"]
+            .as_str()
+            .unwrap()
+            .contains("status Some(127)")
+    );
 }
 
 #[test]
