@@ -4442,6 +4442,58 @@ fn bench_with_eval_manifest_exits_nonzero_when_quality_fails() {
 }
 
 #[test]
+fn bench_with_eval_manifest_reports_silent_failure_summary() {
+    let dir = temp_dir("bench-eval-silent-failure-summary");
+    let pdf_path = dir.join("scan.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "scan.pdf",
+              "expect": {
+                "silent_failures": {
+                  "max_count": 0
+                }
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush bench with silent-failure eval manifest");
+
+    assert!(!output.status.success());
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+
+    assert_eq!(json["quality_status"], "checked");
+    assert_eq!(json["quality"]["failed_checks"], 1);
+    assert_eq!(json["silent_failure_count"], 1);
+    assert_eq!(
+        json["silent_failure_pages"],
+        serde_json::json!([
+            {
+                "path": "scan.pdf",
+                "page": 0,
+                "flags": ["requires_ocr", "low_confidence_text"],
+                "empty_text_output": true
+            }
+        ])
+    );
+}
+
+#[test]
 fn bench_directory_with_eval_manifest_embeds_quality_summary() {
     let dir = temp_dir("bench-dir-eval-pass");
     fs::write(dir.join("b.pdf"), minimal_pdf("Second Quality")).unwrap();
@@ -4492,6 +4544,71 @@ fn bench_directory_with_eval_manifest_embeds_quality_summary() {
     assert_eq!(json["quality"]["failed_checks"], 0);
     assert_eq!(json["quality"]["document_count"], 2);
     assert_eq!(json["documents"][0]["path"], "a.pdf");
+}
+
+#[test]
+fn bench_directory_with_eval_manifest_reports_silent_failure_summary() {
+    let dir = temp_dir("bench-dir-eval-silent-failure-summary");
+    fs::write(dir.join("a.pdf"), minimal_pdf("Clean Directory Bench")).unwrap();
+    fs::write(
+        dir.join("b.pdf"),
+        minimal_pdf_with_stream("0 0 m 10 10 l S"),
+    )
+    .unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "a.pdf",
+              "expect": {
+                "silent_failures": {
+                  "max_count": 0
+                }
+              }
+            },
+            {
+              "path": "b.pdf",
+              "expect": {
+                "silent_failures": {
+                  "max_count": 0
+                }
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            dir.to_str().unwrap(),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush directory bench with silent-failure eval manifest");
+
+    assert!(!output.status.success());
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+
+    assert_eq!(json["quality_status"], "checked");
+    assert_eq!(json["quality"]["failed_checks"], 1);
+    assert_eq!(json["silent_failure_count"], 1);
+    assert_eq!(
+        json["silent_failure_pages"],
+        serde_json::json!([
+            {
+                "path": "b.pdf",
+                "page": 0,
+                "flags": ["requires_ocr", "low_confidence_text"],
+                "empty_text_output": true
+            }
+        ])
+    );
 }
 
 #[test]

@@ -506,6 +506,10 @@ struct BenchOutput {
     cache_status: CacheStatus,
     cache_key: Option<String>,
     baselines: Vec<BaselineBenchOutput>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    silent_failure_count: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    silent_failure_pages: Option<Vec<BenchmarkSilentFailurePage>>,
     quality_status: BenchQualityStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     quality: Option<EvalOutput>,
@@ -560,6 +564,10 @@ struct CorpusBenchOutput {
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     category_summaries: BTreeMap<String, CorpusBenchmarkCategorySummary>,
     baselines: Vec<CorpusBaselineBenchOutput>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    silent_failure_count: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    silent_failure_pages: Option<Vec<BenchmarkSilentFailurePage>>,
     quality_status: BenchQualityStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     quality: Option<EvalOutput>,
@@ -627,6 +635,20 @@ struct CorpusBenchmarkCategorySummary {
     failed_checks: u32,
     quality_passed: bool,
     quality_failed: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct BenchmarkSilentFailurePage {
+    path: String,
+    page: u64,
+    flags: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    empty_text_output: Option<bool>,
+}
+
+struct BenchmarkSilentFailureSummary {
+    count: usize,
+    pages: Vec<BenchmarkSilentFailurePage>,
 }
 
 impl CorpusBenchmarkCategorySummary {
@@ -2203,6 +2225,10 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                     };
                     output.category_summaries =
                         benchmark_category_summaries(&output.documents, &quality);
+                    if let Some(summary) = benchmark_silent_failure_summary(&quality) {
+                        output.silent_failure_count = Some(summary.count);
+                        output.silent_failure_pages = Some(summary.pages);
+                    }
                     output.quality_status = BenchQualityStatus::Checked;
                     output.quality = Some(quality);
                 }
@@ -2252,6 +2278,10 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                             EvalArtifactSelection::MatchingArtifacts,
                         )?
                     };
+                    if let Some(summary) = benchmark_silent_failure_summary(&quality) {
+                        output.silent_failure_count = Some(summary.count);
+                        output.silent_failure_pages = Some(summary.pages);
+                    }
                     output.quality_status = BenchQualityStatus::Checked;
                     output.quality = Some(quality);
                 }
@@ -2959,6 +2989,8 @@ fn bench_corpus<B: PdfBackend + Sync>(
         cache_misses,
         category_summaries: BTreeMap::new(),
         baselines: baseline_outputs,
+        silent_failure_count: None,
+        silent_failure_pages: None,
         quality_status: BenchQualityStatus::NotCheckedNoEvalManifest,
         quality: None,
         cache_probe: cache_probe_output,
@@ -3171,6 +3203,8 @@ fn bench_pdf<B: PdfBackend>(
         cache_status: artifact.global_diagnostics.cache_status.clone(),
         cache_key: artifact.global_diagnostics.cache_key.clone(),
         baselines: baseline_outputs,
+        silent_failure_count: None,
+        silent_failure_pages: None,
         quality_status: BenchQualityStatus::NotCheckedNoEvalManifest,
         quality: None,
         cache_probe: cache_probe_output,
@@ -5238,6 +5272,59 @@ fn benchmark_category_summaries(
                 .add_document(document, failed_checks);
             summaries
         })
+}
+
+fn benchmark_silent_failure_summary(quality: &EvalOutput) -> Option<BenchmarkSilentFailureSummary> {
+    let mut saw_silent_failure_check = false;
+    let mut count = 0usize;
+    let mut pages = Vec::new();
+
+    for document in &quality.documents {
+        let Some(check) = document.checks.get("silent_failures") else {
+            continue;
+        };
+        saw_silent_failure_check = true;
+        let document_pages = check
+            .actual
+            .get("pages")
+            .and_then(Value::as_array)
+            .map(|pages| {
+                pages
+                    .iter()
+                    .filter_map(|page| benchmark_silent_failure_page(&document.path, page))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+
+        count += check
+            .actual
+            .get("count")
+            .and_then(Value::as_u64)
+            .map(|count| count as usize)
+            .unwrap_or(document_pages.len());
+        pages.extend(document_pages);
+    }
+
+    saw_silent_failure_check.then_some(BenchmarkSilentFailureSummary { count, pages })
+}
+
+fn benchmark_silent_failure_page(path: &str, page: &Value) -> Option<BenchmarkSilentFailurePage> {
+    Some(BenchmarkSilentFailurePage {
+        path: path.to_string(),
+        page: page.get("page")?.as_u64()?,
+        flags: page
+            .get("flags")
+            .and_then(Value::as_array)
+            .map(|flags| {
+                flags
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .map(str::to_string)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default(),
+        empty_text_output: page.get("empty_text_output").and_then(Value::as_bool),
+    })
 }
 
 fn eval_document_failed_checks(document: &EvalDocumentOutput) -> u32 {
