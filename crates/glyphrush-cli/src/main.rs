@@ -459,6 +459,7 @@ struct BenchOutput {
     backend: &'static str,
     run_metadata: BenchmarkRunMetadata,
     run_configuration: RunConfiguration,
+    requirements: BenchmarkRequirements,
     requested_baseline_presets: Vec<&'static str>,
     metadata: DocumentMetadata,
     document_fingerprint: String,
@@ -509,6 +510,7 @@ struct CorpusBenchOutput {
     backend: &'static str,
     run_metadata: BenchmarkRunMetadata,
     run_configuration: RunConfiguration,
+    requirements: BenchmarkRequirements,
     requested_baseline_presets: Vec<&'static str>,
     document_count: usize,
     page_count: usize,
@@ -646,6 +648,13 @@ struct RunConfiguration {
     ocr_sidecar: bool,
     ocr_command: bool,
     ocr_timeout_ms: u64,
+}
+
+#[derive(Clone, Copy, Debug, Default, Serialize)]
+struct BenchmarkRequirements {
+    require_quality: bool,
+    require_baselines: bool,
+    require_baseline_quality: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -1581,6 +1590,7 @@ struct BenchRunConfig<'a> {
     baselines: &'a [BaselineSpec],
     requested_baseline_presets: &'a [&'static str],
     baseline_timeout: Duration,
+    requirements: BenchmarkRequirements,
 }
 
 #[derive(Clone, Copy)]
@@ -2087,6 +2097,11 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             )?;
             let requested_baseline_presets = baseline_preset_names(baseline_preset);
             let baseline_specs = baseline_specs_with_preset(&baseline, baseline_preset);
+            let requirements = BenchmarkRequirements {
+                require_quality,
+                require_baselines,
+                require_baseline_quality,
+            };
             let bench_config = BenchRunConfig {
                 ocr,
                 cache_dir: cache_dir.as_deref(),
@@ -2096,6 +2111,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 baselines: &baseline_specs,
                 requested_baseline_presets: &requested_baseline_presets,
                 baseline_timeout: Duration::from_millis(baseline_timeout_ms),
+                requirements,
             };
             let run_configuration = run_configuration(ocr, options);
             let baseline_quality = eval_manifest_path
@@ -2847,6 +2863,7 @@ fn bench_corpus<B: PdfBackend + Sync>(
         backend: backend.name(),
         run_metadata: benchmark_run_metadata(backend),
         run_configuration: run_configuration(config.ocr, config.extraction),
+        requirements: config.requirements,
         requested_baseline_presets: config.requested_baseline_presets.to_vec(),
         document_count: documents.len(),
         page_count,
@@ -3060,6 +3077,7 @@ fn bench_pdf<B: PdfBackend>(
         backend: backend.name(),
         run_metadata: benchmark_run_metadata(backend),
         run_configuration: run_configuration(config.ocr, config.extraction),
+        requirements: config.requirements,
         requested_baseline_presets: config.requested_baseline_presets.to_vec(),
         metadata: artifact.metadata.clone(),
         document_fingerprint: artifact.document_fingerprint.clone(),
@@ -3136,6 +3154,7 @@ fn run_cache_probe<B: PdfBackend>(
         baselines: &[],
         requested_baseline_presets: &[],
         baseline_timeout: Duration::from_millis(DEFAULT_BASELINE_TIMEOUT_MS),
+        requirements: BenchmarkRequirements::default(),
     };
     let warm_bench = bench_pdf(backend, path, warm_config, None)?;
     let warm = cache_probe_run_from_bench(&warm_bench);

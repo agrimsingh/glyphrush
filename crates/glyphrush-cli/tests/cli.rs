@@ -3114,6 +3114,9 @@ fn bench_require_quality_rejects_speed_only_reports_after_writing_json() {
     let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
     assert_eq!(json["quality_status"], "not_checked_no_eval_manifest");
     assert!(json.get("quality").is_none());
+    assert_eq!(json["requirements"]["require_quality"], true);
+    assert_eq!(json["requirements"]["require_baselines"], false);
+    assert_eq!(json["requirements"]["require_baseline_quality"], false);
     assert!(
         String::from_utf8_lossy(&output.stderr).contains("bench quality required"),
         "stderr: {}",
@@ -5257,6 +5260,9 @@ fn bench_directory_require_baseline_quality_rejects_quality_failures_after_writi
     assert_eq!(baseline_summary["quality_status"], "checked");
     assert_eq!(baseline_summary["quality_documents"], 2);
     assert_eq!(baseline_summary["quality_failed_documents"], 1);
+    assert_eq!(json["requirements"]["require_quality"], false);
+    assert_eq!(json["requirements"]["require_baselines"], false);
+    assert_eq!(json["requirements"]["require_baseline_quality"], true);
     assert_eq!(
         baseline_summary["quality_failure_samples"][0]["path"],
         "b.pdf"

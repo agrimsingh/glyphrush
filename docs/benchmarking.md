@@ -7,6 +7,7 @@
 - `backend`.
 - `run_metadata`: parser/backend provenance for the benchmark run.
 - `run_configuration`: output-affecting options for the benchmark run: `span_geometry`, `ocr_sidecar`, `ocr_command`, and `ocr_timeout_ms`.
+- `requirements`: non-output-affecting gate switches requested for the benchmark run: `require_quality`, `require_baselines`, and `require_baseline_quality`.
 - `requested_baseline_presets`: preset comparison sets expanded into baseline wrappers, such as `["glyphrush-v0"]`.
 - `metadata`: parser/backend/source provenance copied from the structured artifact.
 - `document_fingerprint`.
@@ -15,7 +16,7 @@
 - `wall_us`.
 - `pages_per_sec`.
 - `artifact_bytes`: size of the structured Glyphrush document artifact encoded as JSON.
-- Bench JSON includes `run_metadata.parser_name`, `run_metadata.parser_version`, `run_metadata.backend`, `run_metadata.backend_version`, and `run_configuration` so saved reports can be compared without inspecting a nested document or cache key. Single-file reports also include `metadata.source_size_bytes` and `metadata.source_modified_unix_ms` so speed and quality results remain tied to the source artifact that produced them.
+- Bench JSON includes `run_metadata.parser_name`, `run_metadata.parser_version`, `run_metadata.backend`, `run_metadata.backend_version`, `run_configuration`, and `requirements` so saved reports can be compared without inspecting a nested document, cache key, or original shell command. Single-file reports also include `metadata.source_size_bytes` and `metadata.source_modified_unix_ms` so speed and quality results remain tied to the source artifact that produced them.
 - `allocated_bytes`: requested allocation bytes during the parser/cache run. Corpus `--jobs` uses thread-local accounting to keep per-document counters isolated; single-PDF page workers use a process-wide delta so worker-thread page extraction is included.
 - `allocated_bytes_per_page`: `allocated_bytes` divided by page count.
 - `text_output_bytes`, `text_output_line_count`, `text_output_word_count`, and `empty_text_output`: size and emptiness of the same derived text view emitted by `parse --format text`.
@@ -57,6 +58,7 @@ Directory benchmarks accept `--jobs <N>` for opt-in per-PDF parallelism. Glyphru
 - `quality_status`: `checked` when the benchmark embedded an eval report, otherwise `not_checked_no_eval_manifest`.
 - `run_metadata`: parser/backend provenance for the benchmark run.
 - `run_configuration`: output-affecting options for the benchmark run.
+- `requirements`: requested strict benchmark gates.
 - `document_count`.
 - `worker_count`: the effective number of per-PDF worker slots used for the corpus run.
 - `corpus_fingerprint`: SHA-256 over stable document labels, document fingerprints, and page counts.
