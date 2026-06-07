@@ -39,6 +39,7 @@ const BACKEND_CHECK_REPORT_VERSION: &str = "glyphrush-backend-check-report-v1";
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
+const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
 const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v38";
 const DEFAULT_BASELINE_TIMEOUT_MS: u64 = 120_000;
 const DEFAULT_OCR_TIMEOUT_MS: u64 = 120_000;
@@ -8720,6 +8721,10 @@ struct VectorPathState {
 }
 
 fn ruled_table_line_density(content: &[u8]) -> f32 {
+    if let Some(density) = raw_ruled_table_line_density_hint(content) {
+        return density;
+    }
+
     let Ok(content) = Content::decode(content) else {
         return 0.0;
     };
@@ -8772,7 +8777,218 @@ fn ruled_table_line_density(content: &[u8]) -> f32 {
         }
     }
 
-    (stroked_ruling_segments as f32 / 20.0).clamp(0.0, 1.0)
+    ruling_density(stroked_ruling_segments)
+}
+
+fn raw_ruled_table_line_density_hint(content: &[u8]) -> Option<f32> {
+    let mut matrix = PdfMatrix::identity();
+    let mut matrix_stack = Vec::new();
+    let mut path = VectorPathState::default();
+    let mut stroked_ruling_segments = 0u32;
+    let mut operands = Vec::with_capacity(8);
+
+    for token in RawContentTokens::new(content) {
+        if let Some(number) = raw_number_token(token) {
+            operands.push(number);
+            continue;
+        }
+
+        match token {
+            b"BI" | b"ID" => return None,
+            b"q" => matrix_stack.push(matrix),
+            b"Q" => {
+                matrix = matrix_stack.pop().unwrap_or_else(PdfMatrix::identity);
+                path = VectorPathState::default();
+            }
+            b"cm" => {
+                if let Some(next) = raw_matrix_from_operands(&operands) {
+                    matrix = matrix.multiply(next);
+                }
+            }
+            b"m" => {
+                path.current =
+                    raw_two_float_operands(&operands).map(|(x, y)| matrix.transform_point(x, y));
+            }
+            b"l" => {
+                if let (Some(start), Some((x, y))) =
+                    (path.current, raw_two_float_operands(&operands))
+                {
+                    let end = matrix.transform_point(x, y);
+                    if is_ruling_segment(start, end) {
+                        path.pending_ruling_segments += 1;
+                    }
+                    path.current = Some(end);
+                }
+            }
+            b"re" => {
+                if let Some((x, y, width, height)) = raw_rectangle_operands(&operands) {
+                    path.pending_ruling_segments +=
+                        rectangle_ruling_segments_from_values(x, y, width, height, matrix);
+                }
+            }
+            b"S" | b"s" | b"B" | b"B*" | b"b" | b"b*" => {
+                stroked_ruling_segments += path.pending_ruling_segments;
+                if stroked_ruling_segments >= RULED_TABLE_SATURATION_SEGMENTS {
+                    return Some(1.0);
+                }
+                path = VectorPathState::default();
+            }
+            b"n" | b"f" | b"F" | b"f*" => {
+                path = VectorPathState::default();
+            }
+            _ => {}
+        }
+        operands.clear();
+    }
+
+    Some(ruling_density(stroked_ruling_segments))
+}
+
+fn raw_number_token(token: &[u8]) -> Option<f32> {
+    let text = std::str::from_utf8(token).ok()?;
+    let number = text.parse::<f32>().ok()?;
+    number.is_finite().then_some(number)
+}
+
+fn raw_two_float_operands(operands: &[f32]) -> Option<(f32, f32)> {
+    let start = operands.len().checked_sub(2)?;
+    Some((operands[start], operands[start + 1]))
+}
+
+fn raw_rectangle_operands(operands: &[f32]) -> Option<(f32, f32, f32, f32)> {
+    let start = operands.len().checked_sub(4)?;
+    Some((
+        operands[start],
+        operands[start + 1],
+        operands[start + 2],
+        operands[start + 3],
+    ))
+}
+
+fn raw_matrix_from_operands(operands: &[f32]) -> Option<PdfMatrix> {
+    let start = operands.len().checked_sub(6)?;
+    Some(PdfMatrix {
+        a: operands[start],
+        b: operands[start + 1],
+        c: operands[start + 2],
+        d: operands[start + 3],
+        e: operands[start + 4],
+        f: operands[start + 5],
+    })
+}
+
+struct RawContentTokens<'a> {
+    content: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> RawContentTokens<'a> {
+    fn new(content: &'a [u8]) -> Self {
+        Self { content, offset: 0 }
+    }
+
+    fn skip_delimiters(&mut self) {
+        while self.offset < self.content.len() {
+            match self.content[self.offset] {
+                b'%' => {
+                    self.offset += 1;
+                    while self.offset < self.content.len()
+                        && !matches!(self.content[self.offset], b'\n' | b'\r')
+                    {
+                        self.offset += 1;
+                    }
+                }
+                byte if byte.is_ascii_whitespace()
+                    || matches!(byte, b'[' | b']' | b'{' | b'}' | b'/') =>
+                {
+                    self.offset += 1;
+                }
+                _ => break,
+            }
+        }
+    }
+
+    fn skip_literal_string(&mut self) {
+        let mut depth = 1usize;
+        self.offset += 1;
+        while self.offset < self.content.len() && depth > 0 {
+            match self.content[self.offset] {
+                b'\\' => {
+                    self.offset = (self.offset + 2).min(self.content.len());
+                }
+                b'(' => {
+                    depth += 1;
+                    self.offset += 1;
+                }
+                b')' => {
+                    depth -= 1;
+                    self.offset += 1;
+                }
+                _ => self.offset += 1,
+            }
+        }
+    }
+
+    fn skip_hex_string(&mut self) {
+        self.offset += 1;
+        while self.offset < self.content.len() {
+            let byte = self.content[self.offset];
+            self.offset += 1;
+            if byte == b'>' {
+                break;
+            }
+        }
+    }
+}
+
+impl<'a> Iterator for RawContentTokens<'a> {
+    type Item = &'a [u8];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            self.skip_delimiters();
+            if self.offset >= self.content.len() {
+                return None;
+            }
+
+            match self.content[self.offset] {
+                b'(' => {
+                    self.skip_literal_string();
+                    continue;
+                }
+                b'<' if self
+                    .content
+                    .get(self.offset + 1)
+                    .is_none_or(|byte| *byte != b'<') =>
+                {
+                    self.skip_hex_string();
+                    continue;
+                }
+                _ => {}
+            }
+
+            let start = self.offset;
+            while self.offset < self.content.len()
+                && !self.content[self.offset].is_ascii_whitespace()
+                && !matches!(
+                    self.content[self.offset],
+                    b'[' | b']' | b'{' | b'}' | b'/' | b'(' | b')' | b'<' | b'>' | b'%'
+                )
+            {
+                self.offset += 1;
+            }
+
+            if self.offset > start {
+                return Some(&self.content[start..self.offset]);
+            }
+
+            self.offset += 1;
+        }
+    }
+}
+
+fn ruling_density(stroked_ruling_segments: u32) -> f32 {
+    (stroked_ruling_segments as f32 / RULED_TABLE_SATURATION_SEGMENTS as f32).clamp(0.0, 1.0)
 }
 
 fn rectangle_ruling_segments(operands: &[Object], matrix: PdfMatrix) -> u32 {
@@ -8789,6 +9005,16 @@ fn rectangle_ruling_segments(operands: &[Object], matrix: PdfMatrix) -> u32 {
         return 0;
     };
 
+    rectangle_ruling_segments_from_values(x, y, width, height, matrix)
+}
+
+fn rectangle_ruling_segments_from_values(
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    matrix: PdfMatrix,
+) -> u32 {
     let lower_left = matrix.transform_point(x, y);
     let lower_right = matrix.transform_point(x + width, y);
     let upper_right = matrix.transform_point(x + width, y + height);
@@ -8972,4 +9198,49 @@ fn sha256_hex(input: impl AsRef<[u8]>) -> String {
         output.push_str(&format!("{byte:02x}"));
     }
     output
+}
+
+#[cfg(test)]
+mod unit_tests {
+    use super::*;
+
+    #[test]
+    fn ruled_table_line_density_saturates_from_raw_ruling_hint_before_full_decode() {
+        let mut content = String::new();
+        for y in 0..20 {
+            content.push_str(&format!("0 {y} m 120 {y} l S\n"));
+        }
+        content.push_str("BT /F1 12 Tf 72 720 Td (unterminated text");
+
+        assert_eq!(
+            raw_ruled_table_line_density_hint(content.as_bytes()),
+            Some(1.0)
+        );
+    }
+
+    #[test]
+    fn raw_ruled_table_line_density_hint_detects_non_saturated_rulings() {
+        let content = [
+            "72 600 m 360 600 l S",
+            "72 560 m 360 560 l S",
+            "72 520 m 360 520 l S",
+            "72 480 m 360 480 l S",
+            "72 480 m 72 600 l S",
+            "216 480 m 216 600 l S",
+            "360 480 m 360 600 l S",
+        ]
+        .join("\n");
+
+        assert_eq!(
+            raw_ruled_table_line_density_hint(content.as_bytes()),
+            Some(0.35)
+        );
+    }
+
+    #[test]
+    fn raw_ruled_table_line_density_hint_returns_zero_for_text_only_streams() {
+        let content = b"BT /F1 12 Tf 72 720 Td (line l S re text) Tj ET";
+
+        assert_eq!(raw_ruled_table_line_density_hint(content), Some(0.0));
+    }
 }
