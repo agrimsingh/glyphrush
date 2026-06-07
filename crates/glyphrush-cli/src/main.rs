@@ -377,6 +377,8 @@ struct InspectPagesOutput {
 #[derive(Debug, Serialize)]
 struct InspectPageSummary {
     page_index: u32,
+    artifact_id: String,
+    page_fingerprint: String,
     dimensions: PageDimensions,
     route: PageRoute,
     quality_flags: Vec<PageQuality>,
@@ -386,6 +388,7 @@ struct InspectPageSummary {
     ocr_span_count: usize,
     image_artifact_count: usize,
     layout_block_count: usize,
+    timings: PageTimings,
     warnings: Vec<String>,
 }
 
@@ -2620,6 +2623,8 @@ fn inspect_page_summaries(
         .iter()
         .map(|page| InspectPageSummary {
             page_index: page.page_index,
+            artifact_id: page.artifact_id.clone(),
+            page_fingerprint: page.fingerprint.as_hex().to_string(),
             dimensions: page.dimensions.clone(),
             route: page.route.route,
             quality_flags: page.quality.flags.clone(),
@@ -2633,6 +2638,7 @@ fn inspect_page_summaries(
             ocr_span_count: page.ocr_spans.len(),
             image_artifact_count: page.image_artifacts.len(),
             layout_block_count: page.layout_blocks.len(),
+            timings: page.timings.clone(),
             warnings: warnings_for_page(warnings, page.page_index),
         })
         .collect()

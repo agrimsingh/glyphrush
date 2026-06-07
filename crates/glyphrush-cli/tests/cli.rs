@@ -258,6 +258,18 @@ fn inspect_pages_reports_page_level_quality_triage() {
     assert_eq!(json["warnings_count"], 1);
     assert_eq!(json["pages"].as_array().unwrap().len(), 1);
     assert_eq!(json["pages"][0]["page_index"], 0);
+    assert!(
+        json["pages"][0]["artifact_id"]
+            .as_str()
+            .unwrap()
+            .contains(":p000000:"),
+        "page summary should expose the selected artifact id: {}",
+        json["pages"][0]["artifact_id"]
+    );
+    assert_eq!(
+        json["pages"][0]["page_fingerprint"].as_str().unwrap().len(),
+        64
+    );
     assert_eq!(json["pages"][0]["route"], "ocr_fallback");
     assert_eq!(
         json["pages"][0]["quality_flags"],
@@ -274,6 +286,16 @@ fn inspect_pages_reports_page_level_quality_triage() {
     );
     assert_eq!(json["pages"][0]["ocr_span_count"], 0);
     assert_eq!(json["pages"][0]["image_artifact_count"], 1);
+    assert!(json["pages"][0]["timings"]["open_us"].as_u64().unwrap() > 0);
+    assert!(json["pages"][0]["timings"]["classify_us"].as_u64().unwrap() > 0);
+    assert!(
+        json["pages"][0]["timings"]["native_extract_us"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
+    assert!(json["pages"][0]["timings"]["layout_us"].as_u64().unwrap() > 0);
+    assert!(json["pages"][0]["timings"]["table_us"].as_u64().unwrap() > 0);
     assert_eq!(
         json["pages"][0]["warnings"],
         serde_json::json!(["p000000: requires_ocr_without_ocr_output"])
