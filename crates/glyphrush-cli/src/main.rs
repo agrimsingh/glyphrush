@@ -928,6 +928,8 @@ struct BaselineDescribeCheck {
     stderr_preview: Option<String>,
     valid_json_object: bool,
     error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error_kind: Option<&'static str>,
 }
 
 #[derive(Debug, Serialize)]
@@ -3972,6 +3974,8 @@ fn describe_external_baseline_probe(
             let valid_json_object = description.is_some();
             let success = !timed_output.timed_out && output.status.success() && valid_json_object;
             let error = baseline_describe_error(&output, timed_output.timed_out, valid_json_object);
+            let error_kind =
+                baseline_describe_error_kind(&output, timed_output.timed_out, valid_json_object);
 
             (
                 description,
@@ -3986,6 +3990,7 @@ fn describe_external_baseline_probe(
                     stderr_preview: stderr_preview(&output.stderr),
                     valid_json_object,
                     error,
+                    error_kind,
                 },
             )
         }
@@ -4002,6 +4007,7 @@ fn describe_external_baseline_probe(
                 stderr_preview: None,
                 valid_json_object: false,
                 error: Some(format!("{}: {error}", baseline.command.display())),
+                error_kind: Some("spawn_failed"),
             },
         ),
     }
@@ -4023,6 +4029,22 @@ fn baseline_describe_error(
         Some("baseline describe produced no stdout".to_string())
     } else if !valid_json_object {
         Some("baseline describe stdout was not a JSON object".to_string())
+    } else {
+        None
+    }
+}
+
+fn baseline_describe_error_kind(
+    output: &ProcessOutput,
+    timed_out: bool,
+    valid_json_object: bool,
+) -> Option<&'static str> {
+    if let Some(kind) = baseline_process_error_kind(output, timed_out) {
+        Some(kind)
+    } else if output.stdout.is_empty() {
+        Some("empty_describe_output")
+    } else if !valid_json_object {
+        Some("invalid_describe_output")
     } else {
         None
     }

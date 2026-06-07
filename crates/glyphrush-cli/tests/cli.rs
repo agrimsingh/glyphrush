@@ -6187,12 +6187,102 @@ printf 'mock baseline output'"#,
     assert_eq!(json["baselines"][0]["description"]["target"], "Mock Parser");
     assert_eq!(json["baselines"][1]["name"], "missing");
     assert_eq!(json["baselines"][1]["describe"]["success"], false);
+    assert_eq!(
+        json["baselines"][1]["describe"]["error_kind"],
+        "spawn_failed"
+    );
     assert!(
         json["baselines"][1]["describe"]["error"]
             .as_str()
             .unwrap()
             .contains("missing-baseline.sh")
     );
+}
+
+#[test]
+fn baseline_check_classifies_failed_describe_probe_kinds() {
+    let execution_failed = write_baseline_script(
+        "baseline-check-describe-execution-failed",
+        r#"if [ "${1:-}" = "--describe" ]; then printf 'describe failed' >&2; exit 7; fi
+printf 'unused'"#,
+    );
+    let missing_dependency = write_baseline_script(
+        "baseline-check-describe-missing-dependency",
+        r#"if [ "${1:-}" = "--describe" ]; then printf 'lit missing' >&2; exit 127; fi
+printf 'unused'"#,
+    );
+    let invalid = write_baseline_script(
+        "baseline-check-describe-invalid",
+        r#"if [ "${1:-}" = "--describe" ]; then printf 'not json'; exit 0; fi
+printf 'unused'"#,
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "baseline-check",
+            "--baseline",
+            &format!("execution={}", execution_failed.display()),
+            "--baseline",
+            &format!("dependency={}", missing_dependency.display()),
+            "--baseline",
+            &format!("invalid={}", invalid.display()),
+        ])
+        .output()
+        .expect("run glyphrush baseline-check with failed describe probes");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("baseline-check output is json");
+
+    assert_eq!(json["describe_success_count"], 0);
+    assert_eq!(json["all_described"], false);
+    assert_eq!(
+        json["baselines"][0]["describe"]["error_kind"],
+        "execution_failed"
+    );
+    assert_eq!(
+        json["baselines"][1]["describe"]["error_kind"],
+        "missing_dependency"
+    );
+    assert_eq!(
+        json["baselines"][2]["describe"]["error_kind"],
+        "invalid_describe_output"
+    );
+}
+
+#[test]
+fn baseline_check_classifies_timed_out_describe_probe_kind() {
+    let slow = write_baseline_script(
+        "baseline-check-describe-timeout",
+        r#"if [ "${1:-}" = "--describe" ]; then sleep 2; printf '{"name":"slow"}'; exit 0; fi
+printf 'unused'"#,
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "baseline-check",
+            "--baseline",
+            &format!("slow={}", slow.display()),
+            "--baseline-timeout-ms",
+            "50",
+        ])
+        .output()
+        .expect("run glyphrush baseline-check with timed out describe probe");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("baseline-check output is json");
+
+    assert_eq!(json["baselines"][0]["describe"]["timed_out"], true);
+    assert_eq!(json["baselines"][0]["describe"]["error_kind"], "timeout");
 }
 
 #[test]
