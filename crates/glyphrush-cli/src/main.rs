@@ -12,6 +12,9 @@ use std::{
     time::{Duration, Instant, UNIX_EPOCH},
 };
 
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
+
 use anyhow::{Context, Result, anyhow, bail};
 use clap::{Parser, Subcommand, ValueEnum};
 use glyphrush_core::{
@@ -4208,6 +4211,7 @@ fn command_output_with_timeout(
     timeout: Duration,
 ) -> io::Result<TimedProcessOutput> {
     let start = Instant::now();
+    configure_timeout_command(&mut command);
     let mut child = command
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -4215,7 +4219,7 @@ fn command_output_with_timeout(
 
     loop {
         if start.elapsed() >= timeout {
-            let _ = child.kill();
+            kill_timed_out_child(&mut child);
             let output = child.wait_with_output()?;
             return Ok(TimedProcessOutput {
                 output,
@@ -4235,6 +4239,37 @@ fn command_output_with_timeout(
 
         thread::sleep(Duration::from_millis(5));
     }
+}
+
+#[cfg(unix)]
+fn configure_timeout_command(command: &mut ProcessCommand) {
+    unsafe {
+        command.pre_exec(|| {
+            if libc::setpgid(0, 0) == 0 {
+                Ok(())
+            } else {
+                Err(io::Error::last_os_error())
+            }
+        });
+    }
+}
+
+#[cfg(not(unix))]
+fn configure_timeout_command(_command: &mut ProcessCommand) {}
+
+fn kill_timed_out_child(child: &mut std::process::Child) {
+    #[cfg(unix)]
+    {
+        let pgid = child.id() as libc::pid_t;
+        if pgid > 0 {
+            let killed_group = unsafe { libc::kill(-pgid, libc::SIGKILL) } == 0;
+            if killed_group {
+                return;
+            }
+        }
+    }
+
+    let _ = child.kill();
 }
 
 fn describe_external_baseline(baseline: &BaselineSpec, timeout: Duration) -> Option<Value> {
