@@ -335,7 +335,16 @@ struct BackendSmokeOutput {
     successful_documents: Option<usize>,
     failed_documents: Option<usize>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
+    failure_samples: Vec<BackendSmokeFailureSample>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     documents: Vec<BackendSmokeOutput>,
+    error_kind: Option<&'static str>,
+    error: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct BackendSmokeFailureSample {
+    path: String,
     error_kind: Option<&'static str>,
     error: Option<String>,
 }
@@ -1803,6 +1812,7 @@ fn backend_smoke_directory_output<B: PdfBackend + Sync>(
                 .iter()
                 .map(|document| document.ocr_required_pages.unwrap_or_default())
                 .sum::<u32>();
+            let failure_samples = backend_smoke_failure_samples(&documents);
 
             BackendSmokeOutput {
                 mode: "directory",
@@ -1822,6 +1832,7 @@ fn backend_smoke_directory_output<B: PdfBackend + Sync>(
                 document_count: Some(documents.len()),
                 successful_documents: Some(successful_documents),
                 failed_documents: Some(failed_documents),
+                failure_samples,
                 error: (failed_documents > 0)
                     .then(|| format!("{failed_documents} backend smoke document(s) failed")),
                 error_kind: None,
@@ -1846,11 +1857,27 @@ fn backend_smoke_directory_output<B: PdfBackend + Sync>(
             document_count: Some(0),
             successful_documents: Some(0),
             failed_documents: Some(0),
+            failure_samples: Vec::new(),
             documents: Vec::new(),
             error_kind: Some("pdf_discovery_failed"),
             error: Some(format!("{error:#}")),
         },
     }
+}
+
+fn backend_smoke_failure_samples(
+    documents: &[BackendSmokeOutput],
+) -> Vec<BackendSmokeFailureSample> {
+    documents
+        .iter()
+        .filter(|document| !document.success)
+        .take(3)
+        .map(|document| BackendSmokeFailureSample {
+            path: document.path.clone(),
+            error_kind: document.error_kind,
+            error: document.error.clone(),
+        })
+        .collect()
 }
 
 fn backend_smoke_directory_parallel<B: PdfBackend + Sync>(
@@ -1971,6 +1998,7 @@ fn backend_smoke_pdf_output<B: PdfBackend>(
             document_count: None,
             successful_documents: None,
             failed_documents: None,
+            failure_samples: Vec::new(),
             documents: Vec::new(),
             error_kind: None,
             error: None,
@@ -1993,6 +2021,7 @@ fn backend_smoke_pdf_output<B: PdfBackend>(
             document_count: None,
             successful_documents: None,
             failed_documents: None,
+            failure_samples: Vec::new(),
             documents: Vec::new(),
             error_kind: backend_smoke_error_kind(&error),
             error: Some(format!("{error:#}")),

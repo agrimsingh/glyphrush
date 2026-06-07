@@ -229,6 +229,51 @@ fn backend_check_smoke_directory_reports_sorted_corpus_summary() {
 }
 
 #[test]
+fn backend_check_smoke_directory_reports_failure_samples_with_error_kinds() {
+    let dir = temp_dir("backend-check-smoke-dir-failures");
+    fs::write(dir.join("a.pdf"), minimal_pdf("Passing backend smoke")).unwrap();
+    fs::write(
+        dir.join("b.pdf"),
+        minimal_encrypted_pdf("Encrypted directory smoke"),
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["backend-check", "--pdf", dir.to_str().unwrap()])
+        .output()
+        .expect("run glyphrush backend-check --pdf mixed directory");
+
+    assert!(
+        !output.status.success(),
+        "mixed directory smoke should fail after writing JSON"
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("backend-check output is json");
+    let smoke = &json["smoke"];
+
+    assert_eq!(smoke["mode"], "directory");
+    assert_eq!(smoke["success"], false);
+    assert_eq!(smoke["document_count"], 2);
+    assert_eq!(smoke["successful_documents"], 1);
+    assert_eq!(smoke["failed_documents"], 1);
+    assert_eq!(smoke["error"], "1 backend smoke document(s) failed");
+
+    let failure_samples = smoke["failure_samples"].as_array().unwrap();
+    assert_eq!(failure_samples.len(), 1);
+    assert_eq!(failure_samples[0]["path"], "b.pdf");
+    assert_eq!(
+        failure_samples[0]["error_kind"],
+        "encrypted_pdf_requires_password"
+    );
+    assert!(
+        failure_samples[0]["error"]
+            .as_str()
+            .unwrap()
+            .contains("encrypted PDFs are not supported"),
+        "sample should preserve the concrete backend failure: {smoke}"
+    );
+}
+
+#[test]
 fn backend_check_smoke_directory_jobs_preserve_sorted_corpus_summary() {
     let dir = temp_dir("backend-check-smoke-dir-jobs");
     fs::write(dir.join("c.pdf"), minimal_pdf("Third backend smoke jobs")).unwrap();
