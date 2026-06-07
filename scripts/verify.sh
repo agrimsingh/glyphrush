@@ -4,6 +4,7 @@ set -euo pipefail
 cargo fmt --all -- --check
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
+cargo run -q -p glyphrush-cli -- baseline-check --strict --baseline-preset glyphrush-v0
 
 shopt -s nullglob nocaseglob
 local_corpus=(test/*.pdf)

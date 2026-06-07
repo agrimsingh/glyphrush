@@ -16,7 +16,7 @@ cargo run -p glyphrush-cli -- eval test/corpus.datasheets.json --category datash
 bash scripts/verify.sh
 ```
 
-`scripts/verify.sh` is the shared local/GitHub CI gate. It runs formatting, the full workspace test suite, clippy with warnings denied, and the datasheet eval gate when ignored local PDFs exist under `test/`. In a fresh GitHub checkout those PDFs are absent by design, so CI skips only that local corpus gate rather than failing on non-committed benchmark files.
+`scripts/verify.sh` is the shared local/GitHub CI gate. It runs formatting, the full workspace test suite, clippy with warnings denied, strict `glyphrush-v0` baseline-preset metadata preflight, and the datasheet eval gate when ignored local PDFs exist under `test/`. In a fresh GitHub checkout those PDFs are absent by design, so CI skips only that local corpus gate rather than failing on non-committed benchmark files.
 
 ```sh
 cargo run -p glyphrush-cli -- inspect test/example.pdf
