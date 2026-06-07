@@ -520,6 +520,45 @@ fn manifest_includes_page_layout_block_counts_for_eval_bootstrap() {
 }
 
 #[test]
+fn manifest_includes_page_identity_for_eval_bootstrap() {
+    let dir = temp_dir("manifest-page-identity");
+    let pdf_path = dir.join("identity.pdf");
+    fs::write(&pdf_path, minimal_pdf("Manifest page identity")).unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["manifest", pdf_path.to_str().unwrap()])
+        .output()
+        .expect("run glyphrush manifest with page identity");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("manifest output is json");
+    let manifest_path = dir.join("corpus.generated.json");
+    fs::write(&manifest_path, &output.stdout).unwrap();
+    let page = &json["documents"][0]["expect"]["pages"][0];
+
+    assert!(
+        page["artifact_id"].as_str().unwrap().contains(":p000000:"),
+        "generated page expectation should pin artifact id: {}",
+        page["artifact_id"]
+    );
+    assert_eq!(page["page_fingerprint"].as_str().unwrap().len(), 64);
+
+    let eval_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["eval", manifest_path.to_str().unwrap()])
+        .output()
+        .expect("run glyphrush eval on generated manifest with page identity");
+    assert!(
+        eval_output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&eval_output.stderr)
+    );
+}
+
+#[test]
 fn manifest_with_cache_dir_preserves_output_across_warm_runs() {
     let dir = temp_dir("manifest-cache-single");
     let pdf_path = dir.join("single.pdf");
@@ -6496,6 +6535,53 @@ fn eval_manifest_required_text_uses_layout_reflowed_text() {
     assert_eq!(
         json["documents"][0]["checks"]["required_text"]["actual"]["missing"],
         Value::Array(vec![])
+    );
+}
+
+#[test]
+fn eval_manifest_fails_when_page_fingerprint_regresses() {
+    let dir = temp_dir("eval-page-fingerprint-regression");
+    let pdf_path = dir.join("fingerprinted.pdf");
+    fs::write(&pdf_path, minimal_pdf("Page fingerprint text")).unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "fingerprinted.pdf",
+              "expect": {
+                "pages": [
+                  {
+                    "index": 0,
+                    "page_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                ]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["eval", manifest_path.to_str().unwrap()])
+        .output()
+        .expect("run glyphrush eval with page fingerprint mismatch");
+
+    assert!(
+        !output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("eval output is json");
+
+    assert_eq!(json["passed"], false);
+    assert_eq!(json["failed_checks"], 1);
+    assert_eq!(
+        json["documents"][0]["checks"]["page_000000.page_fingerprint"]["passed"],
+        false
     );
 }
 

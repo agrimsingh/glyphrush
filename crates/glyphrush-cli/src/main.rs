@@ -1229,6 +1229,8 @@ struct GeneratedSilentFailuresExpectation {
 #[derive(Debug, Serialize)]
 struct GeneratedPageExpectation {
     index: u32,
+    artifact_id: String,
+    page_fingerprint: String,
     route: PageRoute,
     empty_text_output: bool,
     image_artifact_count: u32,
@@ -1381,6 +1383,8 @@ struct TableCell {
 #[derive(Debug, Deserialize)]
 struct EvalPageExpectation {
     index: u32,
+    artifact_id: Option<String>,
+    page_fingerprint: Option<String>,
     route: Option<PageRoute>,
     empty_text_output: Option<bool>,
     image_artifact_count: Option<u32>,
@@ -4347,6 +4351,8 @@ fn expected_pages_for_quality(artifact: &DocumentArtifact, flag: PageQuality) ->
 fn generated_page_expectation(page: &PageArtifact) -> GeneratedPageExpectation {
     GeneratedPageExpectation {
         index: page.page_index,
+        artifact_id: page.artifact_id.clone(),
+        page_fingerprint: page.fingerprint.as_hex().to_string(),
         route: page.route.route,
         empty_text_output: plain_text_from_page(page).is_empty(),
         image_artifact_count: page.image_artifacts.len() as u32,
@@ -6456,6 +6462,26 @@ fn insert_page_expectation_checks(
         .iter()
         .find(|page| page.page_index == expectation.index);
     let prefix = format!("page_{:06}", expectation.index);
+
+    if let Some(expected_artifact_id) = &expectation.artifact_id {
+        insert_json_check(
+            checks,
+            format!("{prefix}.artifact_id"),
+            json!(expected_artifact_id),
+            page.map(|page| json!(page.artifact_id))
+                .unwrap_or(serde_json::Value::Null),
+        );
+    }
+
+    if let Some(expected_page_fingerprint) = &expectation.page_fingerprint {
+        insert_json_check(
+            checks,
+            format!("{prefix}.page_fingerprint"),
+            json!(expected_page_fingerprint),
+            page.map(|page| json!(page.fingerprint.as_hex()))
+                .unwrap_or(serde_json::Value::Null),
+        );
+    }
 
     if let Some(expected_route) = expectation.route {
         insert_json_check(
