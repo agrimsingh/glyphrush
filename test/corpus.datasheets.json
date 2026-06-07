@@ -1,0 +1,337 @@
+{
+  "required_categories": ["datasheet"],
+  "min_category_counts": {
+    "datasheet": 5
+  },
+  "documents": [
+    {
+      "path": "LDO_AP7354D-15W5-7.pdf",
+      "category": "datasheet",
+      "document_fingerprint": "d1d21d41f3d7e63537762f012e2e015317e3b4179f17d71ceddde339a0900b42",
+      "source_size_bytes": 1697749,
+      "expect": {
+        "page_count": 18,
+        "fallback_pages": 18,
+        "ocr_required_pages": 0,
+        "ocr_applied_pages": 0,
+        "image_artifact_count": 44,
+        "warnings_count": 18,
+        "route_counts": {
+          "native_fast_path": 0,
+          "needs_fallback": 0,
+          "ocr_fallback": 0,
+          "unsupported": 18
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 0,
+          "low_confidence_text": 0,
+          "broken_encoding": 0,
+          "layout_uncertain": 0,
+          "table_uncertain": 0,
+          "unsupported_feature": 18
+        },
+        "route_reason_counts": {
+          "annotation_or_form": 18
+        },
+        "text_recall": {
+          "expected": "AP7354 150mA ultra low quiescent current LDO with enable",
+          "min_word_recall": 1.0,
+          "min_char_recall": 1.0
+        },
+        "reading_order": {
+          "expected_sequence": ["AP7354", "150mA ULTRA", "Description"],
+          "min_score": 1.0
+        },
+        "ocr_required_classification": {
+          "expected_pages": [],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "table_uncertain",
+            "expected_pages": [],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "unsupported_feature",
+            "expected_pages": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        }
+      }
+    },
+    {
+      "path": "LDO_APL5324BI-TRG.pdf",
+      "category": "datasheet",
+      "document_fingerprint": "925bfb3d80722bda5d641175783a797639ec0b3605d8bf67e2b857aa0e64abbd",
+      "source_size_bytes": 314328,
+      "expect": {
+        "page_count": 17,
+        "fallback_pages": 14,
+        "ocr_required_pages": 5,
+        "ocr_applied_pages": 0,
+        "image_artifact_count": 23,
+        "warnings_count": 7,
+        "route_counts": {
+          "native_fast_path": 3,
+          "needs_fallback": 7,
+          "ocr_fallback": 5,
+          "unsupported": 2
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 5,
+          "low_confidence_text": 5,
+          "broken_encoding": 0,
+          "layout_uncertain": 0,
+          "table_uncertain": 13,
+          "unsupported_feature": 2
+        },
+        "route_reason_counts": {
+          "annotation_or_form": 2,
+          "high_image_coverage_without_native_text": 5,
+          "table_line_density": 13
+        },
+        "required_warnings": [
+          "p000000: unsupported_feature: annotation_or_form",
+          "p000007: requires_ocr_without_ocr_output",
+          "p000008: requires_ocr_without_ocr_output",
+          "p000009: requires_ocr_without_ocr_output",
+          "p000011: unsupported_feature: annotation_or_form",
+          "p000012: requires_ocr_without_ocr_output",
+          "p000014: requires_ocr_without_ocr_output"
+        ],
+        "text_recall": {
+          "expected": "Adjustable Low Dropout 300mA Linear Regulator Features Wide Operating Voltage Low Dropout Voltage",
+          "min_word_recall": 1.0,
+          "min_char_recall": 1.0
+        },
+        "ocr_required_classification": {
+          "expected_pages": [7, 8, 9, 12, 14],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "low_confidence_text",
+            "expected_pages": [7, 8, 9, 12, 14],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "table_uncertain",
+            "expected_pages": [0, 1, 2, 3, 4, 6, 7, 9, 10, 11, 12, 13, 14],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "unsupported_feature",
+            "expected_pages": [0, 11],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "pages": [
+          {
+            "index": 16,
+            "empty_text_output": true
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        }
+      }
+    },
+    {
+      "path": "LDO_AW37030D150STR.pdf",
+      "category": "datasheet",
+      "document_fingerprint": "b91b3893a32791bcc80e74c4883036d1902624513502966c38045b431aec68d3",
+      "source_size_bytes": 6928240,
+      "expect": {
+        "page_count": 24,
+        "fallback_pages": 9,
+        "ocr_required_pages": 0,
+        "ocr_applied_pages": 0,
+        "image_artifact_count": 619,
+        "warnings_count": 4,
+        "route_counts": {
+          "native_fast_path": 15,
+          "needs_fallback": 5,
+          "ocr_fallback": 0,
+          "unsupported": 4
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 0,
+          "low_confidence_text": 0,
+          "broken_encoding": 0,
+          "layout_uncertain": 0,
+          "table_uncertain": 5,
+          "unsupported_feature": 4
+        },
+        "route_reason_counts": {
+          "annotation_or_form": 4,
+          "table_line_density": 5
+        },
+        "text_recall": {
+          "expected": "Features Input voltage range Fixed outputs Rated output current Quiescent current",
+          "min_word_recall": 1.0,
+          "min_char_recall": 1.0
+        },
+        "ocr_required_classification": {
+          "expected_pages": [],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "table_uncertain",
+            "expected_pages": [8, 9, 10, 16, 17],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "unsupported_feature",
+            "expected_pages": [0, 1, 4, 19],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        }
+      }
+    },
+    {
+      "path": "LDO_AW37030D180DNR.pdf",
+      "category": "datasheet",
+      "document_fingerprint": "2d2a9f866a5466d33b7b51e9287f8b473986b70b3db39a22b2818dc9924e7bc9",
+      "source_size_bytes": 3684379,
+      "expect": {
+        "page_count": 17,
+        "fallback_pages": 6,
+        "ocr_required_pages": 0,
+        "ocr_applied_pages": 0,
+        "image_artifact_count": 37,
+        "warnings_count": 4,
+        "route_counts": {
+          "native_fast_path": 11,
+          "needs_fallback": 2,
+          "ocr_fallback": 0,
+          "unsupported": 4
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 0,
+          "low_confidence_text": 0,
+          "broken_encoding": 0,
+          "layout_uncertain": 0,
+          "table_uncertain": 2,
+          "unsupported_feature": 4
+        },
+        "route_reason_counts": {
+          "annotation_or_form": 4,
+          "table_line_density": 2
+        },
+        "text_recall": {
+          "expected": "High Performance Low Dropout Linear Regulator Input voltage range Rated output",
+          "min_word_recall": 1.0,
+          "min_char_recall": 1.0
+        },
+        "ocr_required_classification": {
+          "expected_pages": [],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "table_uncertain",
+            "expected_pages": [6, 7],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "unsupported_feature",
+            "expected_pages": [0, 1, 3, 13],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        }
+      }
+    },
+    {
+      "path": "LDO_FP6183-33X7.pdf",
+      "category": "datasheet",
+      "document_fingerprint": "227ba6d88457541d2dc6ff67e78b45c4ad3b53551d60d2958884ea67c797ace1",
+      "source_size_bytes": 2817551,
+      "expect": {
+        "page_count": 10,
+        "fallback_pages": 6,
+        "ocr_required_pages": 0,
+        "ocr_applied_pages": 0,
+        "image_artifact_count": 21,
+        "warnings_count": 3,
+        "route_counts": {
+          "native_fast_path": 4,
+          "needs_fallback": 3,
+          "ocr_fallback": 0,
+          "unsupported": 3
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 0,
+          "low_confidence_text": 0,
+          "broken_encoding": 0,
+          "layout_uncertain": 1,
+          "table_uncertain": 3,
+          "unsupported_feature": 3
+        },
+        "route_reason_counts": {
+          "annotation_or_form": 3,
+          "duplicate_char_ratio": 1,
+          "table_line_density": 3
+        },
+        "text_recall": {
+          "expected": "300mA Low Noise High PSRR LDO Regulator Description",
+          "min_word_recall": 1.0,
+          "min_char_recall": 1.0
+        },
+        "ocr_required_classification": {
+          "expected_pages": [],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "table_uncertain",
+            "expected_pages": [3, 6, 7],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "unsupported_feature",
+            "expected_pages": [0, 1, 9],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "pages": [
+          {
+            "index": 3,
+            "route": "needs_fallback",
+            "required_flags": ["layout_uncertain", "table_uncertain"],
+            "required_reasons": ["duplicate_char_ratio", "table_line_density"]
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        }
+      }
+    }
+  ]
+}

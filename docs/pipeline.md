@@ -1,0 +1,42 @@
+# Pipeline
+
+The v0 pipeline is intentionally narrow:
+
+1. Load PDF bytes and compute a document fingerprint.
+2. If `--cache-dir` is provided, compute a cache key from parser version, backend name/version, document fingerprint, OCR adapter state, and span-geometry mode.
+3. Return a cached artifact on cache hit.
+4. Select a PDF backend. The only enabled backend today is `lopdf`, but command logic now talks to a backend interface rather than direct `lopdf` calls.
+5. Open the document with the selected backend.
+6. Enumerate pages in PDF order. Page-debug paths can request one page directly instead of extracting the full document.
+7. Extract native text for each selected page.
+8. If `--span-geometry` is enabled, collect candidate native spans and approximate bounding boxes in effective page-local coordinates for bounded small/simple positioned text operations, including simple `Tm` text-matrix axes, `q`/`Q`/`cm` content-matrix transforms, text-state parameters preserved across text objects, `TJ`/`Tc`/`Tw`/`Tz` spacing adjustments, `Ts` text rise, `TL` leading for `T*` line movement, and `'`/`"` shortcut text showing.
+9. Accept positioned spans only when their decoded text is compatible with the native text output; otherwise keep the existing page-wide span fallback. Without `--span-geometry`, skip this work entirely. If the requested span-geometry pass hits the bounded content/text cap or unsupported geometry such as page rotation, emit `span_geometry_capped` instead of treating page-wide boxes as complete bbox detail. When positioned spans are accepted, summarize bbox overlap with a bounded sorted spatial scan so layout-risk detection does not become a full dedup/render pass.
+10. Build cheap page signals:
+    - native span count.
+    - native text bytes.
+    - glyph count.
+    - image coverage from unioned drawn image XObject boxes clipped to the effective page box, nested form-wrapped image transforms, and detected inline image operators when available, with an empty-content fallback hint.
+    - duplicate character ratio.
+    - bbox overlap ratio from accepted positioned spans.
+    - broken encoding ratio.
+    - page dimensions from the effective `/CropBox` when present, otherwise `/MediaBox`, including values inherited from parent page-tree nodes.
+    - rotation, including inherited `/Rotate` values from the page tree.
+    - table-like text density and stroked ruling-line density.
+    - annotation count from page `/Annots`, plus form field count from catalog `/AcroForm /Fields` and page widget annotations.
+    - whether requested span geometry was capped.
+11. Classify the page into a route:
+    - `native_fast_path`.
+    - `needs_fallback`.
+    - `ocr_fallback`.
+    - `unsupported`.
+    The route decision includes stable `reasons` strings so debug output and downstream agents can explain why fallback work was requested.
+    Pages with high image coverage and either missing or very sparse native text route to `ocr_fallback` instead of being reported as complete native extraction.
+    Pages with high image coverage and substantial native text skip OCR but route to layout review with `image_text_overlay`.
+12. If an OCR adapter is configured and the page routes to `ocr_fallback`, load sidecar text for that page or invoke the configured OCR command with the PDF path and zero-based page index, bounded by `--ocr-timeout-ms`.
+13. Split native or OCR text into deterministic layout blocks, with conservative reflow for short extraction fragments. When accepted native span geometry exists on a table-routed page, first group aligned multi-column rows into a table block. Otherwise process clearly separated two-column bands left column before right column, or group spans by vertical gaps, and assign each layout block the union box of its contributing spans. If table recovery was routed, preserve simple whitespace rows with a consistent column count as table blocks. After page-local layout, classify repeated positioned blocks in the top or bottom page margin as headers or footers when the same normalized text appears on multiple pages.
+14. Emit a deterministic document artifact with parser/backend/source metadata, page fingerprints over output-relevant text/signals/geometry, quality flags, and separate OCR-required/OCR-applied diagnostics.
+15. Store the artifact on cache miss when `--cache-dir` is enabled.
+
+`glyphrush backend-check` is the current backend preflight surface. It emits `glyphrush-backend-check-report-v1` with parser version, selected backend, enabled backend count, candidate backend count, and per-backend capability/limitation metadata. Add `--pdf <file-or-directory>` to smoke the selected backend through load, page counting, native extraction, and classifier/artifact summarization without OCR. Single-file reports include success, wall time, source size, document fingerprint, page counts, native text bytes, image artifact count, fallback pages, and OCR-required pages. Directory reports scan top-level `.pdf`/`.PDF` files in stable filename order, aggregate the same counters, include sorted per-document smoke results, and accept `--jobs <N>` for concurrent per-PDF smoke runs with deterministic merge order. In v0, `lopdf` is reported as enabled, while PDFium and MuPDF are reported as `not_wired` candidates that require the planned adapter/license/packaging spike before backend lock-in.
+
+The current CLI does not bundle Tesseract or network OCR. It supports sidecar and external-command OCR adapters so fallback merge behavior is testable without putting OCR in the default hot path. Layout reconstruction is currently text-derived with limited fragment reflow, conservative two-column ordering for positioned native spans, conservative table-route whitespace or aligned-positioned row recovery, and optional geometry-aware block boxes. The `lopdf` backend can emit approximate page-local boxes for bounded simple text-positioning operators when `--span-geometry` is requested and estimates direct, form-wrapped, and inline image coverage for page classification, including skipped inline image operators when bytes or colorspace are unsupported by the lightweight decoder. Image artifacts are clipped against the effective page box before page-level coverage is scored, so non-zero `/CropBox` pages do not undercount visible scan/image coverage. Richer geometry-aware layout and full cell reconstruction are later milestones.

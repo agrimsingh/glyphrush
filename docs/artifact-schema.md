@@ -1,0 +1,90 @@
+# Artifact Schema
+
+Glyphrush emits structured document artifacts first. Plain text and markdown are derived views, not the source of truth.
+
+## Document Artifact
+
+- `document_fingerprint`: SHA-256 hash of the source bytes.
+- `metadata`: parser, backend, source-size, and source modified-time provenance for the artifact.
+- `pages`: page artifacts sorted by zero-based `page_index`.
+- `global_diagnostics`: fallback counts, OCR-required page counts, effective parse worker count, total stage timing, and warnings.
+
+## Metadata
+
+- `parser_name`: parser family name, currently `glyphrush`.
+- `parser_version`: CLI parser version that emitted the artifact.
+- `backend`: selected PDF backend name, currently `lopdf`.
+- `backend_version`: backend adapter version, currently `lopdf-adapter-v0`.
+- `source_size_bytes`: source PDF byte size at parse time.
+- `source_modified_unix_ms`: source PDF filesystem modified time at parse time, in Unix milliseconds.
+
+## Page Artifact
+
+- `artifact_id`: deterministic ID in the form `<document>:p000000:<page_hash_prefix>`.
+- `page_index`: zero-based page index.
+- `dimensions`: effective page width and height in PDF units, currently derived from `/CropBox` when present, otherwise `/MediaBox`, including page-tree inheritance.
+- `fingerprint`: page-level SHA-256 fingerprint derived from native/OCR text, effective dimensions, route-driving page signals, native span geometry, and image artifact metadata. Timings are intentionally excluded.
+- `signals`: cheap classifier evidence for this page, including native text/glyph counts, image coverage, encoding/layout/table/form risk signals, rotation, and span-geometry cap state.
+- `native_spans`: spans extracted from PDF text objects. The default hot path emits a page-wide native span. With `--span-geometry`, trustworthy small/simple backend geometry can produce positioned spans with approximate bounding boxes normalized into effective page-local coordinates, including simple text-matrix/content-matrix transforms, text-state parameters preserved across text objects, spacing adjustments, text-rise adjustments, line-leading adjustments, and `'`/`"` text-showing shortcut adjustments.
+- `ocr_spans`: spans produced by an OCR adapter, empty in v0.
+- `image_artifacts`: cheap metadata for drawn image XObjects, image-backed form XObjects, and detected inline images, currently deterministic image IDs, source XObject names when available, drawn bboxes normalized into effective page-local coordinates, and per-artifact visible page-area ratios. Pixel data is not copied or rendered. Image artifacts are preserved even when they fall outside the effective page box; those artifacts contribute zero visible area. The page-level `signals.image_area_ratio` uses unioned artifact bboxes clipped to the page so repeated or overlapping images do not double-count coverage. For form-wrapped images, nested form content and image transforms are followed before area ratios are computed. Skipped or unsupported inline image operators are still surfaced as image artifacts.
+- `layout_blocks`: deterministic text-derived blocks. With positioned native spans, v0 can group table-routed aligned rows into table blocks, otherwise groups spans by vertical gaps and assigns each block the union of only the contributing span boxes.
+- `route`: classifier route, fallback booleans, quality flags, and deterministic `reasons` strings explaining the route decision.
+- `quality`: flags and confidence scores. `low_confidence_text` lowers text confidence; `layout_uncertain` and `table_uncertain` lower layout confidence so table recovery pages are not reported as high-confidence layout.
+- `timings`: per-stage counters in microseconds.
+
+## Global Diagnostics
+
+- `fallback_pages`: pages with any quality/fallback flag.
+- `ocr_pages`: compatibility alias for pages that require OCR.
+- `ocr_required_pages`: pages routed to OCR fallback by classifier evidence.
+- `ocr_applied_pages`: pages where OCR text was actually merged into `ocr_spans`.
+- `worker_count`: effective page extraction worker count for this parser invocation.
+- `cache_status`: `disabled`, `miss`, or `hit`.
+- `cache_key`: cache artifact key when caching is enabled.
+- `total_stage_time_us`: sum of page timing counters.
+- `warnings`: document-level warnings, including `p000000: requires_ocr_without_ocr_output` when a page requires OCR but no OCR span was produced, `p000000: unsupported_feature: span_geometry_capped` when an explicit parser capability request hit a bounded or unsupported v0 geometry cap, or `p000000: unsupported_feature: annotation_or_form` when page annotations, form fields, or widget annotations are present but not extracted.
+
+## Quality Flags
+
+- `requires_ocr`: native extraction is missing or not trustworthy and OCR should be used when available.
+- `low_confidence_text`: text output should not be treated as complete.
+- `broken_encoding`: native text appears damaged by encoding/CMap issues.
+- `layout_uncertain`: reading order or geometry needs heavier layout work.
+- `table_uncertain`: table recovery should be attempted or manually reviewed, based on text-table patterns or ruled-line geometry.
+- `unsupported_feature`: the page hit a v0 cap or unsupported condition.
+
+## Route Reasons
+
+Route reasons are stable machine-readable strings attached to each page route decision. Current reason values include `high_image_coverage_without_native_text`, `high_image_coverage_with_sparse_native_text`, `image_text_overlay`, `broken_encoding`, `bbox_overlap`, `duplicate_char_ratio`, `rotated_page`, `table_line_density`, `annotation_or_form`, `huge_object_count`, and `span_geometry_capped`. `image_text_overlay` means the page has high image coverage plus substantial native text, so OCR is skipped but layout/completeness should be reviewed. `bbox_overlap` means accepted positioned spans overlap enough to make reading order, duplicate text, or hidden text uncertain. `rotated_page` is based on the effective page rotation, including `/Rotate` inherited from parent page-tree nodes. `annotation_or_form` means the document declares page annotations, AcroForm fields, or page widget annotations that v0 does not yet extract. `span_geometry_capped` means `--span-geometry` was requested but the page exceeded the bounded geometry extraction cap or uses unsupported geometry such as page rotation, so page-wide native spans were retained.
+
+## Page Signals
+
+Page signals are included in each page artifact so downstream agents can inspect the evidence behind `route`, `quality`, and warning decisions without rerunning `debug-page`. They are cheap diagnostics, not expensive rendered analysis. Current signals include text density, glyph count, image area ratio, duplicate-character and broken-encoding ratios, measured bbox-overlap ratio for accepted positioned spans, rotation, table-line density, `annotation_count` for page annotations, `form_field_count` for catalog AcroForm fields and page widget annotations, huge-object count, span-geometry cap state, and effective dimensions.
+
+## Layout Blocks
+
+Layout blocks are page-local and use deterministic IDs like `p000000:b000000`.
+
+Supported v0 block kinds:
+
+- `heading`: short uppercase single-line blocks.
+- `paragraph`: default text blocks.
+- `list`: consecutive bullet or numbered lines.
+- `table`: simple pipe-, tab-, table-route whitespace, or table-route aligned positioned row groups.
+
+The v0 layout engine is text-derived. It can receive backend-provided native span boxes for simple positioned text operations when `--span-geometry` is enabled, including simple text/page content transforms, text-state persistence across text objects, text spacing operators, text rise, text leading, and text-showing shortcuts. Current block geometry is conservative: when the classifier has already routed a page for table recovery, aligned positioned spans or simple whitespace rows with a consistent column count are preserved as table blocks. Otherwise, usable spans are sorted deterministically, clearly separated two-column bands are processed left column before right column, remaining spans are split into blocks on large vertical gaps, and each block receives a union box over its own spans. Repeated positioned blocks in the top or bottom page margin are classified as `header` or `footer` when the same normalized text appears on multiple pages. Markdown export renders consistently pipe-delimited or whitespace-delimited table blocks as markdown tables with a generated separator row; plain text, JSON artifacts, and other table blocks keep the original block text. Full multi-column reconstruction and full table cell reconstruction are later milestones.
+
+The splitter includes a conservative fragment reflow pass for common native-text extraction artifacts such as `AP735\n4`, `Rev\n.\n4\n-\n2\n1`, and short adjacent blocks separated by spurious blank lines. Raw `native_spans` are preserved; reflow and two-column ordering affect `layout_blocks`, derived text, derived markdown, and eval text-quality checks.
+
+## OCR Sidecar Provenance
+
+The v0 CLI supports `--ocr-sidecar <dir>` and `--ocr-command <executable>` as adapter seams. For sidecars, page index `0` of `example.pdf` is loaded from `example.p000000.txt`. For commands, Glyphrush invokes the executable only for OCR-routed pages and passes the PDF path plus zero-based page index as arguments. OCR commands are bounded by `--ocr-timeout-ms`, defaulting to `120000`. OCR text is stored in `ocr_spans` with `provenance: "ocr"` and does not overwrite native spans.
+
+## Image Artifact Provenance
+
+The v0 CLI records drawn image XObjects, image-backed form XObjects, and detected inline images as `image_artifacts` with page-local IDs such as `p000000:im000000`. Each entry stores the source XObject name when available, the transformed unit-image bbox normalized into effective page-local coordinates, and approximate visible page-area ratio. Page-level image coverage is computed as the union of artifact boxes clipped to the page, not a raw sum of per-artifact ratios. For form XObjects, Glyphrush recurses through nested form content and applies nested image transforms before recording the bbox and visible area ratio. Inline images use `source_name: "inline"` when no external XObject name exists, including skipped inline images whose bytes or colorspace are unsupported by the lightweight decoder. Glyphrush does not include image bytes in the artifact; image metadata exists to keep image-backed pages observable without adding render/copy cost to the default parser path.
+
+## Cache Provenance
+
+The v0 CLI supports `--cache-dir <dir>` on parse, bench, eval, `inspect --pages`, and manifest generation. Cache keys include parser name/version, parser cache schema, backend name/version, PDF byte fingerprint, OCR sidecar text fingerprint for files matching the current PDF's `<stem>.pNNNNNN.txt` convention or OCR command path/content/timeout, and span-geometry option. If parser identity, relevant OCR adapter state, span-geometry mode, backend adapter version, or the parser cache schema changes, the cache key changes and the parse is treated as a miss. Unrelated sidecar files for other PDFs do not invalidate this document's cache. On cache hits, page-level parser stage timings and `global_diagnostics.total_stage_time_us` are zeroed because the page extraction pipeline did not run, while source metadata such as `source_size_bytes` and `source_modified_unix_ms` is refreshed from the current file; use `cache_status`, per-document `artifact_cache_status`, or aggregate eval/bench/inspect `cache_hits` and `cache_misses` to distinguish warm paths from cold misses.
