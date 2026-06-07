@@ -3772,6 +3772,54 @@ fn bench_with_eval_manifest_scores_baseline_output_quality() {
 }
 
 #[test]
+fn bench_require_baseline_quality_rejects_failed_baseline_quality_after_writing_json() {
+    let dir = temp_dir("bench-require-baseline-quality");
+    let pdf_path = dir.join("sample.pdf");
+    fs::write(&pdf_path, minimal_pdf("Bench Quality Alpha Beta")).unwrap();
+    let bad_baseline =
+        write_baseline_script("require-baseline-quality-bad", "printf 'Unrelated output'");
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "sample.pdf",
+              "expect": {
+                "required_text": ["Bench Quality"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("bad={}", bad_baseline.display()),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+            "--require-baseline-quality",
+        ])
+        .output()
+        .expect("run glyphrush bench requiring baseline quality");
+
+    assert!(!output.status.success());
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+    assert_eq!(json["quality"]["passed"], true);
+    assert_eq!(json["baselines"][0]["quality_status"], "checked");
+    assert_eq!(json["baselines"][0]["quality"]["passed"], false);
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("bench baseline quality required"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn bench_with_eval_manifest_scores_baseline_page_required_text() {
     let dir = temp_dir("bench-eval-baseline-page-required-text");
     let pdf_path = dir.join("sample.pdf");
@@ -5153,6 +5201,70 @@ fn bench_directory_with_eval_manifest_aggregates_baseline_quality() {
     assert_eq!(
         json["documents"][1]["baselines"][0]["quality"]["passed"],
         false
+    );
+}
+
+#[test]
+fn bench_directory_require_baseline_quality_rejects_quality_failures_after_writing_json() {
+    let dir = temp_dir("bench-dir-require-baseline-quality");
+    fs::write(dir.join("b.pdf"), minimal_pdf("Second Quality")).unwrap();
+    fs::write(dir.join("a.pdf"), minimal_pdf("First Quality")).unwrap();
+    let baseline = write_baseline_script(
+        "require-baseline-dir-quality",
+        "case \"$1\" in *a.pdf) printf 'First Quality';; *) printf 'Wrong Quality';; esac",
+    );
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "a.pdf",
+              "expect": {
+                "required_text": ["First Quality"]
+              }
+            },
+            {
+              "path": "b.pdf",
+              "expect": {
+                "required_text": ["Second Quality"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            dir.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+            "--require-baseline-quality",
+        ])
+        .output()
+        .expect("run glyphrush bench directory requiring baseline quality");
+
+    assert!(!output.status.success());
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+    let baseline_summary = &json["baselines"][0];
+
+    assert_eq!(json["quality"]["passed"], true);
+    assert_eq!(baseline_summary["quality_status"], "checked");
+    assert_eq!(baseline_summary["quality_documents"], 2);
+    assert_eq!(baseline_summary["quality_failed_documents"], 1);
+    assert_eq!(
+        baseline_summary["quality_failure_samples"][0]["path"],
+        "b.pdf"
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("bench baseline quality required"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
     );
 }
 
