@@ -997,6 +997,7 @@ struct BaselineQualityOutput {
 #[derive(Clone, Debug, Serialize)]
 struct BaselineRequiredTextOutput {
     passed: bool,
+    expected: Vec<String>,
     missing: Vec<String>,
 }
 
@@ -4452,6 +4453,7 @@ fn baseline_quality_from_stdout(
             .collect::<Vec<_>>();
         BaselineRequiredTextOutput {
             passed: missing.is_empty(),
+            expected: expectations.required_text.clone(),
             missing,
         }
     });

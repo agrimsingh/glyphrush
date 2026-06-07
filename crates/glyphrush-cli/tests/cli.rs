@@ -3781,6 +3781,10 @@ fn bench_with_eval_manifest_scores_baseline_page_required_text() {
     assert_eq!(json["quality"]["passed"], true);
     assert_eq!(json["baselines"][0]["quality_status"], "checked");
     assert_eq!(
+        json["baselines"][0]["quality"]["required_text"]["expected"],
+        serde_json::json!(["Page One Anchor", "Page Two Anchor"])
+    );
+    assert_eq!(
         json["baselines"][0]["quality"]["required_text"]["missing"],
         serde_json::json!(["Page Two Anchor"])
     );
