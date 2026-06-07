@@ -1233,6 +1233,8 @@ struct GeneratedPageExpectation {
     page_fingerprint: String,
     route: PageRoute,
     empty_text_output: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    required_text: Vec<String>,
     image_artifact_count: u32,
     layout_block_counts: DebugLayoutSummary,
     required_flags: Vec<PageQuality>,
@@ -4357,11 +4359,52 @@ fn generated_page_expectation(page: &PageArtifact) -> GeneratedPageExpectation {
         page_fingerprint: page.fingerprint.as_hex().to_string(),
         route: page.route.route,
         empty_text_output: plain_text_from_page(page).is_empty(),
+        required_text: generated_page_required_text(page),
         image_artifact_count: page.image_artifacts.len() as u32,
         layout_block_counts: layout_summary_from_page(page),
         required_flags: page.quality.flags.clone(),
         required_reasons: page.route.reasons.clone(),
     }
+}
+
+fn generated_page_required_text(page: &PageArtifact) -> Vec<String> {
+    const MAX_ANCHOR_CHARS: usize = 160;
+
+    let page_text = quality_text_from_page(page);
+    let fallback_line = page_text
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty());
+
+    page_text
+        .lines()
+        .map(str::trim)
+        .find(|line| is_substantive_required_text_anchor(line))
+        .or(fallback_line)
+        .map(|line| {
+            if line.chars().count() <= MAX_ANCHOR_CHARS {
+                line.to_string()
+            } else {
+                line.chars().take(MAX_ANCHOR_CHARS).collect()
+            }
+        })
+        .into_iter()
+        .collect()
+}
+
+fn is_substantive_required_text_anchor(line: &str) -> bool {
+    let mut has_letter = false;
+    let mut alphanumeric_count = 0;
+    for ch in line.chars() {
+        if ch.is_alphabetic() {
+            has_letter = true;
+        }
+        if ch.is_alphanumeric() {
+            alphanumeric_count += 1;
+        }
+    }
+
+    has_letter && alphanumeric_count >= 4
 }
 
 fn manifest_path_key(path: &Path) -> PathBuf {

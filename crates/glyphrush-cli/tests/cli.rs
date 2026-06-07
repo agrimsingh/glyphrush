@@ -559,6 +559,83 @@ fn manifest_includes_page_identity_for_eval_bootstrap() {
 }
 
 #[test]
+fn manifest_includes_page_required_text_for_eval_bootstrap() {
+    let dir = temp_dir("manifest-page-required-text");
+    let pdf_path = dir.join("anchors.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_streams(&[
+            "BT /F1 24 Tf 72 720 Td (First generated anchor) Tj ET",
+            "BT /F1 24 Tf 72 720 Td (Second generated anchor) Tj ET",
+        ]),
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["manifest", pdf_path.to_str().unwrap()])
+        .output()
+        .expect("run glyphrush manifest with page text anchors");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("manifest output is json");
+    let manifest_path = dir.join("corpus.generated.json");
+    fs::write(&manifest_path, &output.stdout).unwrap();
+
+    assert_eq!(
+        json["documents"][0]["expect"]["pages"][0]["required_text"],
+        serde_json::json!(["First generated anchor"])
+    );
+    assert_eq!(
+        json["documents"][0]["expect"]["pages"][1]["required_text"],
+        serde_json::json!(["Second generated anchor"])
+    );
+
+    let eval_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["eval", manifest_path.to_str().unwrap()])
+        .output()
+        .expect("run glyphrush eval on generated manifest with page text anchors");
+    assert!(
+        eval_output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&eval_output.stderr)
+    );
+}
+
+#[test]
+fn manifest_page_required_text_prefers_substantive_anchor() {
+    let dir = temp_dir("manifest-page-required-text-substantive");
+    let pdf_path = dir.join("page-number.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream(
+            "BT /F1 24 Tf 72 720 Td (1) Tj ET BT /F1 24 Tf 72 690 Td (Substantive generated anchor) Tj ET",
+        ),
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["manifest", pdf_path.to_str().unwrap()])
+        .output()
+        .expect("run glyphrush manifest with page-number prefix");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("manifest output is json");
+
+    assert_eq!(
+        json["documents"][0]["expect"]["pages"][0]["required_text"],
+        serde_json::json!(["Substantive generated anchor"])
+    );
+}
+
+#[test]
 fn manifest_with_cache_dir_preserves_output_across_warm_runs() {
     let dir = temp_dir("manifest-cache-single");
     let pdf_path = dir.join("single.pdf");
