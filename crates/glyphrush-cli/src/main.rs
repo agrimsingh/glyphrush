@@ -1136,13 +1136,17 @@ struct DebugPageOutput {
     backend: &'static str,
     metadata: DocumentMetadata,
     document_fingerprint: String,
+    artifact_id: String,
+    page_fingerprint: String,
     document_page_count: usize,
     extracted_page_count: usize,
     page_index: u32,
+    dimensions: PageDimensions,
     signals: PageSignals,
     quality: PageQualityReport,
     text_output: TextOutputMetrics,
     layout: DebugLayoutSummary,
+    timings: PageTimings,
     image_artifacts: Vec<ImageArtifact>,
     warnings: Vec<String>,
     decision: glyphrush_core::RouteDecision,
@@ -2239,7 +2243,14 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 ocr_command.as_deref(),
                 ocr_timeout_ms,
             )?;
-            let (document, fingerprint) = load_document(backend, &pdf)?;
+            let fingerprint = document_fingerprint(&pdf)?;
+            let open_start = Instant::now();
+            let document = backend.load_document(&pdf)?;
+            let open_us = open_start
+                .elapsed()
+                .as_micros()
+                .max(1)
+                .min(u64::MAX as u128) as u64;
             let document_page_count = backend.page_count(&document);
             let page = backend.extract_page(
                 &document,
@@ -2258,19 +2269,25 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 .into_iter()
                 .next()
                 .context("debug-page extraction returned no page artifact")?;
+            let mut page = page;
+            page.timings.open_us = open_us;
             let text_output = text_output_metrics_from_page(&page);
             let layout = layout_summary_from_page(&page);
             write_json(&DebugPageOutput {
                 backend: backend.name(),
                 metadata: document_metadata(backend, &pdf)?,
                 document_fingerprint: fingerprint,
+                artifact_id: page.artifact_id.clone(),
+                page_fingerprint: page.fingerprint.as_hex().to_string(),
                 document_page_count,
                 extracted_page_count: 1,
                 page_index,
+                dimensions: page.dimensions.clone(),
                 signals: page.signals.clone(),
                 quality: page.quality.clone(),
                 text_output,
                 layout,
+                timings: page.timings.clone(),
                 image_artifacts: page.image_artifacts.clone(),
                 warnings,
                 decision: page.route.clone(),

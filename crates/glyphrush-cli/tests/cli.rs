@@ -5984,6 +5984,37 @@ fn debug_page_explains_classifier_decision_for_a_page() {
 }
 
 #[test]
+fn debug_page_reports_selected_page_artifact_identity_and_timings() {
+    let pdf_path = write_test_pdf("debug-artifact-timings", "Timed Glyphrush page");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .output()
+        .expect("run glyphrush debug-page");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("debug output is json");
+
+    assert!(
+        json["artifact_id"].as_str().unwrap().contains(":p000000:"),
+        "artifact_id should identify the selected page artifact: {}",
+        json["artifact_id"]
+    );
+    assert_eq!(json["page_fingerprint"].as_str().unwrap().len(), 64);
+    assert_eq!(json["dimensions"]["width"].as_f64().unwrap(), 612.0);
+    assert_eq!(json["dimensions"]["height"].as_f64().unwrap(), 792.0);
+    assert!(json["timings"]["open_us"].as_u64().unwrap() > 0);
+    assert!(json["timings"]["classify_us"].as_u64().unwrap() > 0);
+    assert!(json["timings"]["native_extract_us"].as_u64().unwrap() > 0);
+    assert!(json["timings"]["layout_us"].as_u64().unwrap() > 0);
+    assert!(json["timings"]["table_us"].as_u64().unwrap() > 0);
+}
+
+#[test]
 fn debug_page_extracts_only_requested_page() {
     let dir = temp_dir("debug-page-selective");
     let pdf_path = dir.join("two-pages.pdf");
