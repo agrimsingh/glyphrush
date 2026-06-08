@@ -39,10 +39,11 @@ cargo run -p glyphrush-cli -- bench test/ --ocr-http-url http://127.0.0.1:8080/o
 cargo run -p glyphrush-cli -- bench test/ --eval-manifest test/corpus.datasheets.json
 cargo run -p glyphrush-cli -- bench test/ --cache-dir .glyphrush-cache
 cargo run -p glyphrush-cli -- manifest test/ > test/corpus.generated.json
+cargo run -p glyphrush-cli -- manifest test/ --category-from-path --coverage-preset glyphrush-v0 > test/corpus.full.json
 cargo run -p glyphrush-cli -- manifest test/ --category clean_digital --coverage-preset glyphrush-v0 > test/corpus.generated.json
 ```
 
-`*.pdf` and `*.PDF` files in this directory are ignored by git. Batch commands currently scan only top-level files in this directory.
+`*.pdf` and `*.PDF` files in this directory are ignored by git. Directory commands recursively discover PDFs under this directory in stable relative-path order, so category folders work for the same corpus used by `inspect`, `bench`, `baseline-check`, and `backend-check`. `manifest --category-from-path` additionally uses the top-level folder name as each document category for layouts such as `test/clean_digital/`, `test/scanned/`, `test/hybrid/`, `test/academic_columns/`, `test/tables/`, `test/forms/`, `test/rotated/`, `test/weird_encoding/`, and `test/large/`.
 
 Sidecar OCR files use zero-based page indexes. For `your-file.pdf`, OCR text for page `0` should be written to `test/ocr/your-file.p000000.txt`.
 
@@ -56,12 +57,13 @@ Use `manifest` to bootstrap a passing structural manifest after adding PDFs. The
 
 ```sh
 cargo run -p glyphrush-cli -- manifest test/ > test/corpus.generated.json
+cargo run -p glyphrush-cli -- manifest test/ --category-from-path --coverage-preset glyphrush-v0 > test/corpus.full.json
 cargo run -p glyphrush-cli -- manifest test/ --category clean_digital --coverage-preset glyphrush-v0 > test/corpus.generated.json
 cargo run -p glyphrush-cli -- eval test/corpus.generated.json
 GLYPHRUSH_BENCH_CATEGORY=all GLYPHRUSH_BENCH_MANIFEST=test/corpus.generated.json GLYPHRUSH_BENCH_COVERAGE_PRESET=glyphrush-v0 GLYPHRUSH_BENCH_OUTPUT=.glyphrush-baselines/reports/liteparse-full-gate.json scripts/bench-liteparse.sh
 ```
 
-Use `--coverage-preset glyphrush-v0` when building the broader benchmark corpus rather than a single-category manifest. It requires at least one PDF in each core v0 class: `clean_digital`, `scanned`, `hybrid`, `academic_columns`, `tables`, `forms`, `rotated`, `weird_encoding`, and `large`. If only one category has been labeled so far, `eval` should fail coverage until the missing classes are added.
+Use `--coverage-preset glyphrush-v0` when building the broader benchmark corpus rather than a single-category manifest. It requires at least one PDF in each core v0 class: `clean_digital`, `scanned`, `hybrid`, `academic_columns`, `tables`, `forms`, `rotated`, `weird_encoding`, and `large`. If only one category has been labeled so far, `eval` should fail coverage until the missing classes are added. For full-corpus drops, prefer `manifest test/ --category-from-path --coverage-preset glyphrush-v0` so the manifest paths remain relative to `test/` and category counts are generated without hand-editing.
 
 The LiteParse speed gate defaults to the datasheet seed category. Set `GLYPHRUSH_BENCH_CATEGORY=all` when the manifest contains multiple benchmark classes so the script does not pass `--eval-category datasheet` and accidentally filter the full coverage corpus back down to one class.
 

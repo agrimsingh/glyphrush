@@ -2514,6 +2514,64 @@ fn manifest_category_stamps_generated_documents_for_eval_coverage() {
 }
 
 #[test]
+fn manifest_category_from_path_uses_top_level_folders_for_coverage() {
+    let dir = temp_dir("manifest-category-from-path");
+    let clean_dir = dir.join("clean_digital");
+    let scanned_dir = dir.join("scanned");
+    fs::create_dir(&clean_dir).unwrap();
+    fs::create_dir(&scanned_dir).unwrap();
+    fs::write(
+        clean_dir.join("b.pdf"),
+        minimal_pdf("Clean folder manifest"),
+    )
+    .unwrap();
+    fs::write(
+        scanned_dir.join("a.pdf"),
+        minimal_pdf("Scanned folder manifest"),
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "manifest",
+            dir.to_str().unwrap(),
+            "--category-from-path",
+        ])
+        .output()
+        .expect("run glyphrush manifest with category-from-path");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("manifest output is json");
+    let manifest_path = dir.join("corpus.generated.json");
+    fs::write(&manifest_path, &output.stdout).unwrap();
+
+    assert_eq!(json["documents"][0]["path"], "clean_digital/b.pdf");
+    assert_eq!(json["documents"][0]["category"], "clean_digital");
+    assert_eq!(json["documents"][1]["path"], "scanned/a.pdf");
+    assert_eq!(json["documents"][1]["category"], "scanned");
+    assert_eq!(
+        json["corpus_fingerprint"],
+        expected_generated_manifest_corpus_fingerprint(&json)
+    );
+
+    let eval_json = run_json(["eval", manifest_path.to_str().unwrap()]);
+    assert_eq!(
+        eval_json["category_counts"],
+        serde_json::json!({
+            "clean_digital": 1,
+            "scanned": 1
+        })
+    );
+    assert_eq!(eval_json["quality_passed"], true);
+}
+
+#[test]
 fn manifest_required_categories_generate_coverage_gate() {
     let dir = temp_dir("manifest-required-categories");
     fs::write(dir.join("a.pdf"), minimal_pdf("Required category manifest")).unwrap();
@@ -7896,6 +7954,81 @@ fn bench_directory_reports_sorted_documents_and_aggregate_counts() {
             .unwrap()
             > 0
     );
+}
+
+#[test]
+fn bench_directory_recursively_matches_category_manifest_paths() {
+    let dir = temp_dir("bench-dir-recursive-category-paths");
+    let clean_dir = dir.join("clean_digital");
+    let scanned_dir = dir.join("scanned");
+    fs::create_dir(&clean_dir).unwrap();
+    fs::create_dir(&scanned_dir).unwrap();
+    fs::write(
+        clean_dir.join("clean.pdf"),
+        minimal_pdf("Clean nested bench"),
+    )
+    .unwrap();
+    fs::write(
+        scanned_dir.join("scan.pdf"),
+        minimal_pdf("Scanned nested bench"),
+    )
+    .unwrap();
+
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "clean_digital/clean.pdf",
+              "category": "clean_digital",
+              "expect": {
+                "required_text": ["Clean nested bench"]
+              }
+            },
+            {
+              "path": "scanned/scan.pdf",
+              "category": "scanned",
+              "expect": {
+                "required_text": ["Scanned nested bench"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            dir.to_str().unwrap(),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush bench on nested category corpus");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+
+    assert_eq!(json["document_count"], 2);
+    assert_eq!(json["documents"][0]["path"], "clean_digital/clean.pdf");
+    assert_eq!(json["documents"][1]["path"], "scanned/scan.pdf");
+    assert_eq!(
+        json["quality"]["category_counts"],
+        serde_json::json!({
+            "clean_digital": 1,
+            "scanned": 1
+        })
+    );
+    assert_eq!(json["quality"]["quality_passed"], true);
 }
 
 #[test]

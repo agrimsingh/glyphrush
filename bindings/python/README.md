@@ -29,6 +29,12 @@ speed = glyphrush.bench(
     require_speedup_claim=["liteparse=2.0", "liteparse-no-ocr=1.5"],
 )
 generated = glyphrush.manifest("test/", binary="target/debug/glyphrush", category="datasheet")
+full = glyphrush.manifest(
+    "test/",
+    binary="target/debug/glyphrush",
+    category_from_path=True,
+    coverage_preset="glyphrush-v0",
+)
 ```
 
 If `binary` is omitted, the wrapper uses `GLYPHRUSH_BIN` and then falls back to `glyphrush` on `PATH`.
@@ -47,7 +53,7 @@ If `binary` is omitted, the wrapper uses `GLYPHRUSH_BIN` and then falls back to 
 
 `bench()` delegates to `glyphrush bench <pdf-or-directory>` and returns the native speed report, including quality-backed baseline, corpus coverage, and speedup-claim fields when an eval manifest and baselines are requested. Pass `require_coverage_preset="glyphrush-v0"` to require the same v0 corpus coverage gate as the CLI.
 
-`manifest()` delegates to `glyphrush manifest <pdf-or-directory>` and returns the native eval-manifest skeleton, including category coverage gates and deterministic document/page expectations for dropped PDFs.
+`manifest()` delegates to `glyphrush manifest <pdf-or-directory>` and returns the native eval-manifest skeleton, including category coverage gates and deterministic document/page expectations for dropped PDFs. Use `category_from_path=True` for mixed corpora organized as `test/<category>/<file>.pdf`.
 
 Run wrapper tests with:
 

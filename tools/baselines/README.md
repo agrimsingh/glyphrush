@@ -50,7 +50,7 @@ glyphrush baseline-check \
   --baseline docling=tools/baselines/docling-text.sh
 ```
 
-Add `--pdf test/example.pdf` to smoke-test the installed parser dependencies against one PDF before a long corpus benchmark. Use a directory such as `--pdf test/` to smoke every top-level PDF in stable filename order before a corpus run:
+Add `--pdf test/example.pdf` to smoke-test the installed parser dependencies against one PDF before a long corpus benchmark. Use a directory such as `--pdf test/` to smoke every recursively discovered PDF in stable relative-path order before a corpus run:
 
 ```sh
 glyphrush baseline-check --pdf test/example.pdf --baseline-preset glyphrush-v0

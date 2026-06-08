@@ -55,6 +55,9 @@ export function manifest(pdf, options = {}) {
   if (options.category !== undefined) {
     command.push("--category", options.category);
   }
+  if (options.categoryFromPath) {
+    command.push("--category-from-path");
+  }
   if (options.coveragePreset !== undefined) {
     command.push("--coverage-preset", options.coveragePreset);
   }

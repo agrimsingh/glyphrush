@@ -162,6 +162,7 @@ def manifest(
     binary: str | os.PathLike[str] | None = None,
     backend: str | None = None,
     category: str | None = None,
+    category_from_path: bool = False,
     coverage_preset: str | None = None,
     required_category: Sequence[str] = (),
     min_category_count: Sequence[str] = (),
@@ -179,6 +180,8 @@ def manifest(
     command.extend(["manifest", _path(pdf)])
     if category is not None:
         command.extend(["--category", category])
+    if category_from_path:
+        command.append("--category-from-path")
     if coverage_preset is not None:
         command.extend(["--coverage-preset", coverage_preset])
     for required in required_category:

@@ -5,7 +5,7 @@ use std::{
     fs,
     io::{self, Read, Write},
     net::{TcpStream, ToSocketAddrs},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     process::{Command as ProcessCommand, Output as ProcessOutput, Stdio},
     str::FromStr,
     sync::atomic::{AtomicU64, Ordering},
@@ -338,6 +338,8 @@ enum Commands {
         pdf: PathBuf,
         #[arg(long)]
         category: Option<String>,
+        #[arg(long)]
+        category_from_path: bool,
         #[arg(long, value_enum)]
         coverage_preset: Option<CoveragePreset>,
         #[arg(long)]
@@ -2178,6 +2180,7 @@ struct BenchRunConfig<'a> {
 #[derive(Clone, Copy)]
 struct ManifestRunConfig<'a> {
     category: Option<&'a str>,
+    category_from_path: bool,
     required_categories: &'a [String],
     min_category_counts: &'a [CategoryCountSpec],
     ocr: OcrOptions<'a>,
@@ -4222,6 +4225,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
         Commands::Manifest {
             pdf,
             category,
+            category_from_path,
             coverage_preset,
             required_category,
             min_category_count,
@@ -4251,6 +4255,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 &pdf,
                 ManifestRunConfig {
                     category: category.as_deref(),
+                    category_from_path,
                     required_categories: &required_categories,
                     min_category_counts: &min_category_counts,
                     ocr,
@@ -6217,6 +6222,7 @@ fn baseline_smoke_targets(path: &Path) -> Result<Vec<DiscoveredPdf>> {
         Ok(vec![DiscoveredPdf {
             path: path.to_path_buf(),
             label: path.to_string_lossy().into_owned(),
+            category: None,
         }])
     }
 }
@@ -6854,11 +6860,16 @@ fn generate_eval_manifest<B: PdfBackend + Sync>(
     let required_categories = normalize_required_categories(config.required_categories, None);
     let min_category_counts = min_category_counts_from_specs(config.min_category_counts);
     let documents = if path.is_dir() {
-        let pdfs = discover_pdfs(path)?;
+        let pdfs = if config.category_from_path {
+            discover_manifest_pdfs_from_category_paths(path)?
+        } else {
+            discover_pdfs(path)?
+        };
         let worker_count = document_worker_count(backend, config.jobs, pdfs.len());
         if worker_count == 1 {
             pdfs.into_iter()
                 .map(|pdf| {
+                    let document_category = pdf.category.as_deref().or(category.as_deref());
                     generated_manifest_document(
                         backend,
                         &pdf.path,
@@ -6866,7 +6877,7 @@ fn generate_eval_manifest<B: PdfBackend + Sync>(
                         config.ocr,
                         config.cache_dir,
                         config.extraction,
-                        category.as_deref(),
+                        document_category,
                     )
                 })
                 .collect::<Result<Vec<_>>>()?
@@ -6945,8 +6956,15 @@ fn generate_manifest_documents_parallel<B: PdfBackend + Sync>(
                 .map(|(index, pdf)| {
                     let pdf = pdf.clone();
                     scope.spawn(move || {
+                        let document_category = pdf.category.as_deref().or(category);
                         generated_manifest_document(
-                            backend, &pdf.path, pdf.label, ocr, cache_dir, options, category,
+                            backend,
+                            &pdf.path,
+                            pdf.label,
+                            ocr,
+                            cache_dir,
+                            options,
+                            document_category,
                         )
                         .map(|document| (*index, document))
                     })
@@ -9934,27 +9952,12 @@ fn cache_path(cache_dir: &Path, cache_key: &str) -> PathBuf {
 struct DiscoveredPdf {
     path: PathBuf,
     label: String,
+    category: Option<String>,
 }
 
 fn discover_pdfs(path: &Path) -> Result<Vec<DiscoveredPdf>> {
-    let mut pdfs = fs::read_dir(path)
-        .with_context(|| format!("read directory {}", path.display()))?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.file_type().map(|ty| ty.is_file()).unwrap_or(false))
-        .filter(|entry| {
-            entry
-                .path()
-                .extension()
-                .and_then(|extension| extension.to_str())
-                .map(|extension| extension.eq_ignore_ascii_case("pdf"))
-                .unwrap_or(false)
-        })
-        .map(|entry| DiscoveredPdf {
-            label: entry.file_name().to_string_lossy().into_owned(),
-            path: entry.path(),
-        })
-        .collect::<Vec<_>>();
-
+    let mut pdfs = Vec::new();
+    collect_discovered_pdfs(path, path, false, &mut pdfs)?;
     pdfs.sort_by(|left, right| left.label.cmp(&right.label));
 
     if pdfs.is_empty() {
@@ -9962,6 +9965,82 @@ fn discover_pdfs(path: &Path) -> Result<Vec<DiscoveredPdf>> {
     }
 
     Ok(pdfs)
+}
+
+fn discover_manifest_pdfs_from_category_paths(path: &Path) -> Result<Vec<DiscoveredPdf>> {
+    let mut pdfs = Vec::new();
+    collect_discovered_pdfs(path, path, true, &mut pdfs)?;
+    pdfs.sort_by(|left, right| left.label.cmp(&right.label));
+
+    if pdfs.is_empty() {
+        bail!("no PDF files found in {}", path.display());
+    }
+
+    Ok(pdfs)
+}
+
+fn collect_discovered_pdfs(
+    root: &Path,
+    directory: &Path,
+    infer_category_from_path: bool,
+    pdfs: &mut Vec<DiscoveredPdf>,
+) -> Result<()> {
+    let mut entries = fs::read_dir(directory)
+        .with_context(|| format!("read directory {}", directory.display()))?
+        .filter_map(|entry| entry.ok())
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|entry| entry.file_name());
+
+    for entry in entries {
+        let entry_path = entry.path();
+        let file_type = entry
+            .file_type()
+            .with_context(|| format!("read file type {}", entry_path.display()))?;
+        if file_type.is_dir() {
+            collect_discovered_pdfs(root, &entry_path, infer_category_from_path, pdfs)?;
+        } else if file_type.is_file() && path_has_pdf_extension(&entry_path) {
+            let relative_path = entry_path
+                .strip_prefix(root)
+                .unwrap_or(entry_path.as_path());
+            let label = path_label(relative_path);
+            let category = infer_category_from_path
+                .then(|| category_from_relative_pdf_path(relative_path))
+                .flatten();
+            pdfs.push(DiscoveredPdf {
+                path: entry_path,
+                label,
+                category,
+            });
+        }
+    }
+
+    Ok(())
+}
+
+fn path_has_pdf_extension(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .map(|extension| extension.eq_ignore_ascii_case("pdf"))
+        .unwrap_or(false)
+}
+
+fn path_label(path: &Path) -> String {
+    path.components()
+        .filter_map(|component| match component {
+            Component::Normal(segment) => Some(segment.to_string_lossy().into_owned()),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+fn category_from_relative_pdf_path(path: &Path) -> Option<String> {
+    let mut components = path.components();
+    let Some(Component::Normal(category)) = components.next() else {
+        return None;
+    };
+    components.next()?;
+    normalize_manifest_category(category.to_str())
 }
 
 #[cfg(feature = "pdfium")]
