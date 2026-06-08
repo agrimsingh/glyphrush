@@ -1817,6 +1817,7 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
 fn layout_table_from_text_rows(rows: Vec<Vec<String>>) -> Option<LayoutTable> {
     let rows = rows
         .into_iter()
+        .filter(|row| !is_markdown_table_separator_row(row))
         .enumerate()
         .filter_map(|(row_index, row)| {
             let cells = row
@@ -1838,6 +1839,21 @@ fn layout_table_from_text_rows(rows: Vec<Vec<String>>) -> Option<LayoutTable> {
         .collect::<Vec<_>>();
 
     (rows.len() >= 2).then_some(LayoutTable { rows })
+}
+
+fn is_markdown_table_separator_row(row: &[String]) -> bool {
+    row.len() >= 2
+        && row
+            .iter()
+            .all(|cell| is_markdown_table_separator_cell(cell))
+}
+
+fn is_markdown_table_separator_cell(cell: &str) -> bool {
+    let trimmed = cell.trim();
+    let core = trimmed.strip_prefix(':').unwrap_or(trimmed);
+    let core = core.strip_suffix(':').unwrap_or(core);
+
+    core.len() >= 3 && core.chars().all(|ch| ch == '-')
 }
 
 fn table_cells_from_text_line(line: &str) -> Vec<String> {

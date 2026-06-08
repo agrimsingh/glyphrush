@@ -8950,7 +8950,7 @@ fn parse_table_rows(text: &str) -> Vec<Vec<String>> {
                     .map(ToString::to_string)
                     .collect::<Vec<_>>()
             };
-            (row.len() >= 2).then_some(row)
+            (row.len() >= 2 && !is_markdown_table_separator_row(&row)).then_some(row)
         })
         .collect()
 }
@@ -8964,6 +8964,21 @@ fn split_delimited_table_cells(line: &str, delimiter: char) -> Vec<String> {
         .split(delimiter)
         .map(|cell| cell.trim().to_string())
         .collect()
+}
+
+fn is_markdown_table_separator_row(row: &[String]) -> bool {
+    row.len() >= 2
+        && row
+            .iter()
+            .all(|cell| is_markdown_table_separator_cell(cell))
+}
+
+fn is_markdown_table_separator_cell(cell: &str) -> bool {
+    let trimmed = cell.trim();
+    let core = trimmed.strip_prefix(':').unwrap_or(trimmed);
+    let core = core.strip_suffix(':').unwrap_or(core);
+
+    core.len() >= 3 && core.chars().all(|ch| ch == '-')
 }
 
 fn normalize_table_rows(rows: &[Vec<String>]) -> Vec<Vec<String>> {

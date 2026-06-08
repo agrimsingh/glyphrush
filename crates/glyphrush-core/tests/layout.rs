@@ -81,6 +81,33 @@ fn pipe_table_payload_preserves_empty_cells_and_column_indexes() {
 }
 
 #[test]
+fn pipe_table_payload_ignores_markdown_separator_rows() {
+    let artifact = parse_extracted_pages(
+        "doc-table-markdown-separator".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!("| Part | Value |\n", "| --- | --- |\n", "| A | 1 |").to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let table = artifact.pages[0].layout_blocks[0]
+        .table
+        .as_ref()
+        .expect("table payload");
+    assert_eq!(table.rows.len(), 2);
+    assert_eq!(table.rows[0].cells[0].text, "Part");
+    assert_eq!(table.rows[0].cells[1].text, "Value");
+    assert_eq!(table.rows[1].cells[0].text, "A");
+    assert_eq!(table.rows[1].cells[1].text, "1");
+}
+
+#[test]
 fn aligned_whitespace_table_payload_preserves_empty_cells_and_column_indexes() {
     let artifact = parse_extracted_pages(
         "doc-aligned-table-empty-cells".to_string(),

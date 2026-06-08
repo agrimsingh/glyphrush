@@ -6257,8 +6257,10 @@ fn bench_with_eval_manifest_scores_baseline_table_structure() {
         ),
     )
     .unwrap();
-    let table_baseline =
-        write_baseline_script("baseline-table-good", "printf 'Part\\tValue\\nA\\t1'");
+    let table_baseline = write_baseline_script(
+        "baseline-table-good",
+        "printf '| Part | Value |\\n| --- | --- |\\n| A | 1 |'",
+    );
     let wrong_table_baseline =
         write_baseline_script("baseline-table-bad", "printf 'Part\\tValue\\nB\\t2'");
     let manifest_path = dir.join("corpus.json");
