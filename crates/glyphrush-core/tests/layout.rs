@@ -632,6 +632,49 @@ fn positioned_native_spans_preserve_full_width_heading_before_two_columns() {
 }
 
 #[test]
+fn positioned_native_spans_preserve_fragmented_full_width_heading_before_two_columns() {
+    let artifact = parse_extracted_pages(
+        "doc-fragmented-heading-two-column-layout".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "APPLICATION INFORMATION\n",
+                "Left column starts\n",
+                "Left column continues\n",
+                "Right column starts\n",
+                "Right column continues"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("APPLICATION", 72.0, 72.0, 210.0, 88.0),
+                span("INFORMATION", 220.0, 72.0, 430.0, 88.0),
+                span("Left column starts", 72.0, 120.0, 230.0, 134.0),
+                span("Right column starts", 330.0, 120.0, 500.0, 134.0),
+                span("Left column continues", 72.0, 138.0, 248.0, 152.0),
+                span("Right column continues", 330.0, 138.0, 520.0, 152.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let blocks = &artifact.pages[0].layout_blocks;
+    assert_eq!(blocks.len(), 3);
+    assert_eq!(blocks[0].kind, LayoutBlockKind::Heading);
+    assert_eq!(blocks[0].text, "APPLICATION INFORMATION");
+    assert_eq!(blocks[1].text, "Left column starts\nLeft column continues");
+    assert_eq!(
+        blocks[2].text,
+        "Right column starts\nRight column continues"
+    );
+    assert_eq!(blocks[0].bbox.x0, 72.0);
+    assert_eq!(blocks[0].bbox.x1, 430.0);
+}
+
+#[test]
 fn positioned_native_spans_preserve_short_section_heading_between_two_column_regions() {
     let artifact = parse_extracted_pages(
         "doc-short-section-between-columns".to_string(),

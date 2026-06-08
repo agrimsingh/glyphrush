@@ -2072,6 +2072,10 @@ fn group_span_refs_by_full_width_bands<'a>(
     span_refs: &[&'a TextSpan],
     dimensions: &PageDimensions,
 ) -> Option<Vec<Vec<&'a TextSpan>>> {
+    if let Some(groups) = group_span_refs_by_fragmented_leading_band(span_refs, dimensions) {
+        return Some(groups);
+    }
+
     if span_refs.len() < 5
         || !span_refs.iter().any(|span| {
             is_full_width_layout_span(span, dimensions)
@@ -2136,6 +2140,74 @@ fn group_span_refs_by_full_width_bands<'a>(
     append_column_aware_band_groups(&mut groups, pending_band, dimensions, &mut split_columns);
 
     split_columns.then_some(groups)
+}
+
+fn group_span_refs_by_fragmented_leading_band<'a>(
+    span_refs: &[&'a TextSpan],
+    dimensions: &PageDimensions,
+) -> Option<Vec<Vec<&'a TextSpan>>> {
+    if span_refs.len() < 6 || dimensions.width <= 0.0 {
+        return None;
+    }
+
+    let rows = group_positioned_text_rows(span_refs.to_vec());
+    let first_row = rows.first()?;
+    let following_spans = rows.iter().skip(1).flatten().copied().collect::<Vec<_>>();
+    if !is_fragmented_full_width_heading_row(first_row, dimensions)
+        || !has_leading_row_band_vertical_gap(first_row, &following_spans)
+    {
+        return None;
+    }
+
+    let columns = split_layout_columns(&following_spans, dimensions)?;
+    let mut groups = vec![first_row.to_vec()];
+    for column in columns {
+        groups.extend(group_span_refs_by_vertical_gaps(column));
+    }
+
+    Some(groups)
+}
+
+fn is_fragmented_full_width_heading_row(row: &[&TextSpan], dimensions: &PageDimensions) -> bool {
+    if !(2..=4).contains(&row.len()) || !fragmented_row_spans_are_tightly_joined(row) {
+        return false;
+    }
+
+    let Some(bbox) = union_span_refs_bbox(row) else {
+        return false;
+    };
+    let width = bbox.x1 - bbox.x0;
+    let text = text_line_from_positioned_row(row);
+
+    width >= dimensions.width * 0.45
+        && bbox.x0 <= dimensions.width * 0.25
+        && bbox.x1 >= dimensions.width * 0.65
+        && is_heading_line(text.trim())
+}
+
+fn fragmented_row_spans_are_tightly_joined(row: &[&TextSpan]) -> bool {
+    row.windows(2)
+        .all(|window| window[1].bbox.x0 - window[0].bbox.x1 <= 36.0)
+}
+
+fn has_leading_row_band_vertical_gap(row: &[&TextSpan], following_spans: &[&TextSpan]) -> bool {
+    let Some(row_bottom) = row.iter().map(|span| span.bbox.y1).max_by(f32::total_cmp) else {
+        return false;
+    };
+    let Some(following_top) = following_spans
+        .iter()
+        .map(|following| following.bbox.y0)
+        .min_by(f32::total_cmp)
+    else {
+        return false;
+    };
+
+    let height = row
+        .iter()
+        .map(|span| span.bbox.y1 - span.bbox.y0)
+        .max_by(f32::total_cmp)
+        .unwrap_or(12.0);
+    following_top - row_bottom > (height * 0.75).max(8.0)
 }
 
 fn is_column_section_separator_span(

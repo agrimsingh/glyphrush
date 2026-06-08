@@ -278,6 +278,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
             .unwrap()
             .contains("clearly separated 2-4 column reading order")
     );
+    assert!(
+        span_geometry["notes"]
+            .as_str()
+            .unwrap()
+            .contains("fragmented full-width heading rows")
+    );
 
     let cache = capability(capabilities, "artifact_cache_snapshots");
     assert_eq!(cache["glyphrush_status"], "implemented");
