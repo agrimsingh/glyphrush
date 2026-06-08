@@ -2434,6 +2434,108 @@ fn text_table_recovery_extracts_split_pin_number_name_function_tables() {
 }
 
 #[test]
+fn text_table_recovery_extracts_fragmented_symbol_rating_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-fragmented-symbol-rating-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Copyright ANPEC Electronics Corp.\n",
+                "Rev. A.1 - Jan., 2013\n",
+                "APL5324\n",
+                "2 www.anpec.com.tw\n",
+                "Symbol Parameter Rating Unit\n",
+                "VIN\n",
+                " \n",
+                " VIN Supply Voltage (VIN to GND) -0.3 ~ 6.5 V\n",
+                "VSHDN\n",
+                " \n",
+                " SHDN Input Voltage (SHDN to GND) -0.3 ~ 6.5 V\n",
+                "PD\n",
+                " \n",
+                " Power Dissipation Internally Limited W\n",
+                "TJ\n",
+                " \n",
+                " Junction Temperature -40 ~ 150\n",
+                "oC\n",
+                "TSTG\n",
+                " \n",
+                " Storage Temperature -65 ~ 150\n",
+                "oC\n",
+                "TSDR\n",
+                " \n",
+                " Maximum Lead Soldering Temperature, 10 Seconds 260\n",
+                "oC\n",
+                " \n",
+                "Absolute Maximum Ratings (Note 1)"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.38,
+                native_span_count: 22,
+                native_text_bytes: 430,
+                glyph_count: 360,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 3);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Paragraph);
+    assert!(
+        page.layout_blocks[0]
+            .text
+            .starts_with("Copyright ANPEC Electronics Corp.")
+    );
+    assert_eq!(page.layout_blocks[1].kind, LayoutBlockKind::Table);
+    assert_eq!(
+        page.layout_blocks[2].text,
+        "Absolute Maximum Ratings (Note 1)"
+    );
+
+    let table = page.layout_blocks[1].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Symbol", "Parameter", "Rating", "Unit"],
+            vec!["VIN", "Supply Voltage (VIN to GND)", "-0.3 ~ 6.5", "V"],
+            vec![
+                "VSHDN",
+                "SHDN Input Voltage (SHDN to GND)",
+                "-0.3 ~ 6.5",
+                "V"
+            ],
+            vec!["PD", "Power Dissipation Internally Limited", "", "W"],
+            vec!["TJ", "Junction Temperature", "-40 ~ 150", "oC"],
+            vec!["TSTG", "Storage Temperature", "-65 ~ 150", "oC"],
+            vec![
+                "TSDR",
+                "Maximum Lead Soldering Temperature, 10 Seconds",
+                "260",
+                "oC"
+            ],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_extracts_package_pin_description_tables() {
     let artifact = parse_extracted_pages(
         "doc-package-pin-description-table".to_string(),

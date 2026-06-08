@@ -195,6 +195,8 @@ Supported v0 expectations:
 
 Table checks score rows recovered from table layout blocks. Eval uses a table block's structured `table.rows[].cells[]` payload when present, then falls back to parsing the block text for compatibility with older artifacts. In v0 those blocks can come from pipe/tab text, table-routed whitespace rows including fixed-width rows with blank cells, number-first pin-description rows, part-number ordering rows with compound part/code headers and package suffixes, or header-guided rows with same-line or wrapped leading multi-word descriptor cells, lowercase trailing descriptor continuations, inferred trailing blank cells, and leading captions kept outside the structured grid, or table-routed positioned spans that form aligned multi-column rows, preserve omitted blank cells, merge same-line fragmented cells, same-column wrapped header rows, plus near-adjacent single- or multi-cell wrapped continuations, keep cross-column, first-column, or fragmented first-column interior section rows in-grid, and leave positioned captions outside the structured grid when `--span-geometry` is enabled. Markdown separator rows are ignored so `| --- | --- |` does not appear as an extracted data row.
 
+Fragmented `Symbol Parameter Rating Unit` or `Symbol Parameter Range Unit` datasheet rows are scored through the same `table_structure` gate once Glyphrush normalizes their symbol, parameter, value, and unit cells.
+
 Example:
 
 ```json

@@ -275,6 +275,21 @@
           ],
           "table_structure": [
             {
+              "page": 1,
+              "expected_rows": [
+                ["Symbol", "Parameter", "Rating", "Unit"],
+                ["VIN", "Supply Voltage (VIN to GND)", "-0.3 ~ 6.5", "V"],
+                ["VSHDN", "SHDN Input Voltage (SHDN to GND)", "-0.3 ~ 6.5", "V"],
+                ["PD", "Power Dissipation Internally Limited", "", "W"],
+                ["TJ", "Junction Temperature", "-40 ~ 150", "oC"],
+                ["TSTG", "Storage Temperature", "-65 ~ 150", "oC"],
+                ["TSDR", "Maximum Lead Soldering Temperature, 10 Seconds", "260", "oC"]
+              ],
+              "min_row_recall": 1.0,
+              "min_cell_recall": 1.0,
+              "min_cell_f1": 1.0
+            },
+            {
               "page": 6,
               "expected_rows": [
                 ["Pin No.", "Name", "Function"],

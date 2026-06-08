@@ -2769,6 +2769,9 @@ fn split_text_blocks(text: &str, run_table_recovery: bool) -> Vec<String> {
 
     for line in text.lines().map(str::trim_end) {
         if line.trim().is_empty() {
+            if run_table_recovery && should_keep_fragmented_symbol_table_open(&current) {
+                continue;
+            }
             if !current.is_empty() {
                 push_reflowed_text_blocks(&mut blocks, &current, run_table_recovery);
                 current.clear();
@@ -2785,6 +2788,21 @@ fn split_text_blocks(text: &str, run_table_recovery: bool) -> Vec<String> {
     merge_adjacent_fragment_blocks(blocks)
 }
 
+fn should_keep_fragmented_symbol_table_open(current: &[String]) -> bool {
+    let refs = current.iter().map(String::as_str).collect::<Vec<_>>();
+    let Some(header_index) = refs
+        .iter()
+        .position(|line| symbol_parameter_table_header_cells(line).is_some())
+    else {
+        return false;
+    };
+
+    match fragmented_symbol_parameter_table_rows_prefix(&refs[header_index..]) {
+        Some((rows, consumed)) => header_index + consumed != refs.len() || rows.len() < 3,
+        None => true,
+    }
+}
+
 fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_table_recovery: bool) {
     if let Some(split_blocks) = split_embedded_pin_function_table_blocks(lines, run_table_recovery)
     {
@@ -2794,6 +2812,13 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
 
     if let Some(split_blocks) =
         split_pin_number_name_function_table_blocks(lines, run_table_recovery)
+    {
+        blocks.extend(split_blocks);
+        return;
+    }
+
+    if let Some(split_blocks) =
+        split_fragmented_symbol_parameter_table_blocks(lines, run_table_recovery)
     {
         blocks.extend(split_blocks);
         return;
@@ -2878,6 +2903,38 @@ fn split_pin_number_name_function_table_blocks(
     }
     if let Some(caption_index) = caption_index {
         blocks.push(lines[caption_index].trim().to_string());
+    }
+
+    let table_end = header_index + consumed_table_lines;
+    blocks.push(lines[header_index..table_end].join("\n"));
+    if table_end < lines.len() {
+        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
+    }
+
+    Some(blocks)
+}
+
+fn split_fragmented_symbol_parameter_table_blocks(
+    lines: &[String],
+    run_table_recovery: bool,
+) -> Option<Vec<String>> {
+    if !run_table_recovery || lines.len() < 5 {
+        return None;
+    }
+
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let header_index = refs
+        .iter()
+        .position(|line| symbol_parameter_table_header_cells(line).is_some())?;
+    let (_, consumed_table_lines) =
+        fragmented_symbol_parameter_table_rows_prefix(&refs[header_index..])?;
+
+    let mut blocks = Vec::new();
+    if header_index > 0 {
+        blocks.push(reflow_text_block(
+            &lines[..header_index],
+            run_table_recovery,
+        ));
     }
 
     let table_end = header_index + consumed_table_lines;
@@ -3159,6 +3216,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = fragmented_symbol_parameter_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     if let Some(rows) = package_pin_description_table_rows(&lines) {
         return layout_table_from_text_rows(rows);
     }
@@ -3272,6 +3333,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
         return true;
     }
 
+    if fragmented_symbol_parameter_table_rows(lines).is_some() {
+        return true;
+    }
+
     if package_pin_description_table_rows(lines).is_some() {
         return true;
     }
@@ -3378,6 +3443,241 @@ fn pin_number_name_function_data_row(tokens: &[&str]) -> Option<Vec<String>> {
     }
 
     Some(vec![tokens[0].to_string(), name.to_string(), function])
+}
+
+fn fragmented_symbol_parameter_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    let (rows, consumed) = fragmented_symbol_parameter_table_rows_prefix(lines)?;
+    (consumed == lines.len()).then_some(rows)
+}
+
+fn fragmented_symbol_parameter_table_rows_prefix(
+    lines: &[&str],
+) -> Option<(Vec<Vec<String>>, usize)> {
+    let header = symbol_parameter_table_header_cells(lines.first()?)?;
+    let mut rows = vec![header];
+    let mut consumed = 1;
+    let mut index = 1;
+
+    while index < lines.len() {
+        let line = lines[index].trim();
+        if line.is_empty() {
+            break;
+        }
+        let Some(symbol) = symbol_parameter_symbol_line(line) else {
+            break;
+        };
+        index += 1;
+
+        let mut fragments = Vec::new();
+        while index < lines.len() {
+            let next = lines[index].trim();
+            if next.is_empty() || symbol_parameter_symbol_line(next).is_some() {
+                break;
+            }
+            if !fragments.is_empty() && looks_like_symbol_parameter_table_terminator(next) {
+                break;
+            }
+            fragments.push(next);
+            index += 1;
+        }
+
+        let row = fragmented_symbol_parameter_data_row(&symbol, &fragments)?;
+        rows.push(row);
+        consumed = index;
+    }
+
+    (rows.len() >= 3).then_some((rows, consumed))
+}
+
+fn symbol_parameter_table_header_cells(line: &str) -> Option<Vec<String>> {
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    if tokens.len() < 4
+        || !tokens[0].eq_ignore_ascii_case("symbol")
+        || !tokens[1].eq_ignore_ascii_case("parameter")
+        || !tokens.last()?.eq_ignore_ascii_case("unit")
+    {
+        return None;
+    }
+
+    let value_header = tokens[2..tokens.len() - 1].join(" ");
+    let normalized = value_header.to_ascii_lowercase();
+    if !matches!(
+        normalized.as_str(),
+        "rating" | "range" | "typ" | "typical" | "typical value"
+    ) {
+        return None;
+    }
+
+    let value_header = if normalized == "typ" {
+        "Typ".to_string()
+    } else {
+        title_case_ascii_words(&value_header)
+    };
+
+    Some(vec![
+        "Symbol".to_string(),
+        "Parameter".to_string(),
+        value_header,
+        "Unit".to_string(),
+    ])
+}
+
+fn title_case_ascii_words(value: &str) -> String {
+    value
+        .split_whitespace()
+        .map(|word| {
+            let mut chars = word.chars();
+            let Some(first) = chars.next() else {
+                return String::new();
+            };
+            let mut output = first.to_ascii_uppercase().to_string();
+            output.push_str(&chars.as_str().to_ascii_lowercase());
+            output
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn symbol_parameter_symbol_line(line: &str) -> Option<String> {
+    let mut tokens = line.split_whitespace();
+    let token = tokens.next()?;
+    if tokens.next().is_some() || !looks_like_symbol_parameter_symbol_token(token) {
+        return None;
+    }
+
+    Some(
+        token
+            .trim_matches(|ch: char| matches!(ch, ',' | ';'))
+            .to_string(),
+    )
+}
+
+fn looks_like_symbol_parameter_symbol_token(token: &str) -> bool {
+    let token = token.trim_matches(|ch: char| matches!(ch, ',' | ';'));
+    if token.is_empty()
+        || token.chars().count() > 12
+        || looks_like_symbol_parameter_unit_token(token)
+        || !token
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-'))
+    {
+        return false;
+    }
+
+    token.chars().any(|ch| ch.is_ascii_uppercase())
+        && token.chars().any(|ch| ch.is_ascii_alphabetic())
+}
+
+fn fragmented_symbol_parameter_data_row(symbol: &str, fragments: &[&str]) -> Option<Vec<String>> {
+    let mut tokens = fragments
+        .iter()
+        .flat_map(|fragment| fragment.split_whitespace())
+        .collect::<Vec<_>>();
+    if tokens.is_empty() {
+        return None;
+    }
+
+    if tokens
+        .first()
+        .is_some_and(|token| token.eq_ignore_ascii_case(symbol))
+    {
+        tokens.remove(0);
+    }
+
+    let unit = tokens
+        .last()
+        .filter(|token| looks_like_symbol_parameter_unit_token(token))
+        .copied()
+        .unwrap_or_default();
+    if !unit.is_empty() {
+        tokens.pop();
+    }
+
+    let mut rating = Vec::new();
+    while tokens
+        .last()
+        .is_some_and(|token| looks_like_symbol_parameter_rating_token(token))
+    {
+        rating.push(tokens.pop().expect("last token exists"));
+    }
+    rating.reverse();
+
+    if tokens.is_empty() {
+        return None;
+    }
+
+    Some(vec![
+        symbol.to_string(),
+        tokens.join(" "),
+        rating.join(" "),
+        unit.to_string(),
+    ])
+}
+
+fn looks_like_symbol_parameter_unit_token(token: &str) -> bool {
+    let normalized = token
+        .trim_matches(|ch: char| matches!(ch, ',' | ';'))
+        .replace('µ', "u")
+        .to_ascii_lowercase();
+    matches!(
+        normalized.as_str(),
+        "v" | "a"
+            | "ma"
+            | "ua"
+            | "w"
+            | "mw"
+            | "f"
+            | "mf"
+            | "uf"
+            | "nf"
+            | "pf"
+            | "oc"
+            | "c"
+            | "oc/w"
+            | "c/w"
+            | "ohm"
+            | "kohm"
+            | "mohm"
+            | "%"
+    )
+}
+
+fn looks_like_symbol_parameter_rating_token(token: &str) -> bool {
+    let trimmed = token.trim_matches(|ch: char| matches!(ch, ',' | ';'));
+    !trimmed.is_empty()
+        && (matches!(trimmed, "~" | "-" | "to" | "To" | "TO" | "+/-" | "±")
+            || trimmed
+                .chars()
+                .all(|ch| ch.is_ascii_digit() || matches!(ch, '.' | '+' | '-' | ',')))
+}
+
+fn looks_like_symbol_parameter_table_terminator(line: &str) -> bool {
+    if symbol_parameter_table_header_cells(line).is_some()
+        || symbol_parameter_symbol_line(line).is_some()
+        || looks_like_symbol_parameter_unit_token(line)
+    {
+        return false;
+    }
+
+    if looks_like_symbol_parameter_table_caption(line) {
+        return true;
+    }
+
+    let has_rating_token = line
+        .split_whitespace()
+        .any(looks_like_symbol_parameter_rating_token);
+    if has_rating_token {
+        return false;
+    }
+
+    is_heading_line(line)
+}
+
+fn looks_like_symbol_parameter_table_caption(line: &str) -> bool {
+    let normalized = line.to_ascii_lowercase();
+    normalized.contains("ratings")
+        || normalized.contains("characteristics")
+        || normalized.contains("operating conditions")
 }
 
 fn pin_function_table_rows_prefix(lines: &[&str]) -> Option<(Vec<Vec<String>>, usize)> {

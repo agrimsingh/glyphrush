@@ -2901,10 +2901,15 @@ fn seed_datasheet_manifest_tracks_pdfium_pin_number_name_function_table() {
         .iter()
         .find(|document| document["path"] == "LDO_APL5324BI-TRG.pdf")
         .expect("APL5324 datasheet expectation exists");
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
 
-    assert_eq!(
-        document["expect_by_backend"]["pdfium"]["table_structure"],
-        serde_json::json!([
+    assert!(
+        table_structure
+            .iter()
+            .any(|expectation| expectation
+                == &serde_json::json!(
           {
             "page": 6,
             "expected_rows": [
@@ -2919,8 +2924,44 @@ fn seed_datasheet_manifest_tracks_pdfium_pin_number_name_function_table() {
             "min_cell_recall": 1.0,
             "min_cell_f1": 1.0
           }
-        ])
+                ))
     );
+}
+
+#[test]
+fn seed_datasheet_manifest_tracks_pdfium_fragmented_symbol_rating_table() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_APL5324BI-TRG.pdf")
+        .expect("APL5324 datasheet expectation exists");
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
+
+    assert!(table_structure.iter().any(|expectation| expectation
+        == &serde_json::json!(
+        {
+          "page": 1,
+          "expected_rows": [
+            ["Symbol", "Parameter", "Rating", "Unit"],
+            ["VIN", "Supply Voltage (VIN to GND)", "-0.3 ~ 6.5", "V"],
+            ["VSHDN", "SHDN Input Voltage (SHDN to GND)", "-0.3 ~ 6.5", "V"],
+            ["PD", "Power Dissipation Internally Limited", "", "W"],
+            ["TJ", "Junction Temperature", "-40 ~ 150", "oC"],
+            ["TSTG", "Storage Temperature", "-65 ~ 150", "oC"],
+            ["TSDR", "Maximum Lead Soldering Temperature, 10 Seconds", "260", "oC"]
+          ],
+          "min_row_recall": 1.0,
+          "min_cell_recall": 1.0,
+          "min_cell_f1": 1.0
+        }
+              )));
 }
 
 #[test]
