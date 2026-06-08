@@ -139,7 +139,14 @@ text = glyphrush.parse_text("test/example.pdf", binary="target/debug/glyphrush")
 markdown = glyphrush.parse_markdown("test/example.pdf", binary="target/debug/glyphrush")
 triage = glyphrush.inspect_pages("test/example.pdf", binary="target/debug/glyphrush")
 quality = glyphrush.eval_manifest("test/corpus.json", binary="target/debug/glyphrush")
-speed = glyphrush.bench("test/example.pdf", binary="target/debug/glyphrush")
+speed = glyphrush.bench(
+    "test/",
+    binary="target/debug/glyphrush",
+    eval_manifest="test/corpus.json",
+    baseline_preset="glyphrush-v0",
+    require_coverage_preset="glyphrush-v0",
+    require_speedup_claim=["liteparse=2.0", "liteparse-no-ocr=1.5"],
+)
 generated = glyphrush.manifest("test/", binary="target/debug/glyphrush", category="datasheet")
 ```
 
@@ -151,7 +158,13 @@ const text = parseText("test/example.pdf", { binary: "target/debug/glyphrush" })
 const markdown = parseMarkdown("test/example.pdf", { binary: "target/debug/glyphrush" });
 const triage = inspectPages("test/example.pdf", { binary: "target/debug/glyphrush" });
 const quality = evalManifest("test/corpus.json", { binary: "target/debug/glyphrush" });
-const speed = bench("test/example.pdf", { binary: "target/debug/glyphrush" });
+const speed = bench("test/", {
+  binary: "target/debug/glyphrush",
+  evalManifest: "test/corpus.json",
+  baselinePreset: "glyphrush-v0",
+  requireCoveragePreset: "glyphrush-v0",
+  requireSpeedupClaim: ["liteparse=2.0", "liteparse-no-ocr=1.5"],
+});
 const generated = manifest("test/", { binary: "target/debug/glyphrush", category: "datasheet" });
 ```
 

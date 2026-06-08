@@ -85,6 +85,9 @@ export function bench(pdf, options = {}) {
   if (options.requireBaselineQuality) {
     command.push("--require-baseline-quality");
   }
+  if (options.requireCoveragePreset !== undefined) {
+    command.push("--require-coverage-preset", options.requireCoveragePreset);
+  }
   appendRepeated(command, "--require-speedup", options.requireSpeedup);
   appendRepeated(command, "--require-speedup-claim", options.requireSpeedupClaim);
   appendRepeated(command, "--baseline", options.baseline);

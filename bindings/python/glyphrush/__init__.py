@@ -209,6 +209,7 @@ def bench(
     require_quality: bool = False,
     require_baselines: bool = False,
     require_baseline_quality: bool = False,
+    require_coverage_preset: str | None = None,
     require_speedup: Sequence[str] = (),
     require_speedup_claim: Sequence[str] = (),
     baseline: Sequence[str] = (),
@@ -239,6 +240,8 @@ def bench(
         command.append("--require-baselines")
     if require_baseline_quality:
         command.append("--require-baseline-quality")
+    if require_coverage_preset is not None:
+        command.extend(["--require-coverage-preset", require_coverage_preset])
     for requirement in require_speedup:
         command.extend(["--require-speedup", requirement])
     for requirement in require_speedup_claim:
