@@ -383,6 +383,76 @@ fn positioned_native_spans_preserve_full_width_heading_before_two_columns() {
 }
 
 #[test]
+fn positioned_character_spans_reflow_into_readable_words() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-character-spans".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: "Adjustable Low Dropout 300mA Linear Regulator\nFeatures".to_string(),
+            native_spans: vec![
+                span("A", 72.0, 90.0, 78.0, 98.0),
+                span("d", 78.5, 90.4, 84.0, 98.0),
+                span("j", 84.5, 90.1, 87.0, 98.0),
+                span("u", 88.0, 91.8, 94.0, 99.5),
+                span("s", 95.0, 91.6, 100.0, 99.5),
+                span("t", 101.0, 90.6, 104.0, 98.0),
+                span("a", 105.0, 91.6, 111.0, 99.5),
+                span("b", 112.0, 90.4, 118.0, 98.0),
+                span("l", 119.0, 90.4, 121.0, 98.0),
+                span("e ", 122.0, 91.5, 130.0, 99.5),
+                span("L", 137.0, 90.2, 143.0, 98.0),
+                span("o", 144.0, 91.5, 150.0, 99.5),
+                span("w ", 151.0, 91.8, 160.0, 99.5),
+                span("D", 167.0, 90.2, 174.0, 98.0),
+                span("r", 175.0, 91.8, 179.0, 99.5),
+                span("o", 180.0, 91.5, 186.0, 99.5),
+                span("p", 187.0, 91.5, 193.0, 99.5),
+                span("o", 194.0, 91.5, 200.0, 99.5),
+                span("u", 201.0, 91.8, 207.0, 99.5),
+                span("t ", 208.0, 90.6, 213.0, 98.0),
+                span("3", 220.0, 90.1, 226.0, 98.0),
+                span("0", 227.0, 90.1, 233.0, 98.0),
+                span("0", 234.0, 90.1, 240.0, 98.0),
+                span("m", 241.0, 91.5, 250.0, 99.5),
+                span("A ", 251.0, 90.2, 260.0, 98.0),
+                span("Linear", 267.0, 91.5, 306.0, 99.5),
+                span("Regulator", 313.0, 91.5, 370.0, 99.5),
+                span("F", 72.0, 129.0, 79.0, 137.0),
+                span("e", 80.0, 131.1, 87.0, 139.0),
+                span("a", 88.0, 131.1, 95.0, 139.0),
+                span("t", 96.0, 129.3, 101.0, 137.0),
+                span("u", 102.0, 131.3, 109.0, 139.0),
+                span("r", 110.0, 131.2, 116.0, 139.0),
+                span("e", 117.0, 131.1, 124.0, 139.0),
+                span("s", 125.0, 131.1, 132.0, 139.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                native_span_count: 35,
+                native_text_bytes: 62,
+                glyph_count: 58,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let text = artifact.pages[0]
+        .layout_blocks
+        .iter()
+        .map(|block| block.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    assert!(text.contains("Adjustable Low Dropout 300mA Linear Regulator"));
+    assert!(text.contains("Features"));
+    assert!(!text.contains("A d j"));
+    assert!(!text.contains("F e a"));
+}
+
+#[test]
 fn positioned_table_spans_preserve_rows_when_table_recovery_runs() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table".to_string(),

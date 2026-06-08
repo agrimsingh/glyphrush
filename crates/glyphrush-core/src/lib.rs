@@ -1368,11 +1368,7 @@ fn layout_block_from_span_group(
     run_table_recovery: bool,
 ) -> Option<LayoutBlock> {
     let bbox = union_span_refs_bbox(&group)?;
-    let lines = group
-        .iter()
-        .map(|span| span.text.trim().to_string())
-        .filter(|text| !text.is_empty())
-        .collect::<Vec<_>>();
+    let lines = text_lines_from_positioned_spans(&group);
     let text = reflow_text_block(&lines, run_table_recovery);
 
     let kind = classify_layout_block(&text, run_table_recovery);
@@ -1385,6 +1381,108 @@ fn layout_block_from_span_group(
         kind,
         table,
     })
+}
+
+fn text_lines_from_positioned_spans(spans: &[&TextSpan]) -> Vec<String> {
+    let rows = group_positioned_text_rows(spans.to_vec());
+    rows.iter()
+        .map(|row| text_line_from_positioned_row(row))
+        .filter(|text| !text.is_empty())
+        .collect()
+}
+
+fn group_positioned_text_rows(mut spans: Vec<&TextSpan>) -> Vec<Vec<&TextSpan>> {
+    spans.retain(|span| !span.text.trim().is_empty());
+    spans.sort_by(|left, right| {
+        span_center_y(left)
+            .total_cmp(&span_center_y(right))
+            .then_with(|| left.bbox.x0.total_cmp(&right.bbox.x0))
+            .then_with(|| left.text.cmp(&right.text))
+    });
+
+    let tolerance = positioned_text_row_y_tolerance(&spans);
+    let mut rows: Vec<Vec<&TextSpan>> = Vec::new();
+    for span in spans {
+        if let Some(row) = rows.last_mut()
+            && (span_center_y(span) - row_center_y(row)).abs() <= tolerance
+        {
+            row.push(span);
+            continue;
+        }
+        rows.push(vec![span]);
+    }
+
+    for row in &mut rows {
+        row.sort_by(|left, right| {
+            left.bbox
+                .x0
+                .total_cmp(&right.bbox.x0)
+                .then_with(|| left.bbox.y0.total_cmp(&right.bbox.y0))
+                .then_with(|| left.text.cmp(&right.text))
+        });
+    }
+
+    rows
+}
+
+fn positioned_text_row_y_tolerance(spans: &[&TextSpan]) -> f32 {
+    let mut heights = spans
+        .iter()
+        .map(|span| span.bbox.y1 - span.bbox.y0)
+        .filter(|height| *height > 0.0 && height.is_finite())
+        .collect::<Vec<_>>();
+    heights.sort_by(f32::total_cmp);
+
+    let median_height = heights
+        .get(heights.len().saturating_sub(1) / 2)
+        .copied()
+        .unwrap_or(12.0);
+
+    (median_height * 0.75).max(4.0)
+}
+
+fn text_line_from_positioned_row(row: &[&TextSpan]) -> String {
+    let word_gap = positioned_word_gap_threshold(row);
+    let mut output = String::new();
+    let mut previous_x1 = None;
+
+    for span in row {
+        let text = span.text.trim_matches('\n');
+        if text.trim().is_empty() {
+            continue;
+        }
+
+        if !output.is_empty()
+            && !output.ends_with(char::is_whitespace)
+            && !text.starts_with(char::is_whitespace)
+            && previous_x1.is_some_and(|x1| span.bbox.x0 - x1 > word_gap)
+        {
+            output.push(' ');
+        }
+        output.push_str(text);
+        previous_x1 = Some(span.bbox.x1);
+    }
+
+    output.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn positioned_word_gap_threshold(row: &[&TextSpan]) -> f32 {
+    let mut widths = row
+        .iter()
+        .filter_map(|span| {
+            let char_count = span.text.trim().chars().count();
+            (char_count > 0).then_some((span.bbox.x1 - span.bbox.x0) / char_count as f32)
+        })
+        .filter(|width| *width > 0.0 && width.is_finite())
+        .collect::<Vec<_>>();
+    widths.sort_by(f32::total_cmp);
+
+    let median_width = widths
+        .get(widths.len().saturating_sub(1) / 2)
+        .copied()
+        .unwrap_or(6.0);
+
+    (median_width * 0.75).max(3.0)
 }
 
 fn group_positioned_table_rows(mut spans: Vec<&TextSpan>) -> Vec<Vec<&TextSpan>> {
