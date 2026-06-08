@@ -2931,7 +2931,7 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
 
     let header = lines.first()?.split_whitespace().collect::<Vec<_>>();
     let column_count = header.len();
-    if !(3..=8).contains(&column_count)
+    if !(2..=8).contains(&column_count)
         || header
             .iter()
             .any(|cell| cell.chars().count() > 24 || !looks_like_table_header_cell(cell))

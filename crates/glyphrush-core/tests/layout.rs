@@ -1969,6 +1969,58 @@ fn text_table_recovery_merges_leading_descriptor_cells_from_header_columns() {
 }
 
 #[test]
+fn text_table_recovery_merges_two_column_descriptor_value_rows() {
+    let artifact = parse_extracted_pages(
+        "doc-header-guided-two-column-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Parameter Max\n",
+                "Input voltage 5.5\n",
+                "Quiescent current 60"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 3,
+                native_text_bytes: 58,
+                glyph_count: 45,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Parameter", "Max"],
+            vec!["Input voltage", "5.5"],
+            vec!["Quiescent current", "60"],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_merges_wrapped_descriptor_lines_from_header_columns() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-wrapped-text-table".to_string(),

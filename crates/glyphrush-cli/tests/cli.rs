@@ -322,6 +322,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         table_recovery["notes"]
             .as_str()
             .unwrap()
+            .contains("two-column descriptor/value rows")
+    );
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
             .contains("leading text-table captions outside table grids")
     );
     assert!(
