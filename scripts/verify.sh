@@ -3,6 +3,7 @@ set -euo pipefail
 
 cargo fmt --all -- --check
 python3 -m unittest discover -s bindings/python/tests
+node --test bindings/node/test/client.test.mjs
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo run -q -p glyphrush-cli -- baseline-check --strict --baseline-preset glyphrush-v0

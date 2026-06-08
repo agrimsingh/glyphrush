@@ -1,0 +1,10 @@
+{
+  "name": "glyphrush",
+  "version": "0.1.0",
+  "description": "Thin Node.js wrapper for the Glyphrush native PDF parser CLI",
+  "type": "module",
+  "exports": "./src/index.mjs",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

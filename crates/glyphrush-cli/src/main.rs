@@ -2132,11 +2132,11 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             id: "python_node_wasm_bindings",
             area: "bindings",
             liteparse: "python_node_wasm_bindings",
-            glyphrush: "thin_python_cli_wrapper_node_wasm_planned",
+            glyphrush: "thin_python_node_cli_wrappers_wasm_planned",
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "bindings_must_share_native_core_artifact",
-            notes: "A dependency-free Python wrapper delegates to the native CLI and artifact output; Node and WASM bindings remain planned and must wrap the same core.",
+            notes: "Dependency-free Python and Node wrappers delegate to the native CLI and artifact output; WASM remains planned and must wrap the same core.",
         },
         FeatureParityCapability {
             id: "mupdf_backend",
@@ -2243,7 +2243,7 @@ fn backend_check_output<B: PdfBackend + Sync>(
             name: "lopdf",
             status: BackendStatus::Enabled,
             selected: selected_backend == "lopdf",
-            version: Some(backend.version()),
+            version: Some(LOPDF_BACKEND_VERSION),
             capabilities: BackendCapabilityMatrix {
                 open_pdf: true,
                 page_count: true,

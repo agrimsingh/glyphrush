@@ -272,7 +272,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(bindings["glyphrush_status"], "partial");
     assert_eq!(
         bindings["glyphrush"],
-        "thin_python_cli_wrapper_node_wasm_planned"
+        "thin_python_node_cli_wrappers_wasm_planned"
     );
 
     let builtin_ocr = capability(capabilities, "bundled_builtin_ocr");
@@ -334,6 +334,12 @@ fn backend_check_reports_feature_gated_pdfium_backend() {
     assert_eq!(json["enabled_backend_count"], 2);
 
     let backends = json["backends"].as_array().unwrap();
+    let lopdf = backends
+        .iter()
+        .find(|backend| backend["name"] == "lopdf")
+        .expect("lopdf backend candidate exists");
+    assert_eq!(lopdf["version"], "lopdf-adapter-v0");
+
     let pdfium = backends
         .iter()
         .find(|backend| backend["name"] == "pdfium")
