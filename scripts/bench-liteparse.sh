@@ -29,6 +29,18 @@ baseline_timeout_ms="${GLYPHRUSH_BENCH_BASELINE_TIMEOUT_MS:-120000}"
 coverage_preset="${GLYPHRUSH_BENCH_COVERAGE_PRESET:-}"
 output="${GLYPHRUSH_BENCH_OUTPUT:-}"
 
+preflight_cmd=(
+  cargo run -q --release -p glyphrush-cli
+  --features "$features"
+  --
+  --backend "$backend"
+  baseline-check
+  --pdf "$pdf_dir"
+  --baseline-preset glyphrush-v0
+  --baseline-timeout-ms "$baseline_timeout_ms"
+  --strict
+)
+
 cmd=(
   cargo run -q --release -p glyphrush-cli
   --features "$features"
@@ -65,6 +77,8 @@ if [[ -n "$output" && -n "$coverage_preset" ]]; then
 fi
 
 print_command() {
+  printf '%q ' "${preflight_cmd[@]}"
+  printf '\n'
   printf '%q ' "${cmd[@]}"
   if [[ -n "$output" ]]; then
     printf '> %q' "$output"
@@ -82,6 +96,8 @@ if [[ "$dry_run" == true ]]; then
 fi
 
 cd "$repo_root"
+"${preflight_cmd[@]}"
+
 if [[ -n "$output" ]]; then
   mkdir -p "$(dirname "$output")"
   "${cmd[@]}" > "$output"

@@ -22,6 +22,8 @@ scripts/bench-liteparse.sh --dry-run
 
 Use `scripts/verify.sh --dry-run` to print the exact gate commands without running them. Set `GLYPHRUSH_VERIFY_PDFIUM=1` to include the PDFium-feature checks that protect the recommended LiteParse speed-race path: selected-backend feature parity and rendered-image OCR handoff. GitHub CI sets this flag so the PDFium path does not drift while the default local gate remains dependency-light.
 
+Use `scripts/bench-liteparse.sh --dry-run` to inspect the repeatable LiteParse speed gate: it preflights the baseline wrappers against the target PDFs, runs the quality-backed PDFium benchmark, and, when saving a full-coverage report, verifies that report through `feature-parity`.
+
 ```sh
 cargo run -p glyphrush-cli -- inspect test/example.pdf
 cargo run -p glyphrush-cli -- inspect test/example.pdf --pages

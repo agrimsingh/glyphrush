@@ -840,24 +840,30 @@ fn liteparse_benchmark_gate_script_dry_run_uses_quality_backed_pdfium_command() 
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("cargo run -q --release -p glyphrush-cli"));
-    assert!(stdout.contains("--features pdfium"));
-    assert!(stdout.contains("--backend pdfium"));
-    assert!(stdout.contains("bench test/"));
-    assert!(stdout.contains("--eval-manifest test/corpus.datasheets.json"));
-    assert!(stdout.contains("--eval-category datasheet"));
-    assert!(stdout.contains("--baseline-preset glyphrush-v0"));
-    assert!(stdout.contains("--require-baselines"));
-    assert!(stdout.contains("--require-baseline-quality"));
-    assert!(stdout.contains("--require-coverage-preset glyphrush-v0"));
-    assert!(stdout.contains("--require-speedup-claim liteparse=2.0"));
-    assert!(stdout.contains("--require-speedup-claim liteparse-no-ocr=1.5"));
-    assert!(stdout.contains("--jobs 3"));
-    assert!(stdout.contains("> /tmp/glyphrush-liteparse-gate.json"));
-    assert!(stdout.contains("feature-parity"));
-    assert!(stdout.contains("--bench-report /tmp/glyphrush-liteparse-gate.json"));
-    assert!(stdout.contains("--require-speed-evidence"));
-    assert!(stdout.contains("--require-coverage-preset glyphrush-v0"));
+    let lines = stdout.lines().collect::<Vec<_>>();
+    assert_eq!(lines.len(), 3, "dry-run output:\n{stdout}");
+    assert!(lines[0].contains("baseline-check"));
+    assert!(lines[0].contains("--pdf test/"));
+    assert!(lines[0].contains("--baseline-preset glyphrush-v0"));
+    assert!(lines[0].contains("--strict"));
+    assert!(lines[1].contains("cargo run -q --release -p glyphrush-cli"));
+    assert!(lines[1].contains("--features pdfium"));
+    assert!(lines[1].contains("--backend pdfium"));
+    assert!(lines[1].contains("bench test/"));
+    assert!(lines[1].contains("--eval-manifest test/corpus.datasheets.json"));
+    assert!(lines[1].contains("--eval-category datasheet"));
+    assert!(lines[1].contains("--baseline-preset glyphrush-v0"));
+    assert!(lines[1].contains("--require-baselines"));
+    assert!(lines[1].contains("--require-baseline-quality"));
+    assert!(lines[1].contains("--require-coverage-preset glyphrush-v0"));
+    assert!(lines[1].contains("--require-speedup-claim liteparse=2.0"));
+    assert!(lines[1].contains("--require-speedup-claim liteparse-no-ocr=1.5"));
+    assert!(lines[1].contains("--jobs 3"));
+    assert!(lines[1].contains("> /tmp/glyphrush-liteparse-gate.json"));
+    assert!(lines[2].contains("feature-parity"));
+    assert!(lines[2].contains("--bench-report /tmp/glyphrush-liteparse-gate.json"));
+    assert!(lines[2].contains("--require-speed-evidence"));
+    assert!(lines[2].contains("--require-coverage-preset glyphrush-v0"));
 }
 
 #[test]
