@@ -29,8 +29,8 @@ use lopdf::{Dictionary, Document, Object, ObjectId, content::Content};
 #[cfg(feature = "pdfium")]
 use pdfium_render::prelude::{
     PdfBitmapFormat, PdfDocument, PdfPage, PdfPageObject, PdfPageObjectCommon,
-    PdfPageObjectsCommon, PdfPageXObjectFormObject, PdfPathSegmentType, PdfPathSegments,
-    PdfQuadPoints, PdfRenderConfig, Pdfium, PdfiumError,
+    PdfPageObjectsCommon, PdfPageText, PdfPageXObjectFormObject, PdfPathSegmentType,
+    PdfPathSegments, PdfQuadPoints, PdfRect, PdfRenderConfig, Pdfium, PdfiumError,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -41,7 +41,7 @@ const LOPDF_BACKEND_VERSION: &str = "lopdf-adapter-v0";
 #[cfg(feature = "pdfium")]
 const PDFIUM_BACKEND_NAME: &str = "pdfium";
 #[cfg(feature = "pdfium")]
-const PDFIUM_BACKEND_VERSION: &str = "pdfium-adapter-v0";
+const PDFIUM_BACKEND_VERSION: &str = "pdfium-adapter-v1";
 const PARSER_NAME: &str = "glyphrush";
 const PARSER_VERSION: &str = env!("CARGO_PKG_VERSION");
 const BENCH_REPORT_VERSION: &str = "glyphrush-bench-report-v1";
@@ -1901,7 +1901,7 @@ fn backend_check_output<B: PdfBackend + Sync>(
                 open_pdf: true,
                 page_count: true,
                 native_text: true,
-                span_geometry: "page_text",
+                span_geometry: "pdfium_text_segments",
                 image_metadata: true,
                 render_pages: true,
                 builtin_ocr: false,
@@ -1921,8 +1921,6 @@ fn backend_check_output<B: PdfBackend + Sync>(
                 "adapter_not_implemented",
                 #[cfg(feature = "pdfium")]
                 "no_builtin_ocr",
-                #[cfg(feature = "pdfium")]
-                "page_level_span_geometry_only",
                 "license_packaging_spike_required",
             ],
         },
@@ -8334,11 +8332,11 @@ fn extract_pdfium_loaded_page(
         .unwrap_or_default();
 
     let native_extract_start = Instant::now();
-    let native_text = page
+    let text_page = page
         .text()
-        .map(|text| text.all())
         .map_err(map_pdfium_text_error)
         .with_context(|| format!("extract PDFium native text from page {page_index}"))?;
+    let native_text = text_page.all();
     let native_extract_us = native_extract_start
         .elapsed()
         .as_micros()
@@ -8346,10 +8344,23 @@ fn extract_pdfium_loaded_page(
         .min(u64::MAX as u128) as u64;
 
     let native_text_bytes = native_text.trim().len() as u32;
+    let can_extract_positioned_spans =
+        should_extract_pdfium_text_segments(native_text_bytes, rotation_degrees);
+    let span_geometry_capped = options.span_geometry && !can_extract_positioned_spans;
+    let native_spans = if options.span_geometry && can_extract_positioned_spans {
+        partially_compatible_positioned_text_spans(
+            &native_text,
+            extract_pdfium_text_segments(&text_page, &dimensions),
+        )
+    } else {
+        Vec::new()
+    };
+    let bbox_overlap_ratio = positioned_bbox_overlap_ratio(&native_spans);
     let native_span_count = native_text
         .lines()
         .filter(|line| !line.trim().is_empty())
         .count()
+        .max(native_spans.len())
         .max((native_text_bytes > 0) as usize) as u32;
     let glyph_count = native_text.chars().filter(|ch| !ch.is_whitespace()).count() as u32;
     let image_artifacts = pdfium_image_artifacts(&page, &dimensions);
@@ -8371,14 +8382,14 @@ fn extract_pdfium_loaded_page(
         glyph_count,
         image_area_ratio,
         duplicate_char_ratio: duplicate_char_ratio(&native_text),
-        bbox_overlap_ratio: 0.0,
+        bbox_overlap_ratio,
         broken_encoding_ratio: broken_encoding_ratio(&native_text),
         rotation_degrees,
         table_line_density,
         annotation_count: page.annotations().len() as u32,
         form_field_count: 0,
         huge_object_count: 0,
-        span_geometry_capped: options.span_geometry,
+        span_geometry_capped,
     };
     let (ocr_text, render_us, ocr_us) =
         load_pdfium_ocr_if_needed(source_path, ocr, &signals, &page)?;
@@ -8387,7 +8398,7 @@ fn extract_pdfium_loaded_page(
         page_index,
         dimensions,
         native_text,
-        native_spans: Vec::new(),
+        native_spans,
         image_artifacts,
         signals,
         ocr_text,
@@ -8405,6 +8416,55 @@ fn extract_pdfium_loaded_page(
 #[cfg(feature = "pdfium")]
 fn map_pdfium_text_error(error: PdfiumError) -> anyhow::Error {
     anyhow!(error)
+}
+
+#[cfg(feature = "pdfium")]
+fn should_extract_pdfium_text_segments(native_text_bytes: u32, rotation_degrees: i16) -> bool {
+    native_text_bytes <= MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES
+        && rotation_degrees.rem_euclid(360) == 0
+}
+
+#[cfg(feature = "pdfium")]
+fn extract_pdfium_text_segments(
+    text_page: &PdfPageText<'_>,
+    dimensions: &PageDimensions,
+) -> Vec<ExtractedTextSpan> {
+    text_page
+        .segments()
+        .iter()
+        .filter_map(|segment| {
+            let text = segment.text();
+            if text.trim().is_empty() {
+                return None;
+            }
+
+            pdfium_text_segment_bbox(segment.bounds(), dimensions)
+                .map(|bbox| ExtractedTextSpan { text, bbox })
+        })
+        .collect()
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_text_segment_bbox(bounds: PdfRect, dimensions: &PageDimensions) -> Option<BBox> {
+    let x0 = bounds.left().value.clamp(0.0, dimensions.width);
+    let x1 = bounds.right().value.clamp(0.0, dimensions.width);
+    let y0 = (dimensions.height - bounds.top().value).clamp(0.0, dimensions.height);
+    let y1 = (dimensions.height - bounds.bottom().value).clamp(0.0, dimensions.height);
+
+    if ![x0, x1, y0, y1].into_iter().all(f32::is_finite) {
+        return None;
+    }
+
+    let left = x0.min(x1);
+    let right = x0.max(x1);
+    let top = y0.min(y1);
+    let bottom = y0.max(y1);
+    (right - left > f32::EPSILON && bottom - top > f32::EPSILON).then_some(BBox {
+        x0: left,
+        y0: top,
+        x1: right,
+        y1: bottom,
+    })
 }
 
 #[cfg(feature = "pdfium")]
@@ -9139,6 +9199,21 @@ fn compatible_positioned_text_spans(
     });
 
     if compatible { spans } else { Vec::new() }
+}
+
+#[cfg(any(test, feature = "pdfium"))]
+fn partially_compatible_positioned_text_spans(
+    native_text: &str,
+    spans: Vec<ExtractedTextSpan>,
+) -> Vec<ExtractedTextSpan> {
+    let native = normalize_text_for_span_check(native_text);
+    spans
+        .into_iter()
+        .filter(|span| {
+            let text = normalize_text_for_span_check(&span.text);
+            !text.is_empty() && native.contains(&text)
+        })
+        .collect()
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -10834,5 +10909,44 @@ mod unit_tests {
         let content = b"q BI /W 1 /H 1 /BPC 1 ID \x00 EI Q";
 
         assert!(raw_image_draw_ops(content).is_none());
+    }
+
+    #[test]
+    fn partial_span_compatibility_keeps_matching_spans_without_dropping_all_segments() {
+        let spans = vec![
+            ExtractedTextSpan {
+                text: "First line".to_string(),
+                bbox: BBox {
+                    x0: 0.0,
+                    y0: 0.0,
+                    x1: 10.0,
+                    y1: 10.0,
+                },
+            },
+            ExtractedTextSpan {
+                text: "Not in native text".to_string(),
+                bbox: BBox {
+                    x0: 0.0,
+                    y0: 12.0,
+                    x1: 10.0,
+                    y1: 22.0,
+                },
+            },
+            ExtractedTextSpan {
+                text: "Second line".to_string(),
+                bbox: BBox {
+                    x0: 0.0,
+                    y0: 24.0,
+                    x1: 10.0,
+                    y1: 34.0,
+                },
+            },
+        ];
+
+        let filtered = partially_compatible_positioned_text_spans("First line\nSecond line", spans);
+
+        assert_eq!(filtered.len(), 2);
+        assert_eq!(filtered[0].text, "First line");
+        assert_eq!(filtered[1].text, "Second line");
     }
 }

@@ -146,14 +146,69 @@ fn backend_check_reports_feature_gated_pdfium_backend() {
         .expect("pdfium backend candidate exists");
     assert_eq!(pdfium["status"], "enabled");
     assert_eq!(pdfium["selected"], true);
-    assert_eq!(pdfium["version"], "pdfium-adapter-v0");
+    assert_eq!(pdfium["version"], "pdfium-adapter-v1");
     assert_eq!(pdfium["capabilities"]["open_pdf"], true);
     assert_eq!(pdfium["capabilities"]["page_count"], true);
     assert_eq!(pdfium["capabilities"]["native_text"], true);
-    assert_eq!(pdfium["capabilities"]["span_geometry"], "page_text");
+    assert_eq!(
+        pdfium["capabilities"]["span_geometry"],
+        "pdfium_text_segments"
+    );
     assert_eq!(pdfium["capabilities"]["image_metadata"], true);
     assert_eq!(pdfium["capabilities"]["render_pages"], true);
     assert_eq!(pdfium["capabilities"]["builtin_ocr"], false);
+}
+
+#[cfg(feature = "pdfium")]
+#[test]
+fn parse_pdfium_emits_positioned_native_spans_when_span_geometry_requested() {
+    let dir = temp_dir("parse-pdfium-positioned-spans");
+    let pdf_path = dir.join("positioned.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream(
+            "BT /F1 12 Tf 72 720 Td (First line) Tj 0 -24 Td (Second line) Tj ET",
+        ),
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "pdfium",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+            "--span-geometry",
+        ])
+        .output()
+        .expect("run glyphrush pdfium parse with span geometry");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("parse output is json");
+    let page = &json["pages"][0];
+    let spans = page["native_spans"].as_array().unwrap();
+
+    assert_eq!(page["signals"]["span_geometry_capped"], false);
+    assert!(
+        spans.len() >= 2,
+        "PDFium should expose line-level text segments, spans: {spans:?}"
+    );
+    assert_eq!(spans[0]["text"], "First line");
+    assert_eq!(spans[1]["text"], "Second line");
+    assert!(spans[0]["bbox"]["x0"].as_f64().unwrap() >= 60.0);
+    assert!(spans[0]["bbox"]["x0"].as_f64().unwrap() <= 90.0);
+    assert!(spans[0]["bbox"]["x1"].as_f64().unwrap() > spans[0]["bbox"]["x0"].as_f64().unwrap());
+    assert!(spans[0]["bbox"]["y0"].as_f64().unwrap() < spans[1]["bbox"]["y0"].as_f64().unwrap());
+    assert!(spans[0]["bbox"]["y1"].as_f64().unwrap() < 120.0);
+    assert_ne!(spans[0]["bbox"]["x1"], 612.0);
+    assert_ne!(spans[0]["bbox"]["y1"], 792.0);
 }
 
 #[cfg(feature = "pdfium")]
