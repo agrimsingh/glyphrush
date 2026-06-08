@@ -4419,6 +4419,64 @@ fn parse_cache_hit_refreshes_source_modified_metadata() {
 }
 
 #[test]
+fn parse_ignores_corrupt_cache_snapshot_and_rebuilds_miss() {
+    let dir = temp_dir("parse-cache-corrupt-snapshot");
+    let pdf_path = dir.join("cache.pdf");
+    fs::write(&pdf_path, minimal_pdf("Cache corruption recovery")).unwrap();
+    let cache_dir = dir.join("cache");
+
+    let first = run_json([
+        "parse",
+        pdf_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--cache-dir",
+        cache_dir.to_str().unwrap(),
+    ]);
+    let cache_key = first["global_diagnostics"]["cache_key"].as_str().unwrap();
+    let cache_path = cache_dir.join(format!("{cache_key}.json"));
+    fs::write(&cache_path, b"{ this is not valid json").unwrap();
+
+    let second = run_json([
+        "parse",
+        pdf_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--cache-dir",
+        cache_dir.to_str().unwrap(),
+    ]);
+
+    assert_eq!(second["global_diagnostics"]["cache_status"], "miss");
+    assert_eq!(second["global_diagnostics"]["cache_key"], cache_key);
+    assert!(
+        second["pages"][0]["native_spans"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("Cache corruption recovery")
+    );
+    let warnings = second["global_diagnostics"]["warnings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|warning| warning.as_str().unwrap())
+        .collect::<Vec<_>>();
+    assert!(
+        warnings
+            .iter()
+            .any(|warning| warning.starts_with("cache_snapshot_ignored:")),
+        "warnings: {warnings:?}"
+    );
+
+    let snapshot: Value = serde_json::from_slice(&fs::read(&cache_path).unwrap())
+        .expect("rebuilt cache snapshot json");
+    assert_eq!(snapshot["cache_key"], cache_key);
+    assert_eq!(
+        snapshot["artifact"]["document_fingerprint"],
+        second["document_fingerprint"]
+    );
+}
+
+#[test]
 fn cache_key_does_not_reuse_prior_schema_artifacts() {
     let dir = temp_dir("parse-cache-schema-version");
     let pdf_path = dir.join("cache-schema.pdf");

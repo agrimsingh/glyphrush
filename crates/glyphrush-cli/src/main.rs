@@ -635,6 +635,38 @@ enum CachedArtifactFile {
     LegacyArtifact(DocumentArtifact),
 }
 
+struct CachedArtifactLoad {
+    artifact: Option<DocumentArtifact>,
+    ignored_warning: Option<String>,
+}
+
+impl CachedArtifactLoad {
+    fn miss() -> Self {
+        Self {
+            artifact: None,
+            ignored_warning: None,
+        }
+    }
+
+    fn hit(artifact: DocumentArtifact) -> Self {
+        Self {
+            artifact: Some(artifact),
+            ignored_warning: None,
+        }
+    }
+
+    fn ignored(path: &Path, error: anyhow::Error) -> Self {
+        let reason = error.to_string().replace('\n', " ");
+        Self {
+            artifact: None,
+            ignored_warning: Some(format!(
+                "cache_snapshot_ignored: {}: {reason}",
+                path.display()
+            )),
+        }
+    }
+}
+
 impl CachedArtifactSnapshot {
     fn from_artifact(cache_key: &str, artifact: &DocumentArtifact) -> Self {
         Self {
@@ -2398,7 +2430,7 @@ fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "cache_key_includes_parser_backend_ocr_options",
-            notes: "JSON cache snapshots use explicit schema/parser/backend/source provenance and reuse artifacts on warm runs; mmap-friendly snapshots remain a later runtime optimization.",
+            notes: "JSON cache snapshots use explicit schema/parser/backend/source provenance, reuse artifacts on warm runs, and treat unreadable or invalid snapshots as explicit misses with cache_snapshot_ignored warnings; mmap-friendly snapshots remain a later runtime optimization.",
         },
         FeatureParityCapability {
             id: "python_node_wasm_bindings",
@@ -9324,16 +9356,19 @@ fn parse_pdf<B: PdfBackend>(
         ocr,
         options,
     )?;
-    if let Some(cache_dir) = cache_dir
-        && let Some(mut artifact) = load_cached_artifact(cache_dir, &cache_key)?
-    {
-        clear_page_stage_timings(&mut artifact);
-        artifact.metadata =
-            document_metadata_with_source(backend, source_size_bytes, source_modified_unix_ms);
-        artifact.global_diagnostics.cache_status = CacheStatus::Hit;
-        artifact.global_diagnostics.cache_key = Some(cache_key);
-        set_artifact_worker_count(&mut artifact, options);
-        return Ok(artifact);
+    let mut cache_ignored_warning = None;
+    if let Some(cache_dir) = cache_dir {
+        let cached = load_cached_artifact(cache_dir, &cache_key)?;
+        cache_ignored_warning = cached.ignored_warning;
+        if let Some(mut artifact) = cached.artifact {
+            clear_page_stage_timings(&mut artifact);
+            artifact.metadata =
+                document_metadata_with_source(backend, source_size_bytes, source_modified_unix_ms);
+            artifact.global_diagnostics.cache_status = CacheStatus::Hit;
+            artifact.global_diagnostics.cache_key = Some(cache_key);
+            set_artifact_worker_count(&mut artifact, options);
+            return Ok(artifact);
+        }
     }
 
     let open_start = Instant::now();
@@ -9354,6 +9389,9 @@ fn parse_pdf<B: PdfBackend>(
     if let Some(cache_dir) = cache_dir {
         artifact.global_diagnostics.cache_status = CacheStatus::Miss;
         artifact.global_diagnostics.cache_key = Some(cache_key.clone());
+        if let Some(warning) = cache_ignored_warning {
+            artifact.global_diagnostics.warnings.push(warning);
+        }
         store_cached_artifact(cache_dir, &cache_key, &artifact)?;
     }
     Ok(artifact)
@@ -9591,21 +9629,31 @@ fn is_document_sidecar_file(source_path: &Path, file_name: &str) -> bool {
     page_suffix.len() == 6 && page_suffix.chars().all(|ch| ch.is_ascii_digit())
 }
 
-fn load_cached_artifact(cache_dir: &Path, cache_key: &str) -> Result<Option<DocumentArtifact>> {
+fn load_cached_artifact(cache_dir: &Path, cache_key: &str) -> Result<CachedArtifactLoad> {
     let path = cache_path(cache_dir, cache_key);
     if !path.exists() {
-        return Ok(None);
+        return Ok(CachedArtifactLoad::miss());
     }
 
-    let cache_file: CachedArtifactFile = serde_json::from_slice(
-        &fs::read(&path).with_context(|| format!("read cache artifact {}", path.display()))?,
-    )
-    .with_context(|| format!("decode cache artifact {}", path.display()))?;
+    let bytes =
+        match fs::read(&path).with_context(|| format!("read cache artifact {}", path.display())) {
+            Ok(bytes) => bytes,
+            Err(error) => return Ok(CachedArtifactLoad::ignored(&path, error)),
+        };
+    let cache_file: CachedArtifactFile = match serde_json::from_slice(&bytes)
+        .with_context(|| format!("decode cache artifact {}", path.display()))
+    {
+        Ok(cache_file) => cache_file,
+        Err(error) => return Ok(CachedArtifactLoad::ignored(&path, error)),
+    };
     let artifact = match cache_file {
-        CachedArtifactFile::Snapshot(snapshot) => snapshot.into_artifact(cache_key, &path)?,
+        CachedArtifactFile::Snapshot(snapshot) => match snapshot.into_artifact(cache_key, &path) {
+            Ok(artifact) => artifact,
+            Err(error) => return Ok(CachedArtifactLoad::ignored(&path, error)),
+        },
         CachedArtifactFile::LegacyArtifact(artifact) => artifact,
     };
-    Ok(Some(artifact))
+    Ok(CachedArtifactLoad::hit(artifact))
 }
 
 fn clear_page_stage_timings(artifact: &mut DocumentArtifact) {
