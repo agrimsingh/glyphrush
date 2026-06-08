@@ -59,7 +59,8 @@ const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
 const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
 const TABLE_ROUTE_DENSITY_THRESHOLD: f32 = 0.25;
-const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v39";
+const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v40";
+const CACHE_SNAPSHOT_VERSION: &str = "glyphrush-cache-snapshot-v1";
 const DEFAULT_BASELINE_TIMEOUT_MS: u64 = 120_000;
 const DEFAULT_OCR_TIMEOUT_MS: u64 = 120_000;
 #[cfg(feature = "pdfium")]
@@ -575,6 +576,93 @@ struct FeatureParityCapability {
     hot_path: bool,
     quality_guard: &'static str,
     notes: &'static str,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct CachedArtifactSnapshot {
+    snapshot_version: String,
+    cache_schema: String,
+    cache_key: String,
+    parser_name: String,
+    parser_version: String,
+    backend: String,
+    backend_version: String,
+    document_fingerprint: String,
+    artifact: DocumentArtifact,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum CachedArtifactFile {
+    Snapshot(CachedArtifactSnapshot),
+    LegacyArtifact(DocumentArtifact),
+}
+
+impl CachedArtifactSnapshot {
+    fn from_artifact(cache_key: &str, artifact: &DocumentArtifact) -> Self {
+        Self {
+            snapshot_version: CACHE_SNAPSHOT_VERSION.to_string(),
+            cache_schema: CACHE_SCHEMA_VERSION.to_string(),
+            cache_key: cache_key.to_string(),
+            parser_name: artifact.metadata.parser_name.clone(),
+            parser_version: artifact.metadata.parser_version.clone(),
+            backend: artifact.metadata.backend.clone(),
+            backend_version: artifact.metadata.backend_version.clone(),
+            document_fingerprint: artifact.document_fingerprint.clone(),
+            artifact: artifact.clone(),
+        }
+    }
+
+    fn into_artifact(self, expected_cache_key: &str, path: &Path) -> Result<DocumentArtifact> {
+        if self.snapshot_version != CACHE_SNAPSHOT_VERSION {
+            bail!(
+                "cache snapshot {} has unsupported version {}",
+                path.display(),
+                self.snapshot_version
+            );
+        }
+        if self.cache_schema != CACHE_SCHEMA_VERSION {
+            bail!(
+                "cache snapshot {} has unsupported schema {}",
+                path.display(),
+                self.cache_schema
+            );
+        }
+        if self.cache_key != expected_cache_key {
+            bail!(
+                "cache snapshot {} key mismatch: expected {}, found {}",
+                path.display(),
+                expected_cache_key,
+                self.cache_key
+            );
+        }
+        if self.parser_name != PARSER_NAME || self.parser_version != PARSER_VERSION {
+            bail!(
+                "cache snapshot {} parser mismatch: expected {} {}, found {} {}",
+                path.display(),
+                PARSER_NAME,
+                PARSER_VERSION,
+                self.parser_name,
+                self.parser_version
+            );
+        }
+        if self.document_fingerprint != self.artifact.document_fingerprint {
+            bail!(
+                "cache snapshot {} document fingerprint mismatch",
+                path.display()
+            );
+        }
+        if self.backend != self.artifact.metadata.backend
+            || self.backend_version != self.artifact.metadata.backend_version
+        {
+            bail!(
+                "cache snapshot {} backend metadata mismatch",
+                path.display()
+            );
+        }
+
+        Ok(self.artifact)
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -2142,11 +2230,11 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             id: "artifact_cache_snapshots",
             area: "runtime",
             liteparse: "fresh_parse_by_default",
-            glyphrush: "cache_dir_artifact_reuse",
+            glyphrush: "cache_dir_snapshot_envelope_artifact_reuse",
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "cache_key_includes_parser_backend_ocr_options",
-            notes: "JSON artifact caching is implemented; mmap-friendly snapshots remain a later runtime optimization.",
+            notes: "JSON cache snapshots use explicit schema/parser/backend/source provenance and reuse artifacts on warm runs; mmap-friendly snapshots remain a later runtime optimization.",
         },
         FeatureParityCapability {
             id: "python_node_wasm_bindings",
@@ -9222,10 +9310,14 @@ fn load_cached_artifact(cache_dir: &Path, cache_key: &str) -> Result<Option<Docu
         return Ok(None);
     }
 
-    let artifact = serde_json::from_slice(
+    let cache_file: CachedArtifactFile = serde_json::from_slice(
         &fs::read(&path).with_context(|| format!("read cache artifact {}", path.display()))?,
     )
     .with_context(|| format!("decode cache artifact {}", path.display()))?;
+    let artifact = match cache_file {
+        CachedArtifactFile::Snapshot(snapshot) => snapshot.into_artifact(cache_key, &path)?,
+        CachedArtifactFile::LegacyArtifact(artifact) => artifact,
+    };
     Ok(Some(artifact))
 }
 
@@ -9244,7 +9336,8 @@ fn store_cached_artifact(
     fs::create_dir_all(cache_dir)
         .with_context(|| format!("create cache directory {}", cache_dir.display()))?;
     let path = cache_path(cache_dir, cache_key);
-    let bytes = serde_json::to_vec_pretty(artifact)?;
+    let snapshot = CachedArtifactSnapshot::from_artifact(cache_key, artifact);
+    let bytes = serde_json::to_vec_pretty(&snapshot)?;
     fs::write(&path, bytes).with_context(|| format!("write cache artifact {}", path.display()))?;
     Ok(())
 }

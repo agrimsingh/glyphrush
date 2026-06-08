@@ -268,6 +268,13 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(benchmark["glyphrush_status"], "implemented");
     assert_eq!(benchmark["glyphrush"], "strict_speedup_claim_gate");
 
+    let cache = capability(capabilities, "artifact_cache_snapshots");
+    assert_eq!(cache["glyphrush_status"], "partial");
+    assert_eq!(
+        cache["glyphrush"],
+        "cache_dir_snapshot_envelope_artifact_reuse"
+    );
+
     let ocr = capability(capabilities, "ocr");
     assert_eq!(ocr["liteparse"], "tesseract_or_http_ocr");
     assert_eq!(
@@ -3956,7 +3963,29 @@ fn parse_with_cache_dir_reports_miss_then_hit_for_same_pdf() {
             > 0
     );
     assert_eq!(second["global_diagnostics"]["total_stage_time_us"], 0);
-    assert_eq!(fs::read_dir(cache_dir).unwrap().count(), 1);
+    let cache_files = fs::read_dir(&cache_dir)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect::<Vec<_>>();
+    assert_eq!(cache_files.len(), 1);
+    let snapshot: Value =
+        serde_json::from_slice(&fs::read(&cache_files[0]).unwrap()).expect("cache snapshot json");
+    assert_eq!(snapshot["snapshot_version"], "glyphrush-cache-snapshot-v1");
+    assert_eq!(snapshot["cache_schema"], "glyphrush-cache-v40");
+    assert_eq!(
+        snapshot["cache_key"],
+        first["global_diagnostics"]["cache_key"]
+    );
+    assert_eq!(snapshot["parser_name"], "glyphrush");
+    assert_eq!(snapshot["backend"], "lopdf");
+    assert_eq!(
+        snapshot["document_fingerprint"],
+        first["document_fingerprint"]
+    );
+    assert_eq!(
+        snapshot["artifact"]["document_fingerprint"],
+        first["document_fingerprint"]
+    );
 }
 
 #[test]
@@ -4162,8 +4191,12 @@ fn cache_key_does_not_reuse_prior_schema_artifacts() {
         "glyphrush-cache-v38:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
         env!("CARGO_PKG_VERSION")
     ));
-    let expected_current_key = sha256_hex(format!(
+    let old_v39_key = sha256_hex(format!(
         "glyphrush-cache-v39:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
+        env!("CARGO_PKG_VERSION")
+    ));
+    let expected_current_key = sha256_hex(format!(
+        "glyphrush-cache-v40:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
         env!("CARGO_PKG_VERSION")
     ));
 
@@ -4394,6 +4427,12 @@ fn cache_key_does_not_reuse_prior_schema_artifacts() {
             .as_str()
             .expect("cache key is present"),
         old_v38_key
+    );
+    assert_ne!(
+        json["global_diagnostics"]["cache_key"]
+            .as_str()
+            .expect("cache key is present"),
+        old_v39_key
     );
     assert_eq!(
         json["global_diagnostics"]["cache_key"]
