@@ -2772,6 +2772,9 @@ fn split_text_blocks(text: &str, run_table_recovery: bool) -> Vec<String> {
             if run_table_recovery && should_keep_fragmented_symbol_table_open(&current) {
                 continue;
             }
+            if run_table_recovery && should_keep_bullet_leader_table_open(&current) {
+                continue;
+            }
             if !current.is_empty() {
                 push_reflowed_text_blocks(&mut blocks, &current, run_table_recovery);
                 current.clear();
@@ -2803,6 +2806,52 @@ fn should_keep_fragmented_symbol_table_open(current: &[String]) -> bool {
     }
 }
 
+fn should_keep_bullet_leader_table_open(current: &[String]) -> bool {
+    let refs = current.iter().map(String::as_str).collect::<Vec<_>>();
+    let Some(table_start) = refs.iter().position(|line| {
+        bullet_leader_direct_row(line.trim()).is_some()
+            || bullet_leader_pending_parameter(line.trim()).is_some()
+    }) else {
+        return false;
+    };
+
+    let mut pending_parameter = false;
+    let mut row_count = 0;
+
+    for line in refs[table_start..].iter().map(|line| line.trim()) {
+        if line.is_empty() || looks_like_bullet_leader_table_terminator(line) {
+            break;
+        }
+
+        if bullet_leader_direct_row(line).is_some() {
+            pending_parameter = false;
+            row_count += 1;
+            continue;
+        }
+
+        if leader_continuation_row(line).is_some() {
+            if pending_parameter {
+                pending_parameter = false;
+                row_count += 1;
+            }
+            continue;
+        }
+
+        if bullet_leader_pending_parameter(line).is_some() {
+            pending_parameter = true;
+            continue;
+        }
+
+        if pending_parameter && looks_like_bullet_leader_note_fragment(line) {
+            continue;
+        }
+
+        break;
+    }
+
+    pending_parameter && row_count > 0
+}
+
 fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_table_recovery: bool) {
     if let Some(split_blocks) = split_embedded_pin_function_table_blocks(lines, run_table_recovery)
     {
@@ -2820,6 +2869,11 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
     if let Some(split_blocks) =
         split_fragmented_symbol_parameter_table_blocks(lines, run_table_recovery)
     {
+        blocks.extend(split_blocks);
+        return;
+    }
+
+    if let Some(split_blocks) = split_bullet_leader_table_blocks(lines, run_table_recovery) {
         blocks.extend(split_blocks);
         return;
     }
@@ -2939,6 +2993,33 @@ fn split_fragmented_symbol_parameter_table_blocks(
 
     let table_end = header_index + consumed_table_lines;
     blocks.push(lines[header_index..table_end].join("\n"));
+    if table_end < lines.len() {
+        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
+    }
+
+    Some(blocks)
+}
+
+fn split_bullet_leader_table_blocks(
+    lines: &[String],
+    run_table_recovery: bool,
+) -> Option<Vec<String>> {
+    if !run_table_recovery || lines.len() < 3 {
+        return None;
+    }
+
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let table_start =
+        (0..refs.len()).find(|index| bullet_leader_table_rows_prefix(&refs[*index..]).is_some())?;
+    let (_, consumed_table_lines) = bullet_leader_table_rows_prefix(&refs[table_start..])?;
+
+    let mut blocks = Vec::new();
+    if table_start > 0 {
+        blocks.push(reflow_text_block(&lines[..table_start], run_table_recovery));
+    }
+
+    let table_end = table_start + consumed_table_lines;
+    blocks.push(lines[table_start..table_end].join("\n"));
     if table_end < lines.len() {
         blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
     }
@@ -3220,6 +3301,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = bullet_leader_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     if let Some(rows) = package_pin_description_table_rows(&lines) {
         return layout_table_from_text_rows(rows);
     }
@@ -3334,6 +3419,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
     }
 
     if fragmented_symbol_parameter_table_rows(lines).is_some() {
+        return true;
+    }
+
+    if bullet_leader_table_rows(lines).is_some() {
         return true;
     }
 
@@ -3678,6 +3767,137 @@ fn looks_like_symbol_parameter_table_caption(line: &str) -> bool {
     normalized.contains("ratings")
         || normalized.contains("characteristics")
         || normalized.contains("operating conditions")
+}
+
+fn bullet_leader_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    let (rows, consumed) = bullet_leader_table_rows_prefix(lines)?;
+    (consumed == lines.len()).then_some(rows)
+}
+
+fn bullet_leader_table_rows_prefix(lines: &[&str]) -> Option<(Vec<Vec<String>>, usize)> {
+    let mut rows = vec![vec!["Parameter".to_string(), "Limit".to_string()]];
+    let mut consumed = 0;
+    let mut pending_parameter: Vec<String> = Vec::new();
+
+    for (index, line) in lines.iter().enumerate() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || looks_like_bullet_leader_table_terminator(trimmed) {
+            break;
+        }
+
+        if let Some((parameter, limit)) = bullet_leader_direct_row(trimmed) {
+            rows.push(vec![parameter, limit]);
+            pending_parameter.clear();
+            consumed = index + 1;
+            continue;
+        }
+
+        if let Some((parameter, limit)) = leader_continuation_row(trimmed) {
+            if pending_parameter.is_empty() {
+                break;
+            }
+            pending_parameter.push(parameter);
+            rows.push(vec![pending_parameter.join(" "), limit]);
+            pending_parameter.clear();
+            consumed = index + 1;
+            continue;
+        }
+
+        if let Some(parameter) = bullet_leader_pending_parameter(trimmed) {
+            if !pending_parameter.is_empty() {
+                break;
+            }
+            pending_parameter.push(parameter);
+            consumed = index + 1;
+            continue;
+        }
+
+        if !pending_parameter.is_empty() && looks_like_bullet_leader_note_fragment(trimmed) {
+            pending_parameter.push(trimmed.to_string());
+            consumed = index + 1;
+            continue;
+        }
+
+        break;
+    }
+
+    (rows.len() >= 3 && pending_parameter.is_empty()).then_some((rows, consumed))
+}
+
+fn bullet_leader_direct_row(line: &str) -> Option<(String, String)> {
+    let stripped = strip_bullet_marker(line)?;
+    split_leader_row(stripped)
+}
+
+fn bullet_leader_pending_parameter(line: &str) -> Option<String> {
+    let stripped = strip_bullet_marker(line)?;
+    if split_leader_row(stripped).is_some() {
+        return None;
+    }
+
+    let parameter = stripped.trim();
+    (!parameter.is_empty()).then_some(parameter.to_string())
+}
+
+fn leader_continuation_row(line: &str) -> Option<(String, String)> {
+    if strip_bullet_marker(line).is_some() {
+        return None;
+    }
+    split_leader_row(line)
+}
+
+fn strip_bullet_marker(line: &str) -> Option<&str> {
+    let trimmed = line.trim_start();
+    let marker = trimmed.chars().next()?;
+    if !matches!(marker, '●' | '•' | '·' | '*') {
+        return None;
+    }
+    Some(trimmed[marker.len_utf8()..].trim_start())
+}
+
+fn split_leader_row(line: &str) -> Option<(String, String)> {
+    let (start, end) = leader_separator_range(line)?;
+    let parameter = line[..start].trim();
+    let limit = line[end..].trim();
+    if parameter.is_empty() || limit.is_empty() {
+        return None;
+    }
+    Some((parameter.to_string(), limit.to_string()))
+}
+
+fn leader_separator_range(line: &str) -> Option<(usize, usize)> {
+    let mut best: Option<(usize, usize)> = None;
+    let mut run_start: Option<usize> = None;
+    let mut previous_end = 0;
+
+    for (index, ch) in line.char_indices() {
+        if ch == '-' || ch == '‐' || ch == '‑' || ch == '–' || ch == '—' {
+            run_start.get_or_insert(index);
+        } else if let Some(start) = run_start.take()
+            && index - start >= 5
+        {
+            best = Some((start, index));
+        }
+        previous_end = index + ch.len_utf8();
+    }
+
+    if let Some(start) = run_start
+        && previous_end - start >= 5
+    {
+        best = Some((start, previous_end));
+    }
+
+    best
+}
+
+fn looks_like_bullet_leader_note_fragment(line: &str) -> bool {
+    let normalized = line.trim().to_ascii_lowercase();
+    normalized.starts_with("(note ") || normalized.starts_with("note ")
+}
+
+fn looks_like_bullet_leader_table_terminator(line: &str) -> bool {
+    let normalized = line.trim().to_ascii_lowercase();
+    normalized.starts_with("note ") || normalized.contains("operating conditions")
 }
 
 fn pin_function_table_rows_prefix(lines: &[&str]) -> Option<(Vec<Vec<String>>, usize)> {

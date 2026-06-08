@@ -197,6 +197,8 @@ Table checks score rows recovered from table layout blocks. Eval uses a table bl
 
 Fragmented `Symbol Parameter Rating Unit` or `Symbol Parameter Range Unit` datasheet rows are scored through the same `table_structure` gate once Glyphrush normalizes their symbol, parameter, value, and unit cells.
 
+Bullet/leader spec rows are scored the same way after normalization into `Parameter` / `Limit` rows, including wrapped continuation rows for package-specific ratings.
+
 Example:
 
 ```json

@@ -2867,10 +2867,12 @@ fn seed_datasheet_manifest_tracks_pdfium_pin_function_table() {
         .iter()
         .find(|document| document["path"] == "LDO_FP6183-33X7.pdf")
         .expect("FP6183 datasheet expectation exists");
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
 
-    assert_eq!(
-        document["expect_by_backend"]["pdfium"]["table_structure"],
-        serde_json::json!([
+    assert!(table_structure.iter().any(|expectation| expectation
+        == &serde_json::json!(
           {
             "page": 2,
             "expected_rows": [
@@ -2885,8 +2887,46 @@ fn seed_datasheet_manifest_tracks_pdfium_pin_function_table() {
             "min_cell_recall": 1.0,
             "min_cell_f1": 1.0
           }
-        ])
-    );
+              )));
+}
+
+#[test]
+fn seed_datasheet_manifest_tracks_pdfium_bullet_leader_spec_table() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_FP6183-33X7.pdf")
+        .expect("FP6183 datasheet expectation exists");
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
+
+    assert!(table_structure.iter().any(|expectation| expectation
+        == &serde_json::json!(
+        {
+          "page": 3,
+          "expected_rows": [
+            ["Parameter", "Limit"],
+            ["Input Voltage VIN", "-0.3V to +6.5V"],
+            ["Output Voltage VOUT", "-0.3V to +6.5V"],
+            ["EN Voltage VEN", "-0.3V to VIN +0.3V"],
+            ["Power Dissipation @ TA=25°C & TJ=125°C (PD) UTDFN-4L (1.0mmx1.0mm)", "0.5W"],
+            ["Package Thermal Resistance (θJA) (Note 3) UTDFN-4L (1.0mmx1.0mm)", "195°C/W"],
+            ["Package Thermal Resistance (θJC) UTDFN-4L (1.0mmx1.0mm)", "65°C/W"],
+            ["Lead Temperature (Soldering, 10sec.)", "+260°C"],
+            ["Junction Temperature (TJ)", "-40°C to +150°C"],
+            ["Storage Temperature (TSTG)", "-65°C to +150°C"]
+          ],
+          "min_row_recall": 1.0,
+          "min_cell_recall": 1.0,
+          "min_cell_f1": 1.0
+        }
+              )));
 }
 
 #[test]

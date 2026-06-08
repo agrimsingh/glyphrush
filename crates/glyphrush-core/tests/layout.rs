@@ -2536,6 +2536,100 @@ fn text_table_recovery_extracts_fragmented_symbol_rating_tables() {
 }
 
 #[test]
+fn text_table_recovery_extracts_bullet_leader_spec_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-bullet-leader-spec-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "FP6183\n",
+                "Absolute Maximum Ratings\n",
+                "(Note 2)\n",
+                "● Input Voltage VIN ------------------------------------------------------------------------------------------- -0.3V to +6.5V\n",
+                "● Output Voltage VOUT -------------------------------------------------------------------------------------- -0.3V to +6.5V\n",
+                "● EN Voltage VEN -------------------------------------------------------------------------------------------- -0.3V to VIN +0.3V\n",
+                "● Power Dissipation @ TA=25°C & TJ=125°C (PD)\n",
+                "UTDFN-4L (1.0mmx1.0mm) ---------------------------------------------------------------- 0.5W\n",
+                "● Package Thermal Resistance (θJA)\n",
+                "(Note 3)\n",
+                " \n",
+                "UTDFN-4L (1.0mmx1.0mm) ---------------------------------------------------------------- 195°C/W\n",
+                "● Package Thermal Resistance (θJC)\n",
+                "UTDFN-4L (1.0mmx1.0mm) ---------------------------------------------------------------- 65°C/W\n",
+                "● Lead Temperature (Soldering, 10sec.) -------------------------------------------------------------- +260°C\n",
+                "● Junction Temperature (TJ) ------------------------------------------------------------------------------ -40°C to +150°C\n",
+                "● Storage Temperature (TSTG) ---------------------------------------------------------------------------- -65°C to +150°C\n",
+                "Note 2: Stresses beyond this listed under Absolute Maximum Ratings may cause permanent damage.\n",
+                "Recommended Operating Conditions"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.46,
+                native_span_count: 18,
+                native_text_bytes: 1040,
+                glyph_count: 890,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_block = page
+        .layout_blocks
+        .iter()
+        .find(|block| block.kind == LayoutBlockKind::Table)
+        .expect("bullet leader spec table block");
+    assert!(!table_block.text.contains("Note 2:"));
+    assert!(
+        !table_block
+            .text
+            .contains("Recommended Operating Conditions")
+    );
+
+    let table = table_block.table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Parameter", "Limit"],
+            vec!["Input Voltage VIN", "-0.3V to +6.5V"],
+            vec!["Output Voltage VOUT", "-0.3V to +6.5V"],
+            vec!["EN Voltage VEN", "-0.3V to VIN +0.3V"],
+            vec![
+                "Power Dissipation @ TA=25°C & TJ=125°C (PD) UTDFN-4L (1.0mmx1.0mm)",
+                "0.5W"
+            ],
+            vec![
+                "Package Thermal Resistance (θJA) (Note 3) UTDFN-4L (1.0mmx1.0mm)",
+                "195°C/W"
+            ],
+            vec![
+                "Package Thermal Resistance (θJC) UTDFN-4L (1.0mmx1.0mm)",
+                "65°C/W"
+            ],
+            vec!["Lead Temperature (Soldering, 10sec.)", "+260°C"],
+            vec!["Junction Temperature (TJ)", "-40°C to +150°C"],
+            vec!["Storage Temperature (TSTG)", "-65°C to +150°C"],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_extracts_package_pin_description_tables() {
     let artifact = parse_extracted_pages(
         "doc-package-pin-description-table".to_string(),

@@ -595,6 +595,24 @@
               "min_row_recall": 1.0,
               "min_cell_recall": 1.0,
               "min_cell_f1": 1.0
+            },
+            {
+              "page": 3,
+              "expected_rows": [
+                ["Parameter", "Limit"],
+                ["Input Voltage VIN", "-0.3V to +6.5V"],
+                ["Output Voltage VOUT", "-0.3V to +6.5V"],
+                ["EN Voltage VEN", "-0.3V to VIN +0.3V"],
+                ["Power Dissipation @ TA=25°C & TJ=125°C (PD) UTDFN-4L (1.0mmx1.0mm)", "0.5W"],
+                ["Package Thermal Resistance (θJA) (Note 3) UTDFN-4L (1.0mmx1.0mm)", "195°C/W"],
+                ["Package Thermal Resistance (θJC) UTDFN-4L (1.0mmx1.0mm)", "65°C/W"],
+                ["Lead Temperature (Soldering, 10sec.)", "+260°C"],
+                ["Junction Temperature (TJ)", "-40°C to +150°C"],
+                ["Storage Temperature (TSTG)", "-65°C to +150°C"]
+              ],
+              "min_row_recall": 1.0,
+              "min_cell_recall": 1.0,
+              "min_cell_f1": 1.0
             }
           ]
         }
