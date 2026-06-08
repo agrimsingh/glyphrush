@@ -140,6 +140,70 @@ def eval_manifest(
     return json.loads(_run(command, env=env))
 
 
+def bench(
+    pdf: str | os.PathLike[str],
+    *,
+    binary: str | os.PathLike[str] | None = None,
+    backend: str | None = None,
+    eval_manifest: str | os.PathLike[str] | None = None,
+    eval_category: str | None = None,
+    require_quality: bool = False,
+    require_baselines: bool = False,
+    require_baseline_quality: bool = False,
+    require_speedup: Sequence[str] = (),
+    require_speedup_claim: Sequence[str] = (),
+    baseline: Sequence[str] = (),
+    baseline_preset: str | None = None,
+    baseline_timeout_ms: int | None = None,
+    cache_probe: bool = False,
+    span_geometry: bool = False,
+    ocr_sidecar: str | os.PathLike[str] | None = None,
+    ocr_command: str | os.PathLike[str] | None = None,
+    ocr_http_url: str | None = None,
+    ocr_command_input: str | None = None,
+    ocr_timeout_ms: int | None = None,
+    cache_dir: str | os.PathLike[str] | None = None,
+    jobs: int | None = None,
+    env: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    command = _base_command(binary, backend)
+    command.extend(["bench", _path(pdf)])
+    if eval_manifest is not None:
+        command.extend(["--eval-manifest", _path(eval_manifest)])
+    if eval_category is not None:
+        command.extend(["--eval-category", eval_category])
+    if baseline_preset is not None:
+        command.extend(["--baseline-preset", baseline_preset])
+    if require_quality:
+        command.append("--require-quality")
+    if require_baselines:
+        command.append("--require-baselines")
+    if require_baseline_quality:
+        command.append("--require-baseline-quality")
+    for requirement in require_speedup:
+        command.extend(["--require-speedup", requirement])
+    for requirement in require_speedup_claim:
+        command.extend(["--require-speedup-claim", requirement])
+    for spec in baseline:
+        command.extend(["--baseline", spec])
+    if cache_probe:
+        command.append("--cache-probe")
+    if baseline_timeout_ms is not None:
+        command.extend(["--baseline-timeout-ms", str(baseline_timeout_ms)])
+    _append_common_options(
+        command,
+        span_geometry=span_geometry,
+        ocr_sidecar=ocr_sidecar,
+        ocr_command=ocr_command,
+        ocr_http_url=ocr_http_url,
+        ocr_command_input=ocr_command_input,
+        ocr_timeout_ms=ocr_timeout_ms,
+        cache_dir=cache_dir,
+        jobs=jobs,
+    )
+    return json.loads(_run(command, env=env))
+
+
 def _base_command(
     binary: str | os.PathLike[str] | None,
     backend: str | None,
@@ -205,4 +269,4 @@ def _path(path: str | os.PathLike[str]) -> str:
     return str(Path(path))
 
 
-__all__ = ["GlyphrushError", "eval_manifest", "inspect_pages", "parse", "parse_text"]
+__all__ = ["GlyphrushError", "bench", "eval_manifest", "inspect_pages", "parse", "parse_text"]

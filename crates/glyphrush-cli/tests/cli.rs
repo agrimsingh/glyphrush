@@ -282,7 +282,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(bindings["glyphrush_status"], "partial");
     assert_eq!(
         bindings["glyphrush"],
-        "thin_python_node_parse_inspect_eval_wrappers_wasm_planned"
+        "thin_python_node_parse_inspect_eval_bench_wrappers_wasm_planned"
     );
 
     let builtin_ocr = capability(capabilities, "bundled_builtin_ocr");

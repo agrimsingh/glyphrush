@@ -45,6 +45,40 @@ export function evalManifest(manifest, options = {}) {
   return JSON.parse(run(command, options.env));
 }
 
+export function bench(pdf, options = {}) {
+  const command = baseCommand(options);
+  command.push("bench", pathString(pdf));
+  if (options.evalManifest !== undefined) {
+    command.push("--eval-manifest", pathString(options.evalManifest));
+  }
+  if (options.evalCategory !== undefined) {
+    command.push("--eval-category", options.evalCategory);
+  }
+  if (options.baselinePreset !== undefined) {
+    command.push("--baseline-preset", options.baselinePreset);
+  }
+  if (options.requireQuality) {
+    command.push("--require-quality");
+  }
+  if (options.requireBaselines) {
+    command.push("--require-baselines");
+  }
+  if (options.requireBaselineQuality) {
+    command.push("--require-baseline-quality");
+  }
+  appendRepeated(command, "--require-speedup", options.requireSpeedup);
+  appendRepeated(command, "--require-speedup-claim", options.requireSpeedupClaim);
+  appendRepeated(command, "--baseline", options.baseline);
+  if (options.cacheProbe) {
+    command.push("--cache-probe");
+  }
+  if (options.baselineTimeoutMs !== undefined) {
+    command.push("--baseline-timeout-ms", String(options.baselineTimeoutMs));
+  }
+  appendCommonOptions(command, options);
+  return JSON.parse(run(command, options.env));
+}
+
 function baseCommand(options) {
   const command = [pathString(options.binary ?? process.env.GLYPHRUSH_BIN ?? "glyphrush")];
   if (options.backend !== undefined) {
@@ -77,6 +111,15 @@ function appendCommonOptions(command, options) {
   }
   if (options.jobs !== undefined) {
     command.push("--jobs", String(options.jobs));
+  }
+}
+
+function appendRepeated(command, flag, values) {
+  if (values === undefined) {
+    return;
+  }
+  for (const value of values) {
+    command.push(flag, String(value));
   }
 }
 

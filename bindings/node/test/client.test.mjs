@@ -144,6 +144,60 @@ test("evalManifest delegates to native quality gate and decodes JSON", async () 
   });
 });
 
+test("bench delegates to native quality-backed speed gate and decodes JSON", async () => {
+  await withTempDir(async (root) => {
+    const { bench } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+    const pdf = path.join(root, "sample.pdf");
+    const manifest = path.join(root, "corpus.json");
+    await writeFile(pdf, "%PDF-1.4 fake");
+    await writeFile(manifest, '{"documents":[]}');
+
+    const report = bench(pdf, {
+      binary: fake,
+      backend: "lopdf",
+      evalManifest: manifest,
+      evalCategory: "datasheet",
+      baselinePreset: "glyphrush-v0",
+      requireQuality: true,
+      requireBaselines: true,
+      requireBaselineQuality: true,
+      requireSpeedupClaim: ["liteparse=2.0", "liteparse-no-ocr=1.5"],
+      cacheProbe: true,
+      baselineTimeoutMs: 1234,
+      cacheDir: path.join(root, "cache"),
+      jobs: 2,
+    });
+
+    assert.deepEqual(report.argv, [
+      "--backend",
+      "lopdf",
+      "bench",
+      pdf,
+      "--eval-manifest",
+      manifest,
+      "--eval-category",
+      "datasheet",
+      "--baseline-preset",
+      "glyphrush-v0",
+      "--require-quality",
+      "--require-baselines",
+      "--require-baseline-quality",
+      "--require-speedup-claim",
+      "liteparse=2.0",
+      "--require-speedup-claim",
+      "liteparse-no-ocr=1.5",
+      "--cache-probe",
+      "--baseline-timeout-ms",
+      "1234",
+      "--cache-dir",
+      path.join(root, "cache"),
+      "--jobs",
+      "2",
+    ]);
+  });
+});
+
 test("CLI failures raise GlyphrushError with exit status and stderr", async () => {
   await withTempDir(async (root) => {
     const fake = await writeFakeGlyphrush(root);

@@ -147,6 +147,62 @@ class GlyphrushClientTests(unittest.TestCase):
             ],
         )
 
+    def test_bench_delegates_to_native_quality_backed_speed_gate_and_decodes_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            pdf = root / "sample.pdf"
+            pdf.write_bytes(b"%PDF-1.4 fake")
+            manifest = root / "corpus.json"
+            manifest.write_text('{"documents":[]}')
+
+            report = glyphrush.bench(
+                pdf,
+                binary=fake,
+                backend="lopdf",
+                eval_manifest=manifest,
+                eval_category="datasheet",
+                baseline_preset="glyphrush-v0",
+                require_quality=True,
+                require_baselines=True,
+                require_baseline_quality=True,
+                require_speedup_claim=["liteparse=2.0", "liteparse-no-ocr=1.5"],
+                cache_probe=True,
+                baseline_timeout_ms=1234,
+                cache_dir=root / "cache",
+                jobs=2,
+            )
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "--backend",
+                "lopdf",
+                "bench",
+                str(pdf),
+                "--eval-manifest",
+                str(manifest),
+                "--eval-category",
+                "datasheet",
+                "--baseline-preset",
+                "glyphrush-v0",
+                "--require-quality",
+                "--require-baselines",
+                "--require-baseline-quality",
+                "--require-speedup-claim",
+                "liteparse=2.0",
+                "--require-speedup-claim",
+                "liteparse-no-ocr=1.5",
+                "--cache-probe",
+                "--baseline-timeout-ms",
+                "1234",
+                "--cache-dir",
+                str(root / "cache"),
+                "--jobs",
+                "2",
+            ],
+        )
+
     def test_cli_failure_raises_with_exit_status_and_stderr(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
