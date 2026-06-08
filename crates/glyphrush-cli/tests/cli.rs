@@ -204,10 +204,10 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         json["run_metadata"]["parser_version"],
         env!("CARGO_PKG_VERSION")
     );
-    assert_eq!(json["summary"]["target_capability_count"], 12);
-    assert_eq!(json["summary"]["implemented"], 6);
-    assert_eq!(json["summary"]["partial"], 4);
-    assert_eq!(json["summary"]["planned"], 1);
+    assert_eq!(json["summary"]["target_capability_count"], 13);
+    assert_eq!(json["summary"]["implemented"], 7);
+    assert_eq!(json["summary"]["partial"], 3);
+    assert_eq!(json["summary"]["planned"], 2);
     assert_eq!(json["summary"]["not_planned"], 1);
     assert_eq!(
         json["quality_policy"],
@@ -240,19 +240,18 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         json["readiness"]["liteparse_capabilities"]["implemented_or_partial"],
         10
     );
-    assert_eq!(json["readiness"]["liteparse_capabilities"]["target"], 12);
+    assert_eq!(json["readiness"]["liteparse_capabilities"]["target"], 13);
     assert_eq!(
         json["readiness"]["remaining_partial"],
         serde_json::json!([
             "span_geometry_layout",
             "page_render_for_ocr",
-            "table_recovery",
-            "python_node_wasm_bindings"
+            "table_recovery"
         ])
     );
     assert_eq!(
         json["readiness"]["remaining_planned"],
-        serde_json::json!(["mupdf_backend"])
+        serde_json::json!(["wasm_bindings", "mupdf_backend"])
     );
     assert_eq!(
         json["readiness"]["not_planned_by_design"],
@@ -260,7 +259,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     );
 
     let capabilities = json["capabilities"].as_array().unwrap();
-    assert_eq!(capabilities.len(), 12);
+    assert_eq!(capabilities.len(), 13);
 
     let native_text = capability(capabilities, "native_text_extraction");
     assert_eq!(native_text["liteparse"], "pdfium_native_text");
@@ -363,11 +362,11 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         "page_selective_adapter_preflight_and_requires_ocr_flag"
     );
 
-    let bindings = capability(capabilities, "python_node_wasm_bindings");
-    assert_eq!(bindings["glyphrush_status"], "partial");
+    let bindings = capability(capabilities, "python_node_bindings");
+    assert_eq!(bindings["glyphrush_status"], "implemented");
     assert_eq!(
         bindings["glyphrush"],
-        "thin_python_node_parse_inspect_debug_eval_bench_manifest_preflight_wrappers_wasm_planned"
+        "thin_python_node_parse_inspect_debug_eval_bench_manifest_preflight_wrappers"
     );
     assert!(
         bindings["notes"]
@@ -375,6 +374,10 @@ fn feature_parity_reports_liteparse_capability_gaps() {
             .unwrap()
             .contains("text and markdown derived-output helpers")
     );
+
+    let wasm = capability(capabilities, "wasm_bindings");
+    assert_eq!(wasm["glyphrush_status"], "planned");
+    assert_eq!(wasm["glyphrush"], "wasm_wrapper_planned_over_native_core");
 
     let builtin_ocr = capability(capabilities, "bundled_builtin_ocr");
     assert_eq!(builtin_ocr["glyphrush_status"], "not_planned");
@@ -788,15 +791,16 @@ fn feature_parity_counts_pdfium_ocr_runtime_caps_and_cache_as_implemented() {
         serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
 
     assert_eq!(json["selected_backend"], "pdfium");
-    assert_eq!(json["summary"]["implemented"], 7);
-    assert_eq!(json["summary"]["partial"], 3);
+    assert_eq!(json["summary"]["implemented"], 8);
+    assert_eq!(json["summary"]["partial"], 2);
+    assert_eq!(json["summary"]["planned"], 2);
     assert_eq!(
         json["readiness"]["remaining_partial"],
-        serde_json::json!([
-            "span_geometry_layout",
-            "table_recovery",
-            "python_node_wasm_bindings"
-        ])
+        serde_json::json!(["span_geometry_layout", "table_recovery"])
+    );
+    assert_eq!(
+        json["readiness"]["remaining_planned"],
+        serde_json::json!(["wasm_bindings", "mupdf_backend"])
     );
 
     let capabilities = json["capabilities"].as_array().unwrap();
