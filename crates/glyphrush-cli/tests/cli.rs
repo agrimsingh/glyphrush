@@ -1,9 +1,12 @@
 use std::{
     fs,
-    io::Write,
+    io::{Read, Write},
+    net::TcpListener,
     os::unix::fs::PermissionsExt,
     path::PathBuf,
     process::Command,
+    sync::mpsc::{self, Receiver},
+    thread::JoinHandle,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
@@ -223,6 +226,10 @@ fn feature_parity_reports_liteparse_capability_gaps() {
 
     let ocr = capability(capabilities, "ocr");
     assert_eq!(ocr["liteparse"], "tesseract_or_http_ocr");
+    assert_eq!(
+        ocr["glyphrush"],
+        "sidecar_command_or_http_adapter_invoked_page_selectively"
+    );
     assert_eq!(ocr["glyphrush_status"], "partial");
     assert_eq!(ocr["hot_path"], false);
     assert_eq!(ocr["quality_guard"], "requires_ocr_flag_when_unavailable");
@@ -3257,6 +3264,52 @@ fn parse_with_ocr_command_invokes_adapter_only_for_ocr_pages() {
 }
 
 #[test]
+fn parse_with_ocr_http_invokes_adapter_only_for_ocr_pages() {
+    let dir = temp_dir("parse-ocr-http");
+    let native_path = dir.join("native.pdf");
+    let scan_path = dir.join("scan.pdf");
+    fs::write(&native_path, minimal_pdf("Native OCR HTTP bypass")).unwrap();
+    fs::write(&scan_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
+    let (ocr_url, request_rx, server) = start_ocr_http_server("HTTP OCR text page 0");
+
+    let native = run_json([
+        "parse",
+        native_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--ocr-http-url",
+        &ocr_url,
+    ]);
+    let scan = run_json([
+        "parse",
+        scan_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--ocr-http-url",
+        &ocr_url,
+    ]);
+
+    let request = request_rx
+        .recv_timeout(Duration::from_secs(1))
+        .expect("HTTP OCR server should receive one OCR-routed request");
+    server.join().expect("HTTP OCR server should finish");
+
+    assert_eq!(native["global_diagnostics"]["ocr_required_pages"], 0);
+    assert_eq!(native["global_diagnostics"]["ocr_applied_pages"], 0);
+    assert_eq!(native["pages"][0]["ocr_spans"], Value::Array(vec![]));
+    assert_eq!(scan["global_diagnostics"]["ocr_required_pages"], 1);
+    assert_eq!(scan["global_diagnostics"]["ocr_applied_pages"], 1);
+    assert_eq!(
+        scan["pages"][0]["ocr_spans"][0]["text"],
+        "HTTP OCR text page 0"
+    );
+    assert_eq!(scan["global_diagnostics"]["warnings"], Value::Array(vec![]));
+    assert!(request.starts_with("POST /ocr HTTP/1.1"));
+    assert!(request.contains("\"page_index\":0"));
+    assert!(request.contains(scan_path.to_str().unwrap()));
+}
+
+#[test]
 fn parse_with_ocr_command_times_out_slow_adapter() {
     let dir = temp_dir("parse-ocr-command-timeout");
     let pdf_path = dir.join("scan.pdf");
@@ -3344,6 +3397,55 @@ fn ocr_check_command_smoke_reports_nonempty_output() {
     let log = fs::read_to_string(&log_path).expect("read ocr check log");
     assert!(log.contains(pdf_path.to_str().unwrap()));
     assert!(log.contains(":0"));
+}
+
+#[test]
+fn ocr_check_http_smoke_reports_nonempty_output() {
+    let dir = temp_dir("ocr-check-http-success");
+    let pdf_path = dir.join("scan.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
+    let (ocr_url, request_rx, server) = start_ocr_http_server("HTTP check OCR text");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "ocr-check",
+            pdf_path.to_str().unwrap(),
+            "--page-index",
+            "0",
+            "--ocr-http-url",
+            &ocr_url,
+            "--strict",
+        ])
+        .output()
+        .expect("run glyphrush ocr-check with HTTP adapter");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let request = request_rx
+        .recv_timeout(Duration::from_secs(1))
+        .expect("HTTP OCR server should receive preflight request");
+    server.join().expect("HTTP OCR server should finish");
+    let json: Value = serde_json::from_slice(&output.stdout).expect("ocr-check output is json");
+
+    assert_eq!(json["report_version"], "glyphrush-ocr-check-report-v1");
+    assert_eq!(json["adapter"], "ocr_http");
+    assert_eq!(json["passed"], true);
+    assert_eq!(json["success"], true);
+    assert_eq!(json["exit_status"], 200);
+    assert_eq!(json["timed_out"], false);
+    assert_eq!(json["empty_output"], false);
+    assert_eq!(json["output_bytes"], 19);
+    assert_eq!(json["stdout_word_count"], 4);
+    assert_eq!(json["error_kind"], Value::Null);
+    assert!(request.starts_with("POST /ocr HTTP/1.1"));
+    assert!(request.contains("\"page_index\":0"));
+    assert!(request.contains(pdf_path.to_str().unwrap()));
 }
 
 #[test]
@@ -11836,6 +11938,62 @@ fn write_rendered_ocr_command_script(label: &str, log_path: &std::path::Path) ->
     permissions.set_mode(0o755);
     fs::set_permissions(&path, permissions).unwrap();
     path
+}
+
+fn start_ocr_http_server(
+    response_text: &'static str,
+) -> (String, Receiver<String>, JoinHandle<()>) {
+    let listener = TcpListener::bind("127.0.0.1:0").expect("bind OCR HTTP test server");
+    let url = format!(
+        "http://{}/ocr",
+        listener.local_addr().expect("read OCR HTTP server addr")
+    );
+    let (request_tx, request_rx) = mpsc::channel();
+    let server = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().expect("accept OCR HTTP request");
+        let mut buffer = Vec::new();
+        let mut chunk = [0_u8; 512];
+        loop {
+            let read = stream.read(&mut chunk).expect("read OCR HTTP request");
+            if read == 0 {
+                break;
+            }
+            buffer.extend_from_slice(&chunk[..read]);
+            if complete_http_request(&buffer) {
+                break;
+            }
+        }
+        let request = String::from_utf8_lossy(&buffer).into_owned();
+        request_tx.send(request).expect("send OCR HTTP request");
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+            response_text.len(),
+            response_text
+        );
+        stream
+            .write_all(response.as_bytes())
+            .expect("write OCR HTTP response");
+    });
+
+    (url, request_rx, server)
+}
+
+fn complete_http_request(buffer: &[u8]) -> bool {
+    let Some(header_end) = buffer.windows(4).position(|window| window == b"\r\n\r\n") else {
+        return false;
+    };
+    let header_end = header_end + 4;
+    let headers = String::from_utf8_lossy(&buffer[..header_end]);
+    let content_length = headers
+        .lines()
+        .find_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            name.eq_ignore_ascii_case("content-length")
+                .then(|| value.trim().parse::<usize>().ok())
+                .flatten()
+        })
+        .unwrap_or(0);
+    buffer.len() >= header_end + content_length
 }
 
 fn run_json<const N: usize>(args: [&str; N]) -> Value {

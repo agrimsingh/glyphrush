@@ -3,7 +3,8 @@ use std::{
     cell::Cell,
     collections::{BTreeMap, BTreeSet},
     fs,
-    io::{self, Write},
+    io::{self, Read, Write},
+    net::{TcpStream, ToSocketAddrs},
     path::{Path, PathBuf},
     process::{Command as ProcessCommand, Output as ProcessOutput, Stdio},
     str::FromStr,
@@ -204,6 +205,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long)]
+        ocr_http_url: Option<String>,
         #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
         ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
@@ -221,6 +224,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long)]
+        ocr_http_url: Option<String>,
         #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
         ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
@@ -281,6 +286,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long)]
+        ocr_http_url: Option<String>,
         #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
         ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
@@ -302,6 +309,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long)]
+        ocr_http_url: Option<String>,
         #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
         ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
@@ -320,6 +329,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long)]
+        ocr_http_url: Option<String>,
         #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
         ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
@@ -335,6 +346,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long)]
+        ocr_http_url: Option<String>,
         #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
         ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
@@ -417,6 +430,8 @@ struct OcrCheckOutput {
     success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    http_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     sidecar_path: Option<String>,
     exit_status: Option<i32>,
@@ -822,6 +837,7 @@ struct RunConfiguration {
     span_geometry: bool,
     ocr_sidecar: bool,
     ocr_command: bool,
+    ocr_http_url: bool,
     ocr_command_input: OcrCommandInput,
     ocr_timeout_ms: u64,
 }
@@ -1489,6 +1505,7 @@ struct GeneratedManifestGenerator {
     span_geometry: bool,
     ocr_sidecar: bool,
     ocr_command: bool,
+    ocr_http_url: bool,
     ocr_timeout_ms: u64,
 }
 
@@ -1857,6 +1874,7 @@ struct ExtractionOptions {
 struct OcrOptions<'a> {
     sidecar: Option<&'a Path>,
     command: Option<&'a Path>,
+    http_url: Option<&'a str>,
     command_input: OcrCommandInput,
     timeout: Duration,
 }
@@ -1865,11 +1883,14 @@ impl<'a> OcrOptions<'a> {
     fn new(
         sidecar: Option<&'a Path>,
         command: Option<&'a Path>,
+        http_url: Option<&'a str>,
         command_input: OcrCommandInput,
         timeout_ms: u64,
     ) -> Result<Self> {
-        if sidecar.is_some() && command.is_some() {
-            bail!("choose either --ocr-sidecar or --ocr-command, not both");
+        let adapter_count =
+            sidecar.is_some() as u8 + command.is_some() as u8 + http_url.is_some() as u8;
+        if adapter_count > 1 {
+            bail!("choose only one of --ocr-sidecar, --ocr-command, or --ocr-http-url");
         }
         if command.is_none() && command_input != OcrCommandInput::PdfPage {
             bail!("--ocr-command-input requires --ocr-command");
@@ -1878,6 +1899,7 @@ impl<'a> OcrOptions<'a> {
         Ok(Self {
             sidecar,
             command,
+            http_url,
             command_input,
             timeout: Duration::from_millis(timeout_ms),
         })
@@ -2036,11 +2058,11 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             id: "ocr",
             area: "ocr",
             liteparse: "tesseract_or_http_ocr",
-            glyphrush: "sidecar_or_command_adapter_invoked_page_selectively",
+            glyphrush: "sidecar_command_or_http_adapter_invoked_page_selectively",
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "requires_ocr_flag_when_unavailable",
-            notes: "OCR is adapter-based and deliberately outside the default hot path.",
+            notes: "OCR is adapter-based, supports sidecar, command, and HTTP endpoint seams, and stays outside the default hot path.",
         },
         FeatureParityCapability {
             id: "page_render_for_ocr",
@@ -2525,6 +2547,10 @@ fn ocr_check_output<B: PdfBackend + ?Sized>(
         return ocr_command_check_output(pdf, page_index, command, ocr.timeout, strict);
     }
 
+    if let Some(http_url) = ocr.http_url {
+        return ocr_http_check_output(pdf, page_index, http_url, ocr.timeout, strict);
+    }
+
     if let Some(sidecar) = ocr.sidecar {
         return ocr_sidecar_check_output(pdf, page_index, sidecar, ocr.timeout, strict);
     }
@@ -2540,6 +2566,7 @@ fn ocr_check_output<B: PdfBackend + ?Sized>(
         passed: false,
         success: false,
         command: None,
+        http_url: None,
         sidecar_path: None,
         exit_status: None,
         timed_out: false,
@@ -2553,7 +2580,9 @@ fn ocr_check_output<B: PdfBackend + ?Sized>(
         stderr_bytes: 0,
         empty_output: true,
         stderr_preview: None,
-        error: Some("ocr-check requires --ocr-sidecar or --ocr-command".to_string()),
+        error: Some(
+            "ocr-check requires --ocr-sidecar, --ocr-command, or --ocr-http-url".to_string(),
+        ),
         error_kind: Some("missing_adapter"),
     }
 }
@@ -2575,6 +2604,7 @@ fn ocr_render_backend_required_check_output(
         passed: false,
         success: false,
         command: ocr.command.map(|command| command.display().to_string()),
+        http_url: None,
         sidecar_path: None,
         exit_status: None,
         timed_out: false,
@@ -2614,6 +2644,7 @@ fn pdfium_ocr_check_rendered_image_output(
             passed: false,
             success: false,
             command: None,
+            http_url: None,
             sidecar_path: None,
             exit_status: None,
             timed_out: false,
@@ -2646,6 +2677,7 @@ fn pdfium_ocr_check_rendered_image_output(
                 passed: false,
                 success: false,
                 command: Some(command.display().to_string()),
+                http_url: None,
                 sidecar_path: None,
                 exit_status: None,
                 timed_out: false,
@@ -2705,6 +2737,7 @@ fn pdfium_ocr_check_rendered_image_output(
                 passed: success && !empty_output,
                 success,
                 command: Some(command.display().to_string()),
+                http_url: None,
                 sidecar_path: None,
                 exit_status: output.status.code(),
                 timed_out: timed_output.timed_out,
@@ -2733,6 +2766,7 @@ fn pdfium_ocr_check_rendered_image_output(
             passed: false,
             success: false,
             command: Some(command.display().to_string()),
+            http_url: None,
             sidecar_path: None,
             exit_status: None,
             timed_out: false,
@@ -2759,6 +2793,98 @@ fn pdfium_rendered_ocr_check_error_kind(error: &anyhow::Error) -> &'static str {
         "page_not_found"
     } else {
         "render_failed"
+    }
+}
+
+fn ocr_http_check_output(
+    pdf: &Path,
+    page_index: u32,
+    http_url: &str,
+    timeout: Duration,
+    strict: bool,
+) -> OcrCheckOutput {
+    let timeout_ms = duration_millis(timeout);
+    match run_ocr_http_request(http_url, pdf, page_index, timeout) {
+        Ok(response) => {
+            let success = response
+                .status_code
+                .is_some_and(|status| (200..300).contains(&status));
+            let empty_output = success && response.body.is_empty();
+            let error_kind = if empty_output {
+                Some("empty_output")
+            } else if success {
+                None
+            } else {
+                Some("http_status_failed")
+            };
+            let error = if empty_output {
+                Some("OCR HTTP output was empty".to_string())
+            } else if success {
+                None
+            } else {
+                Some(format!(
+                    "OCR HTTP endpoint returned status {}",
+                    response.status_code.unwrap_or_default()
+                ))
+            };
+
+            OcrCheckOutput {
+                report_version: OCR_CHECK_REPORT_VERSION,
+                parser_name: PARSER_NAME,
+                parser_version: PARSER_VERSION,
+                strict,
+                pdf: pdf.display().to_string(),
+                page_index,
+                adapter: "ocr_http",
+                passed: success && !empty_output,
+                success,
+                command: None,
+                http_url: Some(http_url.to_string()),
+                sidecar_path: None,
+                exit_status: response.status_code.map(i32::from),
+                timed_out: false,
+                timeout_ms,
+                wall_us: response.wall_us,
+                render_us: 0,
+                output_bytes: response.body.len() as u64,
+                stdout_sha256: Some(stdout_sha256(&response.body)),
+                stdout_line_count: stdout_line_count(&response.body),
+                stdout_word_count: stdout_word_count(&response.body),
+                stderr_bytes: 0,
+                empty_output,
+                stderr_preview: None,
+                error,
+                error_kind,
+            }
+        }
+        Err(error) => OcrCheckOutput {
+            report_version: OCR_CHECK_REPORT_VERSION,
+            parser_name: PARSER_NAME,
+            parser_version: PARSER_VERSION,
+            strict,
+            pdf: pdf.display().to_string(),
+            page_index,
+            adapter: "ocr_http",
+            passed: false,
+            success: false,
+            command: None,
+            http_url: Some(http_url.to_string()),
+            sidecar_path: None,
+            exit_status: None,
+            timed_out: ocr_http_error_kind(&error) == "timeout",
+            timeout_ms,
+            wall_us: 0,
+            render_us: 0,
+            output_bytes: 0,
+            stdout_sha256: None,
+            stdout_line_count: 0,
+            stdout_word_count: 0,
+            stderr_bytes: 0,
+            empty_output: true,
+            stderr_preview: None,
+            error: Some(format!("{error:#}")),
+            error_kind: Some(ocr_http_error_kind(&error)),
+        },
     }
 }
 
@@ -2796,6 +2922,7 @@ fn ocr_command_check_output(
                 passed: success && !empty_output,
                 success,
                 command: Some(command.display().to_string()),
+                http_url: None,
                 sidecar_path: None,
                 exit_status: output.status.code(),
                 timed_out: timed_output.timed_out,
@@ -2824,6 +2951,7 @@ fn ocr_command_check_output(
             passed: false,
             success: false,
             command: Some(command.display().to_string()),
+            http_url: None,
             sidecar_path: None,
             exit_status: None,
             timed_out: false,
@@ -2870,6 +2998,7 @@ fn ocr_sidecar_check_output(
                 passed: !empty_output,
                 success: true,
                 command: None,
+                http_url: None,
                 sidecar_path: Some(sidecar_path.display().to_string()),
                 exit_status: None,
                 timed_out: false,
@@ -2898,6 +3027,7 @@ fn ocr_sidecar_check_output(
             passed: false,
             success: false,
             command: None,
+            http_url: None,
             sidecar_path: Some(sidecar_path.display().to_string()),
             exit_status: None,
             timed_out: false,
@@ -2941,7 +3071,9 @@ fn ocr_command_check_error(
 
 fn ocr_check_error(output: &OcrCheckOutput) -> Option<String> {
     if output.adapter == "none" {
-        return Some("ocr-check requires --ocr-sidecar or --ocr-command".to_string());
+        return Some(
+            "ocr-check requires --ocr-sidecar, --ocr-command, or --ocr-http-url".to_string(),
+        );
     }
 
     if output.adapter == "ocr_command_rendered_image"
@@ -3021,6 +3153,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             format,
             ocr_sidecar,
             ocr_command,
+            ocr_http_url,
             ocr_command_input,
             ocr_timeout_ms,
             cache_dir,
@@ -3030,6 +3163,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_http_url.as_deref(),
                 ocr_command_input,
                 ocr_timeout_ms,
             )?;
@@ -3059,6 +3193,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             pdf,
             ocr_sidecar,
             ocr_command,
+            ocr_http_url,
             ocr_command_input,
             ocr_timeout_ms,
             cache_dir,
@@ -3084,6 +3219,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_http_url.as_deref(),
                 ocr_command_input,
                 ocr_timeout_ms,
             )?;
@@ -3294,6 +3430,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             page_index,
             ocr_sidecar,
             ocr_command,
+            ocr_http_url,
             ocr_command_input,
             ocr_timeout_ms,
             strict,
@@ -3301,6 +3438,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_http_url.as_deref(),
                 ocr_command_input,
                 ocr_timeout_ms,
             )?;
@@ -3319,6 +3457,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             min_category_count,
             ocr_sidecar,
             ocr_command,
+            ocr_http_url,
             ocr_command_input,
             ocr_timeout_ms,
             cache_dir,
@@ -3329,6 +3468,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_http_url.as_deref(),
                 ocr_command_input,
                 ocr_timeout_ms,
             )?;
@@ -3359,6 +3499,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             page_index,
             ocr_sidecar,
             ocr_command,
+            ocr_http_url,
             ocr_command_input,
             ocr_timeout_ms,
             span_geometry,
@@ -3366,6 +3507,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_http_url.as_deref(),
                 ocr_command_input,
                 ocr_timeout_ms,
             )?;
@@ -3424,6 +3566,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             category,
             ocr_sidecar,
             ocr_command,
+            ocr_http_url,
             ocr_command_input,
             ocr_timeout_ms,
             cache_dir,
@@ -3433,6 +3576,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_http_url.as_deref(),
                 ocr_command_input,
                 ocr_timeout_ms,
             )?;
@@ -4277,6 +4421,7 @@ fn run_configuration(ocr: OcrOptions<'_>, options: ExtractionOptions) -> RunConf
         span_geometry: options.span_geometry,
         ocr_sidecar: ocr.sidecar.is_some(),
         ocr_command: ocr.command.is_some(),
+        ocr_http_url: ocr.http_url.is_some(),
         ocr_command_input: ocr.command_input,
         ocr_timeout_ms: duration_millis(ocr.timeout),
     }
@@ -5925,6 +6070,7 @@ fn generate_eval_manifest<B: PdfBackend + Sync>(
             span_geometry: config.extraction.span_geometry,
             ocr_sidecar: config.ocr.sidecar.is_some(),
             ocr_command: config.ocr.command.is_some(),
+            ocr_http_url: config.ocr.http_url.is_some(),
             ocr_timeout_ms: duration_millis(config.ocr.timeout),
         },
         corpus_fingerprint,
@@ -8648,6 +8794,10 @@ fn ocr_fingerprint(ocr: OcrOptions<'_>, source_path: &Path) -> Result<String> {
         return ocr_command_fingerprint(command, ocr.command_input, ocr.timeout);
     }
 
+    if let Some(http_url) = ocr.http_url {
+        return Ok(ocr_http_fingerprint(http_url, ocr.timeout));
+    }
+
     Ok("no-sidecar".to_string())
 }
 
@@ -8712,6 +8862,16 @@ fn ocr_command_fingerprint(
     }
 
     Ok(sha256_hex(payload))
+}
+
+fn ocr_http_fingerprint(http_url: &str, timeout: Duration) -> String {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(b"ocr-http");
+    payload.push(0);
+    payload.extend_from_slice(http_url.as_bytes());
+    payload.push(0);
+    payload.extend_from_slice(duration_millis(timeout).to_string().as_bytes());
+    sha256_hex(payload)
 }
 
 fn is_document_sidecar_file(source_path: &Path, file_name: &str) -> bool {
@@ -10003,6 +10163,8 @@ fn load_ocr_if_needed(
             .with_context(|| format!("read OCR sidecar {}", sidecar_path.display()))?
     } else if let Some(command) = ocr.command {
         run_ocr_command(command, source_path, signals.page_index, ocr.timeout)?
+    } else if let Some(http_url) = ocr.http_url {
+        run_ocr_http(http_url, source_path, signals.page_index, ocr.timeout)?
     } else {
         return Ok((None, 0));
     };
@@ -10044,6 +10206,149 @@ fn run_ocr_command(
     }
 
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+#[derive(Debug)]
+struct OcrHttpResponse {
+    status_code: Option<u16>,
+    body: Vec<u8>,
+    wall_us: u128,
+}
+
+#[derive(Debug)]
+struct ParsedHttpUrl {
+    host: String,
+    port: u16,
+    path: String,
+}
+
+fn run_ocr_http_request(
+    http_url: &str,
+    source_path: &Path,
+    page_index: u32,
+    timeout: Duration,
+) -> Result<OcrHttpResponse> {
+    let url = parse_http_url(http_url)?;
+    let body = serde_json::to_vec(&json!({
+        "pdf_path": source_path.display().to_string(),
+        "page_index": page_index,
+    }))
+    .context("encode OCR HTTP request")?;
+    let request = format!(
+        "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        url.path,
+        url.host,
+        body.len()
+    );
+    let started = Instant::now();
+    let address = (url.host.as_str(), url.port)
+        .to_socket_addrs()
+        .with_context(|| format!("resolve OCR HTTP endpoint {http_url}"))?
+        .next()
+        .with_context(|| format!("resolve OCR HTTP endpoint {http_url}"))?;
+    let mut stream = TcpStream::connect_timeout(&address, timeout)
+        .with_context(|| format!("connect OCR HTTP endpoint {http_url}"))?;
+    stream
+        .set_read_timeout(Some(timeout))
+        .context("set OCR HTTP read timeout")?;
+    stream
+        .set_write_timeout(Some(timeout))
+        .context("set OCR HTTP write timeout")?;
+    stream
+        .write_all(request.as_bytes())
+        .context("write OCR HTTP request headers")?;
+    stream
+        .write_all(&body)
+        .context("write OCR HTTP request body")?;
+    let mut response = Vec::new();
+    stream
+        .read_to_end(&mut response)
+        .context("read OCR HTTP response")?;
+    let wall_us = started.elapsed().as_micros().max(1);
+    let (status_code, body) = parse_http_response(&response)?;
+
+    Ok(OcrHttpResponse {
+        status_code: Some(status_code),
+        body,
+        wall_us,
+    })
+}
+
+fn parse_http_url(http_url: &str) -> Result<ParsedHttpUrl> {
+    let Some(rest) = http_url.strip_prefix("http://") else {
+        bail!("OCR HTTP URL must start with http://");
+    };
+    let (authority, path) = rest.split_once('/').unwrap_or((rest, ""));
+    if authority.is_empty() {
+        bail!("OCR HTTP URL missing host");
+    }
+    if authority.contains('@') {
+        bail!("OCR HTTP URL userinfo is not supported");
+    }
+    let (host, port) = if let Some((host, port)) = authority.rsplit_once(':') {
+        let port = port
+            .parse::<u16>()
+            .with_context(|| format!("parse OCR HTTP URL port {port}"))?;
+        (host, port)
+    } else {
+        (authority, 80)
+    };
+    if host.is_empty() {
+        bail!("OCR HTTP URL missing host");
+    }
+
+    Ok(ParsedHttpUrl {
+        host: host.to_string(),
+        port,
+        path: format!("/{path}"),
+    })
+}
+
+fn parse_http_response(response: &[u8]) -> Result<(u16, Vec<u8>)> {
+    let header_end = response
+        .windows(4)
+        .position(|window| window == b"\r\n\r\n")
+        .map(|index| index + 4)
+        .context("OCR HTTP response missing header terminator")?;
+    let headers = String::from_utf8_lossy(&response[..header_end]);
+    let status_line = headers
+        .lines()
+        .next()
+        .context("OCR HTTP response missing status line")?;
+    let status_code = status_line
+        .split_whitespace()
+        .nth(1)
+        .context("OCR HTTP response missing status code")?
+        .parse::<u16>()
+        .context("parse OCR HTTP response status code")?;
+
+    Ok((status_code, response[header_end..].to_vec()))
+}
+
+fn ocr_http_error_kind(error: &anyhow::Error) -> &'static str {
+    let error = format!("{error:#}");
+    if error.contains("timed out") || error.contains("would block") {
+        "timeout"
+    } else if error.contains("returned status") {
+        "http_status_failed"
+    } else {
+        "http_request_failed"
+    }
+}
+
+fn run_ocr_http(
+    http_url: &str,
+    source_path: &Path,
+    page_index: u32,
+    timeout: Duration,
+) -> Result<String> {
+    let response = run_ocr_http_request(http_url, source_path, page_index, timeout)?;
+    let status_code = response.status_code.unwrap_or_default();
+    if !(200..300).contains(&status_code) {
+        bail!("OCR HTTP endpoint returned status {status_code}");
+    }
+
+    Ok(String::from_utf8_lossy(&response.body).into_owned())
 }
 
 fn sidecar_file_name(source_path: &Path, page_index: u32) -> String {
