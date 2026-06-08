@@ -196,8 +196,8 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     );
     assert_eq!(json["summary"]["target_capability_count"], 12);
     assert_eq!(json["summary"]["implemented"], 4);
-    assert_eq!(json["summary"]["partial"], 5);
-    assert_eq!(json["summary"]["planned"], 2);
+    assert_eq!(json["summary"]["partial"], 6);
+    assert_eq!(json["summary"]["planned"], 1);
     assert_eq!(json["summary"]["not_planned"], 1);
     assert_eq!(
         json["quality_policy"],
@@ -235,7 +235,11 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(ocr["quality_guard"], "requires_ocr_flag_when_unavailable");
 
     let bindings = capability(capabilities, "python_node_wasm_bindings");
-    assert_eq!(bindings["glyphrush_status"], "planned");
+    assert_eq!(bindings["glyphrush_status"], "partial");
+    assert_eq!(
+        bindings["glyphrush"],
+        "thin_python_cli_wrapper_node_wasm_planned"
+    );
 
     let builtin_ocr = capability(capabilities, "bundled_builtin_ocr");
     assert_eq!(builtin_ocr["glyphrush_status"], "not_planned");

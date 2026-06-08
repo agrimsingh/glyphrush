@@ -6,6 +6,7 @@ Glyphrush is a native PDF parsing experiment focused on fast native-text extract
 
 - `glyphrush-core`: deterministic artifacts, page signals, classifier decisions, and extracted-page parsing.
 - `glyphrush-cli`: `inspect`, `parse`, `bench`, `debug-page`, and backend/baseline preflight commands backed by a thin backend interface. The default backend choice is `auto`: plain builds resolve to `lopdf`, while PDFium-feature builds resolve to the faster PDFium adapter.
+- `bindings/python`: an experimental dependency-free Python wrapper that shells out to the native CLI and returns the same JSON artifact. Node and WASM bindings remain planned.
 
 The dependency-light backend extracts native text through `lopdf`, can preserve simple positioned text spans with approximate boxes when explicitly requested, records cheap drawn-image metadata for direct image XObjects, image-backed form XObjects, and detected inline images without copying pixels, follows nested form image transforms for image coverage, routes OCR-required pages to optional sidecar, command, or HTTP OCR adapters, and emits structured artifacts with parser/backend/source size and modified-time metadata. The experimental PDFium backend opens PDFs through PDFium, extracts native page text, can emit PDFium text-segment boxes when `--span-geometry` is requested, records cheap image-object metadata without rendering pixels on the native extraction path, detects ruled-table vector paths, and can render OCR-routed pages to temporary PPM images for command adapters; it does not provide built-in OCR. Bundled OCR engines, full table reconstruction, richer geometry-aware layout recovery, and MuPDF comparison are later milestones. Use `backend-check` to inspect the selected backend and the pending MuPDF adapter candidate.
 
@@ -16,7 +17,7 @@ cargo run -p glyphrush-cli -- eval test/corpus.datasheets.json --category datash
 bash scripts/verify.sh
 ```
 
-`scripts/verify.sh` is the shared local/GitHub CI gate. It runs formatting, the full workspace test suite, clippy with warnings denied, strict `glyphrush-v0` baseline-preset metadata preflight, and the datasheet eval gate when ignored local PDFs exist under `test/`. In a fresh GitHub checkout those PDFs are absent by design, so CI skips only that local corpus gate rather than failing on non-committed benchmark files.
+`scripts/verify.sh` is the shared local/GitHub CI gate. It runs formatting, Python wrapper tests, the full Rust workspace test suite, clippy with warnings denied, strict `glyphrush-v0` baseline-preset metadata preflight, and the datasheet eval gate when ignored local PDFs exist under `test/`. In a fresh GitHub checkout those PDFs are absent by design, so CI skips only that local corpus gate rather than failing on non-committed benchmark files.
 
 ```sh
 cargo run -p glyphrush-cli -- inspect test/example.pdf
@@ -114,6 +115,23 @@ cargo run -p glyphrush-cli -- manifest test/ --category datasheet --min-category
 cargo run -p glyphrush-cli -- manifest test/ --jobs 4 > test/corpus.generated.json
 cargo run -p glyphrush-cli -- manifest test/ --cache-dir .glyphrush-cache > test/corpus.generated.json
 ```
+
+## Python Wrapper
+
+The Python package is intentionally thin: it does not parse PDFs itself, and it should not grow behavior that diverges from the native core. Install or point it at a built `glyphrush` binary, then call the same CLI artifact path:
+
+```python
+import glyphrush
+
+artifact = glyphrush.parse(
+    "test/example.pdf",
+    binary="target/debug/glyphrush",
+    backend="lopdf",
+)
+text = glyphrush.parse_text("test/example.pdf", binary="target/debug/glyphrush")
+```
+
+Set `GLYPHRUSH_BIN=/path/to/glyphrush` to avoid passing `binary=` on each call. Use `python3 -m unittest discover -s bindings/python/tests` to run the wrapper tests.
 
 The global `--backend` option defaults to `auto`, which resolves to the fastest enabled backend for the current binary. Plain builds resolve `auto` to `lopdf`; builds compiled with `--features pdfium` resolve `auto` to the PDFium adapter, so the faster native backend is the default when it is available. You can still select `--backend lopdf` explicitly for dependency-light runs, and `--backend pdfium` explicitly in PDFium builds. The optional adapter uses `pdfium-auto`, which may download and cache a matching PDFium runtime the first time the PDFium backend is actually used. `backend-check` emits `glyphrush-backend-check-report-v1` with parser version, selected backend, enabled backend count, candidate backend count, and per-backend capability/limitation metadata. `feature-parity` emits `glyphrush-feature-parity-report-v1`, a conservative LiteParse comparison matrix that separates implemented, partial, planned, and intentionally-not-planned capabilities; it keeps built-in OCR, bindings, layout/table maturity, and the quality-backed speedup gate visible instead of relying on README prose. Add `backend-check --pdf <file-or-directory>` to smoke the selected backend against one PDF or every top-level PDF in a directory and report open/extract success, page counts, native text bytes, image artifact count, OCR-required pages, source size/fingerprints for files, wall time, stable failure `error_kind` values such as `encrypted_pdf_requires_password`, sorted per-document results for directories, and bounded directory `failure_samples` so a mixed corpus failure is visible without scanning every document. Use `--jobs <N>` with directory smoke tests to run PDFs concurrently while merging results back into stable filename order and reporting the effective worker count. Default builds report `lopdf` as enabled and PDFium/MuPDF as `not_wired`; PDFium-feature builds report `lopdf` and `pdfium` as enabled while MuPDF remains `not_wired`. PDFium-feature reports set `render_pages: true` because the adapter can render page images for OCR handoff, while `builtin_ocr` remains false.
 

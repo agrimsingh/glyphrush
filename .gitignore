@@ -1,5 +1,11 @@
 /target/
 /.glyphrush-baselines/
 /.venv/
+/build/
+/dist/
+/.DS_Store
+__pycache__/
+*.py[cod]
+*.egg-info/
 /test/*.pdf
 /test/*.PDF
