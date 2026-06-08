@@ -1809,9 +1809,22 @@ fn group_positioned_table_rows(mut spans: Vec<&TextSpan>) -> Vec<Vec<&TextSpan>>
 fn merge_wrapped_positioned_table_rows<'a>(rows: Vec<Vec<&'a TextSpan>>) -> Vec<Vec<&'a TextSpan>> {
     let mut merged: Vec<Vec<&'a TextSpan>> = Vec::new();
 
-    for row in rows {
+    for row_index in 0..rows.len() {
+        let row = rows[row_index].clone();
+        let following_row = rows.get(row_index + 1).map(Vec::as_slice);
+        let is_first_multi_span_row_continuation = merged
+            .iter()
+            .filter(|candidate| candidate.len() >= 2)
+            .count()
+            == 1;
         if let Some(previous) = merged.last_mut()
-            && looks_like_positioned_table_continuation_row(previous, &row)
+            && (looks_like_positioned_table_continuation_row(previous, &row)
+                || (is_first_multi_span_row_continuation
+                    && looks_like_same_column_positioned_table_header_continuation(
+                        previous,
+                        &row,
+                        following_row,
+                    )))
         {
             previous.extend(row);
             sort_positioned_table_row(previous);
@@ -1821,6 +1834,67 @@ fn merge_wrapped_positioned_table_rows<'a>(rows: Vec<Vec<&'a TextSpan>>) -> Vec<
     }
 
     merged
+}
+
+fn looks_like_same_column_positioned_table_header_continuation(
+    previous: &[&TextSpan],
+    row: &[&TextSpan],
+    following_row: Option<&[&TextSpan]>,
+) -> bool {
+    if previous.len() != row.len()
+        || previous.len() < 2
+        || !positioned_row_looks_like_header_fragments(previous)
+        || !positioned_row_looks_like_header_fragments(row)
+    {
+        return false;
+    }
+
+    let gap = positioned_row_vertical_gap(previous, row);
+    if gap < -1.0 || gap > positioned_table_continuation_gap_threshold(previous, row) {
+        return false;
+    }
+
+    let Some(following_row) = following_row else {
+        return false;
+    };
+    if !positioned_row_looks_like_table_values(following_row) {
+        return false;
+    }
+
+    let columns = columns_from_row(previous);
+    let tolerance = table_column_x_tolerance(&[previous.to_vec(), row.to_vec()]);
+    let mut seen = vec![false; columns.len()];
+    for (expected_column, span) in row.iter().enumerate() {
+        let Some(column_index) = nearest_positioned_column_index(span, &columns, tolerance) else {
+            return false;
+        };
+        if column_index != expected_column || seen[column_index] {
+            return false;
+        }
+        seen[column_index] = true;
+    }
+
+    true
+}
+
+fn positioned_row_looks_like_table_values(row: &[&TextSpan]) -> bool {
+    row.iter().any(|span| {
+        let text = span.text.trim();
+        text.chars().any(|ch| {
+            ch.is_ascii_digit() || matches!(ch, '.' | '-' | '+' | '/' | '%' | '<' | '>' | '=')
+        })
+    })
+}
+
+fn positioned_row_looks_like_header_fragments(row: &[&TextSpan]) -> bool {
+    row.iter().all(|span| {
+        let text = span.text.trim();
+        !text.is_empty()
+            && !is_standalone_list_marker(text)
+            && text.chars().any(char::is_alphabetic)
+            && !text.chars().any(|ch| ch.is_ascii_digit())
+            && text.split_whitespace().count() <= 3
+    })
 }
 
 fn looks_like_positioned_table_continuation_row(previous: &[&TextSpan], row: &[&TextSpan]) -> bool {

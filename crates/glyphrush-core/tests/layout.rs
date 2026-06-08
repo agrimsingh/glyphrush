@@ -1201,6 +1201,161 @@ fn positioned_table_recovery_merges_multi_cell_wrapped_continuations() {
 }
 
 #[test]
+fn positioned_table_recovery_merges_same_column_wrapped_header_rows() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-table-wrapped-header".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Output\n",
+                "Load\n",
+                "Current\n",
+                "Unit\n",
+                "Voltage\n",
+                "Regulation\n",
+                "Limit\n",
+                "mA\n",
+                "3.3V\n",
+                "0-100mA\n",
+                "150\n",
+                "mA\n",
+                "5.0V\n",
+                "0-50mA\n",
+                "100\n",
+                "mA"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("Output", 72.0, 100.0, 120.0, 114.0),
+                span("Load", 180.0, 100.0, 220.0, 114.0),
+                span("Current", 300.0, 100.0, 360.0, 114.0),
+                span("Unit", 420.0, 100.0, 450.0, 114.0),
+                span("Voltage", 72.0, 116.0, 128.0, 130.0),
+                span("Regulation", 180.0, 116.0, 250.0, 130.0),
+                span("Limit", 300.0, 116.0, 340.0, 130.0),
+                span("mA", 420.0, 116.0, 442.0, 130.0),
+                span("3.3V", 72.0, 152.0, 108.0, 166.0),
+                span("0-100mA", 180.0, 152.0, 246.0, 166.0),
+                span("150", 300.0, 152.0, 330.0, 166.0),
+                span("mA", 420.0, 152.0, 442.0, 166.0),
+                span("5.0V", 72.0, 184.0, 108.0, 198.0),
+                span("0-50mA", 180.0, 184.0, 238.0, 198.0),
+                span("100", 300.0, 184.0, 330.0, 198.0),
+                span("mA", 420.0, 184.0, 442.0, 198.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 16,
+                native_text_bytes: 112,
+                glyph_count: 91,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        concat!(
+            "Output Voltage Load Regulation Current Limit Unit mA\n",
+            "3.3V 0-100mA 150 mA\n",
+            "5.0V 0-50mA 100 mA"
+        )
+    );
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec![
+                "Output Voltage",
+                "Load Regulation",
+                "Current Limit",
+                "Unit mA"
+            ],
+            vec!["3.3V", "0-100mA", "150", "mA"],
+            vec!["5.0V", "0-50mA", "100", "mA"],
+        ]
+    );
+    assert_eq!(table.rows[0].cells[0].bbox.as_ref().unwrap().y0, 100.0);
+    assert_eq!(table.rows[0].cells[0].bbox.as_ref().unwrap().y1, 130.0);
+}
+
+#[test]
+fn positioned_table_recovery_does_not_merge_compact_text_data_rows_into_header() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-table-text-data-rows".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: "Name\nStatus\nAlpha\nGood\nBeta\nBetter".to_string(),
+            native_spans: vec![
+                span("Name", 72.0, 100.0, 112.0, 114.0),
+                span("Status", 220.0, 100.0, 270.0, 114.0),
+                span("Alpha", 72.0, 116.0, 120.0, 130.0),
+                span("Good", 220.0, 116.0, 260.0, 130.0),
+                span("Beta", 72.0, 148.0, 112.0, 162.0),
+                span("Better", 220.0, 148.0, 270.0, 162.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 6,
+                native_text_bytes: 41,
+                glyph_count: 35,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        "Name Status\nAlpha Good\nBeta Better"
+    );
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Name", "Status"],
+            vec!["Alpha", "Good"],
+            vec!["Beta", "Better"],
+        ]
+    );
+}
+
+#[test]
 fn positioned_table_recovery_preserves_cross_column_section_rows() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-section-row".to_string(),
