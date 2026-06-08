@@ -633,6 +633,91 @@ fn positioned_table_recovery_preserves_surrounding_text_blocks() {
 }
 
 #[test]
+fn text_table_recovery_merges_leading_descriptor_cells_from_header_columns() {
+    let artifact = parse_extracted_pages(
+        "doc-header-guided-text-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Parameter Symbol Typ Max Unit\n",
+                "Input voltage VIN 3.3 5.5 V\n",
+                "Quiescent current IQ 35 60 uA"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 3,
+                native_text_bytes: 90,
+                glyph_count: 70,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Parameter", "Symbol", "Typ", "Max", "Unit"],
+            vec!["Input voltage", "VIN", "3.3", "5.5", "V"],
+            vec!["Quiescent current", "IQ", "35", "60", "uA"],
+        ]
+    );
+}
+
+#[test]
+fn text_table_recovery_does_not_treat_wrapped_prose_as_header_guided_table() {
+    let artifact = parse_extracted_pages(
+        "doc-header-guided-prose".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "The quick brown\n",
+                "fox jumps over the lazy\n",
+                "dog keeps running nearby"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 3,
+                native_text_bytes: 72,
+                glyph_count: 58,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Paragraph);
+    assert!(page.layout_blocks[0].table.is_none());
+}
+
+#[test]
 fn positioned_bullet_list_rows_are_not_recovered_as_tables() {
     let artifact = parse_extracted_pages(
         "doc-positioned-bullet-list".to_string(),

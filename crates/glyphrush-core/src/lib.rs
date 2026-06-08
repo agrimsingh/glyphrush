@@ -2049,6 +2049,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = header_guided_whitespace_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     let rows = lines
         .iter()
         .map(|line| table_cells_from_text_line(line))
@@ -2142,6 +2146,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
         return true;
     }
 
+    if header_guided_whitespace_table_rows(lines).is_some() {
+        return true;
+    }
+
     let rows = lines
         .iter()
         .map(|line| line.split_whitespace().collect::<Vec<_>>())
@@ -2160,6 +2168,103 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
                     .iter()
                     .all(|cell| !cell.is_empty() && cell.chars().count() <= 40)
         })
+}
+
+fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    if lines.len() < 2
+        || lines
+            .iter()
+            .any(|line| line.contains('|') || line.contains('\t') || has_wide_space_gap(line))
+    {
+        return None;
+    }
+
+    let header = lines.first()?.split_whitespace().collect::<Vec<_>>();
+    let column_count = header.len();
+    if !(3..=8).contains(&column_count)
+        || header
+            .iter()
+            .any(|cell| cell.chars().count() > 24 || !looks_like_table_header_cell(cell))
+    {
+        return None;
+    }
+
+    let mut rows = Vec::with_capacity(lines.len());
+    rows.push(header.iter().map(|cell| (*cell).to_string()).collect());
+    let mut rows_with_table_value_cells = 0;
+    let mut merged_descriptor_rows = 0;
+
+    for line in lines.iter().skip(1) {
+        let tokens = line.split_whitespace().collect::<Vec<_>>();
+        if tokens.len() < column_count || tokens.len() > column_count + 3 {
+            return None;
+        }
+
+        let overflow = tokens.len() - column_count;
+        if overflow > 0 {
+            merged_descriptor_rows += 1;
+        }
+
+        let mut row = Vec::with_capacity(column_count);
+        row.push(tokens[..=overflow].join(" "));
+        row.extend(
+            tokens
+                .iter()
+                .skip(overflow + 1)
+                .map(|token| (*token).to_string()),
+        );
+
+        if row.len() != column_count {
+            return None;
+        }
+        if row
+            .iter()
+            .skip(1)
+            .any(|cell| looks_like_table_value_cell(cell))
+        {
+            rows_with_table_value_cells += 1;
+        }
+        rows.push(row);
+    }
+
+    let data_row_count = rows.len().saturating_sub(1);
+    (merged_descriptor_rows > 0 && rows_with_table_value_cells == data_row_count).then_some(rows)
+}
+
+fn looks_like_table_header_cell(cell: &str) -> bool {
+    let mut saw_alphanumeric = false;
+    for ch in cell.chars() {
+        if ch.is_alphanumeric() {
+            saw_alphanumeric = true;
+        } else if !matches!(ch, '_' | '-' | '/' | '%' | '(' | ')') {
+            return false;
+        }
+    }
+
+    saw_alphanumeric
+}
+
+fn looks_like_table_value_cell(cell: &str) -> bool {
+    let trimmed = cell.trim();
+    if trimmed.is_empty() {
+        return false;
+    }
+
+    if trimmed
+        .chars()
+        .any(|ch| ch.is_ascii_digit() || matches!(ch, '.' | ',' | '%' | '$' | '/' | '+' | '-'))
+    {
+        return true;
+    }
+
+    let mut chars = trimmed.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+
+    let char_count = 1 + chars.count();
+    let uppercase_count = trimmed.chars().filter(|ch| ch.is_uppercase()).count();
+    (first.is_uppercase() && char_count <= 24) || uppercase_count >= 2
 }
 
 #[derive(Debug)]
