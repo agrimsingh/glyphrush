@@ -151,6 +151,62 @@ fn aligned_whitespace_table_payload_preserves_empty_cells_and_column_indexes() {
 }
 
 #[test]
+fn aligned_whitespace_table_payload_preserves_section_rows() {
+    let artifact = parse_extracted_pages(
+        "doc-aligned-table-section-row".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Parameter           Symbol      Typ     Max     Unit\n",
+                "Input voltage       VIN         3.3     5.5     V\n",
+                "Protection features\n",
+                "Current limit       ILIM        650     900     mA\n",
+                "Thermal shutdown    TSD         150     175     C\n"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 1,
+                native_text_bytes: 224,
+                glyph_count: 154,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Parameter", "Symbol", "Typ", "Max", "Unit"],
+            vec!["Input voltage", "VIN", "3.3", "5.5", "V"],
+            vec!["Protection features", "", "", "", ""],
+            vec!["Current limit", "ILIM", "650", "900", "mA"],
+            vec!["Thermal shutdown", "TSD", "150", "175", "C"],
+        ]
+    );
+}
+
+#[test]
 fn ocr_text_can_produce_layout_blocks_when_native_text_is_missing() {
     let artifact = parse_extracted_pages(
         "doc-ocr-layout".to_string(),

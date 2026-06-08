@@ -2689,6 +2689,7 @@ fn aligned_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
     }
 
     let mut rows = Vec::with_capacity(lines.len());
+    let mut regular_row_count = 0;
     for line in lines {
         let segments = wide_space_segments(line);
         if segments.is_empty() {
@@ -2696,7 +2697,7 @@ fn aligned_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
         }
 
         let mut cells = vec![String::new(); column_count];
-        for segment in segments {
+        for segment in &segments {
             let column_index = nearest_column_index(segment.start, &column_starts);
             if !cells[column_index].is_empty() {
                 cells[column_index].push(' ');
@@ -2705,19 +2706,39 @@ fn aligned_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
         }
 
         if cells.iter().filter(|cell| !cell.is_empty()).count() < 2 {
-            return None;
+            if !aligned_whitespace_row_is_section(&segments, &column_starts) {
+                return None;
+            }
+        } else {
+            regular_row_count += 1;
         }
         rows.push(cells);
     }
 
-    if rows
-        .first()
-        .is_some_and(|header| header.iter().all(|cell| !cell.is_empty()))
+    if regular_row_count >= 2
+        && rows
+            .first()
+            .is_some_and(|header| header.iter().all(|cell| !cell.is_empty()))
     {
         Some(rows)
     } else {
         None
     }
+}
+
+fn aligned_whitespace_row_is_section(
+    segments: &[AlignedTableSegment],
+    column_starts: &[usize],
+) -> bool {
+    let Some(segment) = segments.first() else {
+        return false;
+    };
+    segments.len() == 1
+        && column_starts
+            .first()
+            .is_some_and(|start| segment.start == *start)
+        && segment.text.chars().count() <= 80
+        && segment.text.chars().any(char::is_alphabetic)
 }
 
 fn wide_space_segments(line: &str) -> Vec<AlignedTableSegment> {
