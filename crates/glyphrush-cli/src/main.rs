@@ -14,6 +14,8 @@ use std::{
 
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
+#[cfg(feature = "pdfium")]
+use std::time::SystemTime;
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::{Parser, Subcommand, ValueEnum};
@@ -26,9 +28,9 @@ use glyphrush_core::{
 use lopdf::{Dictionary, Document, Object, ObjectId, content::Content};
 #[cfg(feature = "pdfium")]
 use pdfium_render::prelude::{
-    PdfDocument, PdfPage, PdfPageObject, PdfPageObjectCommon, PdfPageObjectsCommon,
-    PdfPageXObjectFormObject, PdfPathSegmentType, PdfPathSegments, PdfQuadPoints, Pdfium,
-    PdfiumError,
+    PdfBitmapFormat, PdfDocument, PdfPage, PdfPageObject, PdfPageObjectCommon,
+    PdfPageObjectsCommon, PdfPageXObjectFormObject, PdfPathSegmentType, PdfPathSegments,
+    PdfQuadPoints, PdfRenderConfig, Pdfium, PdfiumError,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -54,6 +56,10 @@ const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
 const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v38";
 const DEFAULT_BASELINE_TIMEOUT_MS: u64 = 120_000;
 const DEFAULT_OCR_TIMEOUT_MS: u64 = 120_000;
+#[cfg(feature = "pdfium")]
+const DEFAULT_OCR_RENDER_WIDTH: i32 = 1600;
+#[cfg(feature = "pdfium")]
+const MAX_OCR_RENDER_HEIGHT: i32 = 2400;
 
 #[global_allocator]
 static GLOBAL_ALLOCATOR: CountingAllocator = CountingAllocator;
@@ -143,6 +149,16 @@ enum BaselinePreset {
     GlyphrushV0,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, ValueEnum)]
+#[serde(rename_all = "snake_case")]
+enum OcrCommandInput {
+    #[default]
+    #[value(name = "pdf-page")]
+    PdfPage,
+    #[value(name = "rendered-image")]
+    RenderedImage,
+}
+
 const GLYPHRUSH_V0_BASELINES: &[(&str, &str)] = &[
     ("liteparse", "tools/baselines/liteparse-text.sh"),
     (
@@ -186,6 +202,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
+        ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
         ocr_timeout_ms: u64,
         #[arg(long)]
@@ -201,6 +219,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
+        ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
         ocr_timeout_ms: u64,
         #[arg(long)]
@@ -256,6 +276,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
+        ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
         ocr_timeout_ms: u64,
         #[arg(long)]
@@ -275,6 +297,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
+        ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
         ocr_timeout_ms: u64,
         #[arg(long)]
@@ -291,6 +315,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
+        ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
         ocr_timeout_ms: u64,
         #[arg(long)]
@@ -304,6 +330,8 @@ enum Commands {
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
         ocr_command: Option<PathBuf>,
+        #[arg(long, value_enum, default_value_t = OcrCommandInput::PdfPage)]
+        ocr_command_input: OcrCommandInput,
         #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
         ocr_timeout_ms: u64,
         #[arg(long)]
@@ -742,6 +770,7 @@ struct RunConfiguration {
     span_geometry: bool,
     ocr_sidecar: bool,
     ocr_command: bool,
+    ocr_command_input: OcrCommandInput,
     ocr_timeout_ms: u64,
 }
 
@@ -1722,18 +1751,28 @@ struct ExtractionOptions {
 struct OcrOptions<'a> {
     sidecar: Option<&'a Path>,
     command: Option<&'a Path>,
+    command_input: OcrCommandInput,
     timeout: Duration,
 }
 
 impl<'a> OcrOptions<'a> {
-    fn new(sidecar: Option<&'a Path>, command: Option<&'a Path>, timeout_ms: u64) -> Result<Self> {
+    fn new(
+        sidecar: Option<&'a Path>,
+        command: Option<&'a Path>,
+        command_input: OcrCommandInput,
+        timeout_ms: u64,
+    ) -> Result<Self> {
         if sidecar.is_some() && command.is_some() {
             bail!("choose either --ocr-sidecar or --ocr-command, not both");
+        }
+        if command.is_none() && command_input != OcrCommandInput::PdfPage {
+            bail!("--ocr-command-input requires --ocr-command");
         }
 
         Ok(Self {
             sidecar,
             command,
+            command_input,
             timeout: Duration::from_millis(timeout_ms),
         })
     }
@@ -1863,7 +1902,7 @@ fn backend_check_output<B: PdfBackend + Sync>(
                 native_text: true,
                 span_geometry: "page_text",
                 image_metadata: true,
-                render_pages: false,
+                render_pages: true,
                 builtin_ocr: false,
             },
             #[cfg(not(feature = "pdfium"))]
@@ -1879,8 +1918,6 @@ fn backend_check_output<B: PdfBackend + Sync>(
             limitations: vec![
                 #[cfg(not(feature = "pdfium"))]
                 "adapter_not_implemented",
-                #[cfg(feature = "pdfium")]
-                "no_page_rendering",
                 #[cfg(feature = "pdfium")]
                 "no_builtin_ocr",
                 #[cfg(feature = "pdfium")]
@@ -2217,6 +2254,10 @@ fn ocr_check_output(
     ocr: OcrOptions<'_>,
     strict: bool,
 ) -> OcrCheckOutput {
+    if ocr.command_input == OcrCommandInput::RenderedImage {
+        return ocr_render_backend_required_check_output(pdf, page_index, ocr, strict);
+    }
+
     if let Some(command) = ocr.command {
         return ocr_command_check_output(pdf, page_index, command, ocr.timeout, strict);
     }
@@ -2250,6 +2291,40 @@ fn ocr_check_output(
         stderr_preview: None,
         error: Some("ocr-check requires --ocr-sidecar or --ocr-command".to_string()),
         error_kind: Some("missing_adapter"),
+    }
+}
+
+fn ocr_render_backend_required_check_output(
+    pdf: &Path,
+    page_index: u32,
+    ocr: OcrOptions<'_>,
+    strict: bool,
+) -> OcrCheckOutput {
+    OcrCheckOutput {
+        report_version: OCR_CHECK_REPORT_VERSION,
+        parser_name: PARSER_NAME,
+        parser_version: PARSER_VERSION,
+        strict,
+        pdf: pdf.display().to_string(),
+        page_index,
+        adapter: "ocr_command_rendered_image",
+        passed: false,
+        success: false,
+        command: ocr.command.map(|command| command.display().to_string()),
+        sidecar_path: None,
+        exit_status: None,
+        timed_out: false,
+        timeout_ms: duration_millis(ocr.timeout),
+        wall_us: 0,
+        output_bytes: 0,
+        stdout_sha256: None,
+        stdout_line_count: 0,
+        stdout_word_count: 0,
+        stderr_bytes: 0,
+        empty_output: true,
+        stderr_preview: None,
+        error: Some("rendered-image OCR command input requires a rendering backend".to_string()),
+        error_kind: Some("render_backend_required"),
     }
 }
 
@@ -2431,6 +2506,10 @@ fn ocr_check_error(output: &OcrCheckOutput) -> Option<String> {
         return Some("ocr-check requires --ocr-sidecar or --ocr-command".to_string());
     }
 
+    if output.adapter == "ocr_command_rendered_image" && output.error_kind.is_some() {
+        return output.error.clone();
+    }
+
     if output.strict && !output.passed {
         return Some(format!(
             "ocr-check strict failed: {}",
@@ -2490,6 +2569,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             format,
             ocr_sidecar,
             ocr_command,
+            ocr_command_input,
             ocr_timeout_ms,
             cache_dir,
             span_geometry,
@@ -2498,6 +2578,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_command_input,
                 ocr_timeout_ms,
             )?;
             let artifact = parse_pdf(
@@ -2526,6 +2607,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             pdf,
             ocr_sidecar,
             ocr_command,
+            ocr_command_input,
             ocr_timeout_ms,
             cache_dir,
             eval_manifest: eval_manifest_path,
@@ -2549,6 +2631,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_command_input,
                 ocr_timeout_ms,
             )?;
             let requested_baseline_presets = baseline_preset_names(baseline_preset);
@@ -2732,12 +2815,14 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             page_index,
             ocr_sidecar,
             ocr_command,
+            ocr_command_input,
             ocr_timeout_ms,
             strict,
         } => {
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_command_input,
                 ocr_timeout_ms,
             )?;
             let output = ocr_check_output(&pdf, page_index, ocr, strict);
@@ -2755,6 +2840,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             min_category_count,
             ocr_sidecar,
             ocr_command,
+            ocr_command_input,
             ocr_timeout_ms,
             cache_dir,
             span_geometry,
@@ -2764,6 +2850,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_command_input,
                 ocr_timeout_ms,
             )?;
             let required_categories =
@@ -2793,12 +2880,14 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             page_index,
             ocr_sidecar,
             ocr_command,
+            ocr_command_input,
             ocr_timeout_ms,
             span_geometry,
         } => {
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_command_input,
                 ocr_timeout_ms,
             )?;
             let fingerprint = document_fingerprint(&pdf)?;
@@ -2856,6 +2945,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             category,
             ocr_sidecar,
             ocr_command,
+            ocr_command_input,
             ocr_timeout_ms,
             cache_dir,
             span_geometry,
@@ -2864,6 +2954,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let ocr = OcrOptions::new(
                 ocr_sidecar.as_deref(),
                 ocr_command.as_deref(),
+                ocr_command_input,
                 ocr_timeout_ms,
             )?;
             let output = eval_manifest(
@@ -3685,6 +3776,7 @@ fn run_configuration(ocr: OcrOptions<'_>, options: ExtractionOptions) -> RunConf
         span_geometry: options.span_geometry,
         ocr_sidecar: ocr.sidecar.is_some(),
         ocr_command: ocr.command.is_some(),
+        ocr_command_input: ocr.command_input,
         ocr_timeout_ms: duration_millis(ocr.timeout),
     }
 }
@@ -7802,7 +7894,7 @@ fn ocr_fingerprint(ocr: OcrOptions<'_>, source_path: &Path) -> Result<String> {
     }
 
     if let Some(command) = ocr.command {
-        return ocr_command_fingerprint(command, ocr.timeout);
+        return ocr_command_fingerprint(command, ocr.command_input, ocr.timeout);
     }
 
     Ok("no-sidecar".to_string())
@@ -7845,9 +7937,15 @@ fn sidecar_fingerprint(path: &Path, source_path: &Path) -> Result<String> {
     Ok(sha256_hex(payload))
 }
 
-fn ocr_command_fingerprint(command: &Path, timeout: Duration) -> Result<String> {
+fn ocr_command_fingerprint(
+    command: &Path,
+    command_input: OcrCommandInput,
+    timeout: Duration,
+) -> Result<String> {
     let mut payload = Vec::new();
     payload.extend_from_slice(b"ocr-command");
+    payload.push(0);
+    payload.extend_from_slice(format!("{command_input:?}").as_bytes());
     payload.push(0);
     payload.extend_from_slice(command.to_string_lossy().as_bytes());
     payload.push(0);
@@ -8084,7 +8182,8 @@ fn extract_pdfium_loaded_page(
         huge_object_count: 0,
         span_geometry_capped: options.span_geometry,
     };
-    let (ocr_text, ocr_us) = load_ocr_if_needed(source_path, ocr, &signals)?;
+    let (ocr_text, render_us, ocr_us) =
+        load_pdfium_ocr_if_needed(source_path, ocr, &signals, &page)?;
 
     Ok(ExtractedPage {
         page_index,
@@ -8098,6 +8197,7 @@ fn extract_pdfium_loaded_page(
             open_us,
             native_extract_us,
             table_us,
+            render_us,
             ocr_us,
             ..PageTimings::default()
         },
@@ -8107,6 +8207,140 @@ fn extract_pdfium_loaded_page(
 #[cfg(feature = "pdfium")]
 fn map_pdfium_text_error(error: PdfiumError) -> anyhow::Error {
     anyhow!(error)
+}
+
+#[cfg(feature = "pdfium")]
+fn load_pdfium_ocr_if_needed(
+    source_path: &Path,
+    ocr: OcrOptions<'_>,
+    signals: &PageSignals,
+    page: &PdfPage<'_>,
+) -> Result<(Option<String>, u64, u64)> {
+    if ocr.command_input != OcrCommandInput::RenderedImage {
+        let (text, ocr_us) = load_ocr_if_needed(source_path, ocr, signals)?;
+        return Ok((text, 0, ocr_us));
+    }
+
+    if !classify_page(signals).run_ocr {
+        return Ok((None, 0, 0));
+    }
+
+    let Some(command) = ocr.command else {
+        return Ok((None, 0, 0));
+    };
+
+    let (rendered_path, render_us) =
+        render_pdfium_page_to_temp_ppm(page, source_path, signals.page_index)?;
+    let ocr_start = Instant::now();
+    let text_result = run_ocr_command(command, &rendered_path, signals.page_index, ocr.timeout);
+    let command_succeeded = text_result.is_ok();
+    let cleanup_result = fs::remove_file(&rendered_path)
+        .with_context(|| format!("remove temporary OCR image {}", rendered_path.display()));
+    if command_succeeded {
+        cleanup_result?;
+    }
+    let text = text_result?;
+    let ocr_us = ocr_start.elapsed().as_micros().max(1).min(u64::MAX as u128) as u64;
+
+    if text.is_empty() {
+        return Ok((None, render_us, ocr_us));
+    }
+
+    Ok((Some(text), render_us, ocr_us))
+}
+
+#[cfg(feature = "pdfium")]
+fn render_pdfium_page_to_temp_ppm(
+    page: &PdfPage<'_>,
+    source_path: &Path,
+    page_index: u32,
+) -> Result<(PathBuf, u64)> {
+    let render_start = Instant::now();
+    let rendered_path = rendered_ocr_temp_path(source_path, page_index);
+    let config = PdfRenderConfig::new()
+        .set_target_width(DEFAULT_OCR_RENDER_WIDTH)
+        .set_maximum_height(MAX_OCR_RENDER_HEIGHT)
+        .set_format(PdfBitmapFormat::BGRA)
+        .set_reverse_byte_order(true)
+        .render_annotations(true)
+        .render_form_data(true);
+    let bitmap = page
+        .render_with_config(&config)
+        .with_context(|| format!("render PDFium page {page_index} for OCR"))?;
+    let rgba = bitmap.as_rgba_bytes();
+    write_rgba_ppm(
+        &rendered_path,
+        bitmap.width() as usize,
+        bitmap.height() as usize,
+        &rgba,
+    )?;
+    let render_us = render_start
+        .elapsed()
+        .as_micros()
+        .max(1)
+        .min(u64::MAX as u128) as u64;
+
+    Ok((rendered_path, render_us))
+}
+
+#[cfg(feature = "pdfium")]
+fn rendered_ocr_temp_path(source_path: &Path, page_index: u32) -> PathBuf {
+    let stem = source_path
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .map(sanitize_temp_stem)
+        .filter(|stem| !stem.is_empty())
+        .unwrap_or_else(|| "document".to_string());
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or_default();
+
+    std::env::temp_dir().join(format!(
+        "glyphrush-ocr-{stem}-p{page_index:06}-{}-{nanos}.ppm",
+        std::process::id()
+    ))
+}
+
+#[cfg(feature = "pdfium")]
+fn sanitize_temp_stem(stem: &str) -> String {
+    stem.chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                ch
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
+#[cfg(feature = "pdfium")]
+fn write_rgba_ppm(path: &Path, width: usize, height: usize, rgba: &[u8]) -> Result<()> {
+    if width == 0 || height == 0 {
+        bail!("rendered OCR image has empty dimensions");
+    }
+    let expected_len = width
+        .checked_mul(height)
+        .and_then(|pixels| pixels.checked_mul(4))
+        .context("rendered OCR image dimensions overflow")?;
+    if rgba.len() != expected_len {
+        bail!(
+            "rendered OCR image buffer size mismatch: expected {expected_len} bytes, got {}",
+            rgba.len()
+        );
+    }
+
+    let mut file =
+        fs::File::create(path).with_context(|| format!("create OCR image {}", path.display()))?;
+    write!(file, "P6\n{width} {height}\n255\n")
+        .with_context(|| format!("write OCR image header {}", path.display()))?;
+    for pixel in rgba.chunks_exact(4) {
+        file.write_all(&pixel[..3])
+            .with_context(|| format!("write OCR image pixels {}", path.display()))?;
+    }
+
+    Ok(())
 }
 
 #[cfg(feature = "pdfium")]
@@ -8907,6 +9141,10 @@ fn load_ocr_if_needed(
 ) -> Result<(Option<String>, u64)> {
     if !classify_page(signals).run_ocr {
         return Ok((None, 0));
+    }
+
+    if ocr.command_input == OcrCommandInput::RenderedImage {
+        bail!("rendered-image OCR command input requires a rendering backend");
     }
 
     let ocr_start = Instant::now();

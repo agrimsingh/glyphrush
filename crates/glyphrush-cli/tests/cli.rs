@@ -77,7 +77,10 @@ fn backend_check_reports_lopdf_and_pending_pdfium_mupdf_candidates() {
 
     assert_eq!(json["report_version"], "glyphrush-backend-check-report-v1");
     assert_eq!(json["selected_backend"], "lopdf");
-    assert_eq!(json["enabled_backend_count"], 1);
+    assert_eq!(
+        json["enabled_backend_count"],
+        if cfg!(feature = "pdfium") { 2 } else { 1 }
+    );
     assert_eq!(json["candidate_backend_count"], 3);
     assert_eq!(
         json["decision_gate"],
@@ -100,8 +103,19 @@ fn backend_check_reports_lopdf_and_pending_pdfium_mupdf_candidates() {
     assert_eq!(backends[0]["capabilities"]["render_pages"], false);
     assert_eq!(backends[0]["capabilities"]["builtin_ocr"], false);
     assert_eq!(backends[1]["name"], "pdfium");
-    assert_eq!(backends[1]["status"], "not_wired");
+    assert_eq!(
+        backends[1]["status"],
+        if cfg!(feature = "pdfium") {
+            "enabled"
+        } else {
+            "not_wired"
+        }
+    );
     assert_eq!(backends[1]["selected"], false);
+    if cfg!(feature = "pdfium") {
+        assert_eq!(backends[1]["capabilities"]["render_pages"], true);
+        assert_eq!(backends[1]["capabilities"]["builtin_ocr"], false);
+    }
     assert_eq!(backends[2]["name"], "mupdf");
     assert_eq!(backends[2]["status"], "not_wired");
     assert_eq!(backends[2]["selected"], false);
@@ -138,7 +152,7 @@ fn backend_check_reports_feature_gated_pdfium_backend() {
     assert_eq!(pdfium["capabilities"]["native_text"], true);
     assert_eq!(pdfium["capabilities"]["span_geometry"], "page_text");
     assert_eq!(pdfium["capabilities"]["image_metadata"], true);
-    assert_eq!(pdfium["capabilities"]["render_pages"], false);
+    assert_eq!(pdfium["capabilities"]["render_pages"], true);
     assert_eq!(pdfium["capabilities"]["builtin_ocr"], false);
 }
 
@@ -180,6 +194,115 @@ fn pdfium_backend_flags_ruled_table_vector_paths() {
             .unwrap()
             .iter()
             .any(|flag| flag == "table_uncertain")
+    );
+}
+
+#[cfg(feature = "pdfium")]
+#[test]
+fn parse_pdfium_ocr_command_rendered_image_invokes_adapter_only_for_ocr_pages() {
+    let dir = temp_dir("pdfium-rendered-image-ocr");
+    let native_path = dir.join("native.pdf");
+    let scan_path = dir.join("scan.pdf");
+    let log_path = dir.join("rendered-ocr.log");
+    fs::write(
+        &native_path,
+        minimal_pdf("Native PDFium rendered OCR bypass"),
+    )
+    .unwrap();
+    fs::write(&scan_path, minimal_pdf_with_full_page_image_and_text("")).unwrap();
+    let command = write_rendered_ocr_command_script("pdfium-rendered-ocr-command", &log_path);
+
+    let native = run_json([
+        "--backend",
+        "pdfium",
+        "parse",
+        native_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--ocr-command",
+        command.to_str().unwrap(),
+        "--ocr-command-input",
+        "rendered-image",
+    ]);
+    let scan = run_json([
+        "--backend",
+        "pdfium",
+        "parse",
+        scan_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--ocr-command",
+        command.to_str().unwrap(),
+        "--ocr-command-input",
+        "rendered-image",
+    ]);
+
+    assert_eq!(native["global_diagnostics"]["ocr_required_pages"], 0);
+    assert_eq!(native["global_diagnostics"]["ocr_applied_pages"], 0);
+    assert_eq!(scan["global_diagnostics"]["ocr_required_pages"], 1);
+    assert_eq!(scan["global_diagnostics"]["ocr_applied_pages"], 1);
+    assert_eq!(
+        scan["pages"][0]["ocr_spans"][0]["text"],
+        "Rendered OCR text page 0"
+    );
+    assert!(
+        scan["pages"][0]["timings"]["render_us"].as_u64().unwrap() > 0,
+        "scan page timings: {}",
+        scan["pages"][0]["timings"]
+    );
+    assert!(scan["pages"][0]["timings"]["ocr_us"].as_u64().unwrap() > 0);
+
+    let log = fs::read_to_string(&log_path).expect("read rendered OCR command log");
+    let lines = log.lines().collect::<Vec<_>>();
+    assert_eq!(lines.len(), 1, "log: {log}");
+    let columns = lines[0].split('\t').collect::<Vec<_>>();
+    assert_eq!(columns.len(), 4, "log line: {}", lines[0]);
+    assert!(
+        columns[0].ends_with(".ppm"),
+        "rendered path: {}",
+        columns[0]
+    );
+    assert_eq!(columns[1], "0");
+    assert_eq!(columns[2], "P6");
+    assert!(columns[3].parse::<usize>().unwrap() > 32);
+    assert!(
+        !PathBuf::from(columns[0]).exists(),
+        "temporary rendered image should be removed after OCR command returns"
+    );
+}
+
+#[test]
+fn parse_lopdf_rejects_rendered_image_ocr_command_without_render_backend() {
+    let dir = temp_dir("lopdf-rendered-image-ocr-reject");
+    let pdf_path = dir.join("scan.pdf");
+    let log_path = dir.join("rendered-ocr.log");
+    fs::write(&pdf_path, minimal_pdf_with_full_page_image_and_text("")).unwrap();
+    let command = write_rendered_ocr_command_script("lopdf-rendered-ocr-command", &log_path);
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+            "--ocr-command",
+            command.to_str().unwrap(),
+            "--ocr-command-input",
+            "rendered-image",
+        ])
+        .output()
+        .expect("run glyphrush lopdf parse with rendered-image OCR command");
+
+    assert!(!output.status.success());
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("rendered-image OCR command input requires a rendering backend"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        !log_path.exists(),
+        "OCR command should not be invoked when the backend cannot render"
     );
 }
 
@@ -2690,6 +2813,51 @@ fn ocr_check_command_smoke_reports_nonempty_output() {
 }
 
 #[test]
+fn ocr_check_rejects_rendered_image_command_input_without_render_preflight() {
+    let dir = temp_dir("ocr-check-rendered-image-reject");
+    let pdf_path = dir.join("scan.pdf");
+    let log_path = dir.join("ocr.log");
+    fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
+    let command = write_rendered_ocr_command_script("ocr-check-rendered-image", &log_path);
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "ocr-check",
+            pdf_path.to_str().unwrap(),
+            "--page-index",
+            "0",
+            "--ocr-command",
+            command.to_str().unwrap(),
+            "--ocr-command-input",
+            "rendered-image",
+        ])
+        .output()
+        .expect("run glyphrush ocr-check with rendered-image input");
+
+    assert!(!output.status.success());
+    let json: Value = serde_json::from_slice(&output.stdout).expect("ocr-check output is json");
+
+    assert_eq!(json["adapter"], "ocr_command_rendered_image");
+    assert_eq!(json["success"], false);
+    assert_eq!(json["passed"], false);
+    assert_eq!(json["error_kind"], "render_backend_required");
+    assert_eq!(
+        json["error"],
+        "rendered-image OCR command input requires a rendering backend"
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("rendered-image OCR command input requires a rendering backend"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        !log_path.exists(),
+        "ocr-check should not invoke a rendered-image command without a render preflight"
+    );
+}
+
+#[test]
 fn ocr_check_strict_rejects_empty_command_output_after_writing_json() {
     let dir = temp_dir("ocr-check-empty-command");
     let pdf_path = dir.join("scan.pdf");
@@ -4150,6 +4318,7 @@ fn bench_with_eval_manifest_embeds_quality_summary() {
     assert_eq!(json["run_configuration"]["span_geometry"], true);
     assert_eq!(json["run_configuration"]["ocr_sidecar"], true);
     assert_eq!(json["run_configuration"]["ocr_command"], false);
+    assert_eq!(json["run_configuration"]["ocr_command_input"], "pdf_page");
     assert_eq!(json["run_configuration"]["ocr_timeout_ms"], 4321);
     assert_eq!(json["quality"]["passed"], true);
     assert_eq!(
@@ -4159,6 +4328,10 @@ fn bench_with_eval_manifest_embeds_quality_summary() {
     assert_eq!(json["quality"]["run_configuration"]["span_geometry"], true);
     assert_eq!(json["quality"]["run_configuration"]["ocr_sidecar"], true);
     assert_eq!(json["quality"]["run_configuration"]["ocr_command"], false);
+    assert_eq!(
+        json["quality"]["run_configuration"]["ocr_command_input"],
+        "pdf_page"
+    );
     assert_eq!(json["quality"]["run_configuration"]["ocr_timeout_ms"], 4321);
     assert_eq!(json["quality"]["failed_checks"], 0);
     assert_eq!(json["quality"]["document_count"], 1);
@@ -5407,6 +5580,7 @@ fn bench_directory_reports_sorted_documents_and_aggregate_counts() {
     assert_eq!(json["run_configuration"]["span_geometry"], true);
     assert_eq!(json["run_configuration"]["ocr_sidecar"], true);
     assert_eq!(json["run_configuration"]["ocr_command"], false);
+    assert_eq!(json["run_configuration"]["ocr_command_input"], "pdf_page");
     assert_eq!(json["run_configuration"]["ocr_timeout_ms"], 5678);
     assert_eq!(json["document_count"], 2);
     assert_eq!(json["page_count"], 2);
@@ -8258,6 +8432,7 @@ fn eval_manifest_reports_run_configuration_options() {
     assert_eq!(json["run_configuration"]["span_geometry"], true);
     assert_eq!(json["run_configuration"]["ocr_sidecar"], true);
     assert_eq!(json["run_configuration"]["ocr_command"], false);
+    assert_eq!(json["run_configuration"]["ocr_command_input"], "pdf_page");
     assert_eq!(json["run_configuration"]["ocr_timeout_ms"], 1234);
     assert_eq!(json["quality_passed"], true);
     assert_eq!(json["failed_checks"], 0);
@@ -10419,6 +10594,23 @@ fn write_ocr_command_script(label: &str, log_path: &std::path::Path) -> PathBuf 
         &path,
         format!(
             "#!/bin/sh\nprintf '%s:%s\\n' \"$1\" \"$2\" >> '{}'\nprintf 'Command OCR text page %s' \"$2\"\n",
+            log_path.display()
+        ),
+    )
+    .unwrap();
+    let mut permissions = fs::metadata(&path).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&path, permissions).unwrap();
+    path
+}
+
+fn write_rendered_ocr_command_script(label: &str, log_path: &std::path::Path) -> PathBuf {
+    let dir = temp_dir(label);
+    let path = dir.join("rendered-ocr-command.sh");
+    fs::write(
+        &path,
+        format!(
+            "#!/bin/sh\nif [ ! -f \"$1\" ]; then echo 'missing rendered image' >&2; exit 2; fi\nheader=$(dd if=\"$1\" bs=2 count=1 2>/dev/null)\nbytes=$(wc -c < \"$1\" | tr -d ' ')\nprintf '%s\\t%s\\t%s\\t%s\\n' \"$1\" \"$2\" \"$header\" \"$bytes\" >> '{}'\nprintf 'Rendered OCR text page %s' \"$2\"\n",
             log_path.display()
         ),
     )
