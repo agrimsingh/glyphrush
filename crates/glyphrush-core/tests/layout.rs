@@ -1352,6 +1352,107 @@ fn positioned_table_recovery_merges_multi_cell_wrapped_continuations() {
 }
 
 #[test]
+fn positioned_table_recovery_preserves_interior_condition_note_rows() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-table-interior-condition-note".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Parameter\n",
+                "Symbol\n",
+                "Condition\n",
+                "Typ\n",
+                "Max\n",
+                "Input voltage\n",
+                "VIN\n",
+                "3.3\n",
+                "5.5\n",
+                "VIN = VOUT + 1V\n",
+                "Output current\n",
+                "IOUT\n",
+                "100\n",
+                "150\n",
+                "Shutdown current\n",
+                "ISD\n",
+                "0.1\n",
+                "1.0"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                span("Symbol", 180.0, 100.0, 230.0, 114.0),
+                span("Condition", 260.0, 100.0, 330.0, 114.0),
+                span("Typ", 380.0, 100.0, 410.0, 114.0),
+                span("Max", 440.0, 100.0, 470.0, 114.0),
+                span("Input voltage", 72.0, 132.0, 160.0, 146.0),
+                span("VIN", 180.0, 132.0, 208.0, 146.0),
+                span("3.3", 380.0, 132.0, 406.0, 146.0),
+                span("5.5", 440.0, 132.0, 466.0, 146.0),
+                span("VIN = VOUT + 1V", 260.0, 164.0, 366.0, 178.0),
+                span("Output current", 72.0, 196.0, 168.0, 210.0),
+                span("IOUT", 180.0, 196.0, 216.0, 210.0),
+                span("100", 380.0, 196.0, 410.0, 210.0),
+                span("150", 440.0, 196.0, 470.0, 210.0),
+                span("Shutdown current", 72.0, 228.0, 184.0, 242.0),
+                span("ISD", 180.0, 228.0, 208.0, 242.0),
+                span("0.1", 380.0, 228.0, 406.0, 242.0),
+                span("1.0", 440.0, 228.0, 466.0, 242.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 18,
+                native_text_bytes: 150,
+                glyph_count: 118,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        concat!(
+            "Parameter Symbol Condition Typ Max\n",
+            "Input voltage VIN 3.3 5.5\n",
+            "VIN = VOUT + 1V\n",
+            "Output current IOUT 100 150\n",
+            "Shutdown current ISD 0.1 1.0"
+        )
+    );
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Parameter", "Symbol", "Condition", "Typ", "Max"],
+            vec!["Input voltage", "VIN", "", "3.3", "5.5"],
+            vec!["", "", "VIN = VOUT + 1V", "", ""],
+            vec!["Output current", "IOUT", "", "100", "150"],
+            vec!["Shutdown current", "ISD", "", "0.1", "1.0"],
+        ]
+    );
+    assert_eq!(table.rows[2].cells[2].bbox.as_ref().unwrap().x0, 260.0);
+    assert!(table.rows[2].cells[0].bbox.is_none());
+    assert!(table.rows[2].cells[4].bbox.is_none());
+}
+
+#[test]
 fn positioned_table_recovery_merges_same_column_wrapped_header_rows() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-wrapped-header".to_string(),

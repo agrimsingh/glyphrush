@@ -1481,6 +1481,7 @@ fn positioned_row_is_table_section(
         || positioned_row_is_first_column_table_section(
             row, columns, tolerance, row_index, row_count,
         )
+        || positioned_row_is_interior_table_note(row, columns, tolerance, row_index, row_count)
 }
 
 fn positioned_row_is_first_column_table_section(
@@ -1526,9 +1527,58 @@ fn positioned_row_is_first_column_table_section(
     (row_bbox.x0 - *first_x0).abs() <= tolerance && row_bbox.x1 < *second_x1 - tolerance
 }
 
+fn positioned_row_is_interior_table_note(
+    row: &[&TextSpan],
+    columns: &[(f32, f32)],
+    tolerance: f32,
+    row_index: usize,
+    row_count: usize,
+) -> bool {
+    if row.is_empty() || columns.len() < 3 || row_index == 0 || row_index + 1 >= row_count {
+        return false;
+    }
+
+    let cells = positioned_table_cells_from_row(row, columns, tolerance);
+    let non_empty_cells = cells
+        .iter()
+        .enumerate()
+        .filter(|(_, cell)| !cell.text.trim().is_empty())
+        .collect::<Vec<_>>();
+    let [(column_index, cell)] = non_empty_cells.as_slice() else {
+        return false;
+    };
+    if *column_index == 0 || *column_index + 1 >= columns.len() {
+        return false;
+    }
+
+    let mut row_text = String::new();
+    append_positioned_row_text(&mut row_text, row);
+    let text = cell.text.trim();
+    if text != row_text.trim() || is_standalone_list_marker(text) {
+        return false;
+    }
+
+    looks_like_positioned_table_condition_note(text)
+}
+
 fn looks_like_positioned_table_section_label(text: &str) -> bool {
     let tokens = text.split_whitespace().collect::<Vec<_>>();
     looks_like_wrapped_descriptor_fragment(&tokens) || is_heading_line(text)
+}
+
+fn looks_like_positioned_table_condition_note(text: &str) -> bool {
+    let trimmed = text.trim();
+    if trimmed.is_empty() || trimmed.chars().count() > 80 {
+        return false;
+    }
+
+    let token_count = trimmed.split_whitespace().count();
+    let has_alpha = trimmed.chars().any(char::is_alphabetic);
+    let has_condition_syntax = trimmed
+        .chars()
+        .any(|ch| ch.is_ascii_digit() || matches!(ch, '=' | '<' | '>' | '+' | '-' | '/' | '%'));
+
+    has_alpha && has_condition_syntax && (1..=8).contains(&token_count)
 }
 
 fn is_wrapped_same_column_cell(previous: &TextSpan, span: &TextSpan) -> bool {
