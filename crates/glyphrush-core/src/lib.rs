@@ -1663,8 +1663,15 @@ fn group_span_refs_by_full_width_bands<'a>(
     let mut pending_band = Vec::new();
     let mut split_columns = false;
 
-    for span in sorted_spans {
-        if is_full_width_layout_span(span, dimensions) {
+    for (index, span) in sorted_spans.iter().copied().enumerate() {
+        if is_full_width_layout_span(span, dimensions)
+            || is_column_section_separator_span(
+                span,
+                &pending_band,
+                &sorted_spans[index + 1..],
+                dimensions,
+            )
+        {
             append_column_aware_band_groups(
                 &mut groups,
                 std::mem::take(&mut pending_band),
@@ -1680,6 +1687,75 @@ fn group_span_refs_by_full_width_bands<'a>(
     append_column_aware_band_groups(&mut groups, pending_band, dimensions, &mut split_columns);
 
     split_columns.then_some(groups)
+}
+
+fn is_column_section_separator_span(
+    span: &TextSpan,
+    previous_band: &[&TextSpan],
+    following_spans: &[&TextSpan],
+    dimensions: &PageDimensions,
+) -> bool {
+    if !is_left_aligned_section_heading_span(span, dimensions) {
+        return false;
+    }
+
+    let following_band = following_spans
+        .iter()
+        .copied()
+        .take_while(|following| !is_full_width_layout_span(following, dimensions))
+        .collect::<Vec<_>>();
+
+    previous_band.len() >= 4
+        && following_band.len() >= 4
+        && !has_same_row_neighbor(
+            span,
+            previous_band.iter().chain(following_band.iter()).copied(),
+        )
+        && has_section_separator_vertical_gap(span, previous_band, &following_band)
+        && split_two_columns(previous_band, dimensions).is_some()
+        && split_two_columns(&following_band, dimensions).is_some()
+}
+
+fn is_left_aligned_section_heading_span(span: &TextSpan, dimensions: &PageDimensions) -> bool {
+    dimensions.width > 0.0
+        && span.bbox.x0 <= dimensions.width * 0.25
+        && is_heading_line(span.text.trim())
+}
+
+fn has_same_row_neighbor<'a>(
+    span: &TextSpan,
+    spans: impl IntoIterator<Item = &'a TextSpan>,
+) -> bool {
+    let tolerance = ((span.bbox.y1 - span.bbox.y0) * 0.75).max(4.0);
+    spans.into_iter().any(|other| {
+        !std::ptr::eq(other, span)
+            && (span_center_y(other) - span_center_y(span)).abs() <= tolerance
+    })
+}
+
+fn has_section_separator_vertical_gap(
+    span: &TextSpan,
+    previous_band: &[&TextSpan],
+    following_band: &[&TextSpan],
+) -> bool {
+    let Some(previous_bottom) = previous_band
+        .iter()
+        .map(|previous| previous.bbox.y1)
+        .max_by(f32::total_cmp)
+    else {
+        return false;
+    };
+    let Some(following_top) = following_band
+        .iter()
+        .map(|following| following.bbox.y0)
+        .min_by(f32::total_cmp)
+    else {
+        return false;
+    };
+
+    let height = span.bbox.y1 - span.bbox.y0;
+    let minimum_gap = (height * 0.75).max(8.0);
+    span.bbox.y0 - previous_bottom > minimum_gap && following_top - span.bbox.y1 > minimum_gap
 }
 
 fn append_column_aware_band_groups<'a>(
