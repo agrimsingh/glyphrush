@@ -105,7 +105,7 @@ unsafe impl GlobalAlloc for CountingAllocator {
 #[command(name = "glyphrush")]
 #[command(about = "Adaptive fast PDF parser with explicit quality flags")]
 struct Cli {
-    #[arg(long, value_enum, default_value_t = BackendChoice::Lopdf, global = true)]
+    #[arg(long, value_enum, default_value_t = BackendChoice::Auto, global = true)]
     backend: BackendChoice,
     #[command(subcommand)]
     command: Commands,
@@ -1990,7 +1990,7 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             glyphrush_status: FeatureParityStatus::Implemented,
             hot_path: true,
             quality_guard: "text_recall_and_silent_failure_eval",
-            notes: "PDFium is the fast backend when the pdfium feature is enabled; lopdf remains the dependency-light default.",
+            notes: "PDFium is the default fast backend when the pdfium feature is enabled; lopdf remains the dependency-light explicit backend and the auto fallback in plain builds.",
         },
         FeatureParityCapability {
             id: "page_classifier_quality_flags",

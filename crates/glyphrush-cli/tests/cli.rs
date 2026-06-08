@@ -15,7 +15,7 @@ fn inspect_reports_pdf_page_count_and_fingerprint() {
     let pdf_path = write_test_pdf("inspect", "Hello Glyphrush");
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["inspect", pdf_path.to_str().unwrap()])
+        .args(["--backend", "lopdf", "inspect", pdf_path.to_str().unwrap()])
         .output()
         .expect("run glyphrush inspect");
 
@@ -127,6 +127,30 @@ fn backend_auto_selects_fastest_enabled_backend() {
         .args(["--backend", "auto", "backend-check"])
         .output()
         .expect("run glyphrush backend-check with auto backend");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("backend-check output is json");
+
+    assert_eq!(
+        json["selected_backend"],
+        if cfg!(feature = "pdfium") {
+            "pdfium"
+        } else {
+            "lopdf"
+        }
+    );
+}
+
+#[test]
+fn default_backend_selects_fastest_enabled_backend() {
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["backend-check"])
+        .output()
+        .expect("run glyphrush backend-check with default backend");
 
     assert!(
         output.status.success(),
@@ -425,6 +449,8 @@ fn parse_lopdf_rejects_rendered_image_ocr_command_without_render_backend() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "parse",
             pdf_path.to_str().unwrap(),
             "--format",
@@ -562,7 +588,13 @@ fn backend_check_smoke_pdf_classifies_encrypted_input_without_losing_source_iden
     fs::write(&pdf_path, minimal_encrypted_pdf("Encrypted smoke text")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["backend-check", "--pdf", pdf_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "backend-check",
+            "--pdf",
+            pdf_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush backend-check --pdf encrypted");
 
@@ -598,7 +630,13 @@ fn backend_check_smoke_directory_reports_sorted_corpus_summary() {
     fs::write(dir.join("a.pdf"), minimal_pdf("First backend smoke")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["backend-check", "--pdf", dir.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "backend-check",
+            "--pdf",
+            dir.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush backend-check --pdf directory");
 
@@ -646,7 +684,13 @@ fn backend_check_smoke_directory_reports_failure_samples_with_error_kinds() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["backend-check", "--pdf", dir.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "backend-check",
+            "--pdf",
+            dir.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush backend-check --pdf mixed directory");
 
@@ -689,6 +733,8 @@ fn backend_check_smoke_directory_jobs_preserve_sorted_corpus_summary() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "backend-check",
             "--pdf",
             dir.to_str().unwrap(),
@@ -730,7 +776,13 @@ fn inspect_pages_reports_page_level_quality_triage() {
     fs::write(&pdf_path, minimal_pdf_with_full_page_image_and_text("tiny")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["inspect", pdf_path.to_str().unwrap(), "--pages"])
+        .args([
+            "--backend",
+            "lopdf",
+            "inspect",
+            pdf_path.to_str().unwrap(),
+            "--pages",
+        ])
         .output()
         .expect("run glyphrush inspect --pages");
 
@@ -797,7 +849,13 @@ fn inspect_pages_reports_table_row_cell_triage() {
     fs::write(&pdf_path, minimal_pdf_with_ruled_table()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["inspect", pdf_path.to_str().unwrap(), "--pages"])
+        .args([
+            "--backend",
+            "lopdf",
+            "inspect",
+            pdf_path.to_str().unwrap(),
+            "--pages",
+        ])
         .output()
         .expect("run glyphrush inspect --pages on ruled table");
 
@@ -834,6 +892,8 @@ fn inspect_pages_jobs_report_worker_count_and_preserve_page_order() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "inspect",
             pdf_path.to_str().unwrap(),
             "--pages",
@@ -867,6 +927,8 @@ fn inspect_pages_with_cache_dir_reports_miss_then_hit() {
 
     let first = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "inspect",
             pdf_path.to_str().unwrap(),
             "--pages",
@@ -884,6 +946,8 @@ fn inspect_pages_with_cache_dir_reports_miss_then_hit() {
 
     let second = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "inspect",
             pdf_path.to_str().unwrap(),
             "--pages",
@@ -915,7 +979,7 @@ fn manifest_generates_eval_manifest_for_single_pdf() {
     fs::write(&pdf_path, minimal_pdf("Manifest single")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["manifest", pdf_path.to_str().unwrap()])
+        .args(["--backend", "lopdf", "manifest", pdf_path.to_str().unwrap()])
         .output()
         .expect("run glyphrush manifest on one PDF");
 
@@ -993,7 +1057,12 @@ fn manifest_generates_eval_manifest_for_single_pdf() {
     );
 
     let eval_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval on generated manifest");
     assert!(
@@ -1010,7 +1079,7 @@ fn manifest_includes_page_layout_block_counts_for_eval_bootstrap() {
     fs::write(&pdf_path, minimal_pdf("Manifest layout block")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["manifest", pdf_path.to_str().unwrap()])
+        .args(["--backend", "lopdf", "manifest", pdf_path.to_str().unwrap()])
         .output()
         .expect("run glyphrush manifest with layout block counts");
 
@@ -1043,7 +1112,7 @@ fn manifest_includes_recovered_table_structure_for_eval_bootstrap() {
     fs::write(&pdf_path, minimal_pdf_with_ruled_table()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["manifest", pdf_path.to_str().unwrap()])
+        .args(["--backend", "lopdf", "manifest", pdf_path.to_str().unwrap()])
         .output()
         .expect("run glyphrush manifest with recovered table structure");
 
@@ -1075,7 +1144,7 @@ fn manifest_includes_page_identity_for_eval_bootstrap() {
     fs::write(&pdf_path, minimal_pdf("Manifest page identity")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["manifest", pdf_path.to_str().unwrap()])
+        .args(["--backend", "lopdf", "manifest", pdf_path.to_str().unwrap()])
         .output()
         .expect("run glyphrush manifest with page identity");
 
@@ -1097,7 +1166,12 @@ fn manifest_includes_page_identity_for_eval_bootstrap() {
     assert_eq!(page["page_fingerprint"].as_str().unwrap().len(), 64);
 
     let eval_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval on generated manifest with page identity");
     assert!(
@@ -1121,7 +1195,7 @@ fn manifest_includes_page_required_text_for_eval_bootstrap() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["manifest", pdf_path.to_str().unwrap()])
+        .args(["--backend", "lopdf", "manifest", pdf_path.to_str().unwrap()])
         .output()
         .expect("run glyphrush manifest with page text anchors");
 
@@ -1144,7 +1218,12 @@ fn manifest_includes_page_required_text_for_eval_bootstrap() {
     );
 
     let eval_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval on generated manifest with page text anchors");
     assert!(
@@ -1167,7 +1246,7 @@ fn manifest_page_required_text_prefers_substantive_anchor() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["manifest", pdf_path.to_str().unwrap()])
+        .args(["--backend", "lopdf", "manifest", pdf_path.to_str().unwrap()])
         .output()
         .expect("run glyphrush manifest with page-number prefix");
 
@@ -1193,6 +1272,8 @@ fn manifest_with_cache_dir_preserves_output_across_warm_runs() {
 
     let first = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "manifest",
             pdf_path.to_str().unwrap(),
             "--cache-dir",
@@ -1208,6 +1289,8 @@ fn manifest_with_cache_dir_preserves_output_across_warm_runs() {
 
     let second = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "manifest",
             pdf_path.to_str().unwrap(),
             "--cache-dir",
@@ -1246,7 +1329,7 @@ fn manifest_generates_eval_manifest_for_directory_in_stable_order() {
     fs::write(dir.join("a.pdf"), minimal_pdf("Native manifest")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["manifest", dir.to_str().unwrap()])
+        .args(["--backend", "lopdf", "manifest", dir.to_str().unwrap()])
         .output()
         .expect("run glyphrush manifest on directory");
 
@@ -1312,7 +1395,12 @@ fn manifest_generates_eval_manifest_for_directory_in_stable_order() {
     );
 
     let eval_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval on generated directory manifest");
     assert!(
@@ -1333,7 +1421,14 @@ fn manifest_category_stamps_generated_documents_for_eval_coverage() {
     fs::write(dir.join("a.pdf"), minimal_pdf("First categorized manifest")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["manifest", dir.to_str().unwrap(), "--category", "datasheet"])
+        .args([
+            "--backend",
+            "lopdf",
+            "manifest",
+            dir.to_str().unwrap(),
+            "--category",
+            "datasheet",
+        ])
         .output()
         .expect("run glyphrush manifest with category");
 
@@ -1374,6 +1469,8 @@ fn manifest_required_categories_generate_coverage_gate() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "manifest",
             dir.to_str().unwrap(),
             "--category",
@@ -1402,7 +1499,12 @@ fn manifest_required_categories_generate_coverage_gate() {
     assert_eq!(json["documents"][0]["category"], "datasheet");
 
     let eval_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval on generated manifest with coverage gate");
     assert!(!eval_output.status.success());
@@ -1424,6 +1526,8 @@ fn manifest_min_category_counts_generate_coverage_gate() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "manifest",
             dir.to_str().unwrap(),
             "--category",
@@ -1454,7 +1558,12 @@ fn manifest_min_category_counts_generate_coverage_gate() {
     );
 
     let eval_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval on generated manifest with minimum coverage gate");
     assert!(!eval_output.status.success());
@@ -1492,6 +1601,8 @@ fn manifest_coverage_preset_generates_glyphrush_v0_category_gate() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "manifest",
             dir.to_str().unwrap(),
             "--category",
@@ -1540,7 +1651,12 @@ fn manifest_coverage_preset_generates_glyphrush_v0_category_gate() {
     assert_eq!(json["documents"][0]["category"], "clean_digital");
 
     let eval_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval on generated manifest with preset coverage gate");
     assert!(!eval_output.status.success());
@@ -1626,7 +1742,7 @@ fn manifest_directory_jobs_preserve_stable_output() {
     fs::write(dir.join("b.pdf"), minimal_pdf("Second manifest jobs")).unwrap();
 
     let serial_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["manifest", dir.to_str().unwrap()])
+        .args(["--backend", "lopdf", "manifest", dir.to_str().unwrap()])
         .output()
         .expect("run glyphrush manifest serially");
     assert!(
@@ -1636,7 +1752,14 @@ fn manifest_directory_jobs_preserve_stable_output() {
     );
 
     let parallel_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["manifest", dir.to_str().unwrap(), "--jobs", "2"])
+        .args([
+            "--backend",
+            "lopdf",
+            "manifest",
+            dir.to_str().unwrap(),
+            "--jobs",
+            "2",
+        ])
         .output()
         .expect("run glyphrush manifest with jobs");
     assert!(
@@ -1669,6 +1792,8 @@ fn manifest_directory_with_cache_dir_preserves_stable_output() {
 
     let serial_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "manifest",
             dir.to_str().unwrap(),
             "--cache-dir",
@@ -1684,6 +1809,8 @@ fn manifest_directory_with_cache_dir_preserves_stable_output() {
 
     let parallel_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "manifest",
             dir.to_str().unwrap(),
             "--cache-dir",
@@ -1719,7 +1846,14 @@ fn parse_json_emits_structured_artifact_with_native_text() {
     let pdf_path = write_test_pdf("parse", "Hello Glyphrush");
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "json"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+        ])
         .output()
         .expect("run glyphrush parse");
 
@@ -1782,6 +1916,8 @@ fn parse_json_jobs_preserve_page_order_and_report_worker_count() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "parse",
             pdf_path.to_str().unwrap(),
             "--format",
@@ -1831,7 +1967,14 @@ fn parse_json_reports_table_signal_timing_for_ruled_table() {
     fs::write(&pdf_path, minimal_pdf_with_ruled_table()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "json"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+        ])
         .output()
         .expect("run glyphrush parse on ruled table");
 
@@ -2087,7 +2230,14 @@ fn parse_json_uses_page_wide_native_span_by_default_for_hot_path() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "json"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+        ])
         .output()
         .expect("run glyphrush parse");
 
@@ -2120,6 +2270,8 @@ fn parse_json_emits_positioned_native_spans_when_span_geometry_requested() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "parse",
             pdf_path.to_str().unwrap(),
             "--format",
@@ -2470,6 +2622,8 @@ fn parse_json_skips_positioned_spans_for_large_content_streams() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "parse",
             pdf_path.to_str().unwrap(),
             "--format",
@@ -2562,7 +2716,14 @@ fn parse_json_flags_widget_annotations_as_unsupported_feature() {
     fs::write(&pdf_path, minimal_pdf_with_widget_annotation("Form text")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "json"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+        ])
         .output()
         .expect("run glyphrush parse on widget annotation");
 
@@ -2599,7 +2760,14 @@ fn parse_json_flags_non_widget_annotations_as_unsupported_feature() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "json"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+        ])
         .output()
         .expect("run glyphrush parse on text annotation");
 
@@ -2637,7 +2805,14 @@ fn parse_json_flags_catalog_acroform_fields_as_unsupported_feature() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "json"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+        ])
         .output()
         .expect("run glyphrush parse on catalog AcroForm");
 
@@ -2673,6 +2848,8 @@ fn parse_text_emits_warnings_to_stderr_for_capped_span_geometry() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "parse",
             pdf_path.to_str().unwrap(),
             "--format",
@@ -2699,7 +2876,14 @@ fn parse_markdown_emits_text_from_layout_blocks() {
     let pdf_path = write_test_pdf("parse-markdown", "Hello Markdown");
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "markdown"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "markdown",
+        ])
         .output()
         .expect("run glyphrush parse markdown");
 
@@ -2726,7 +2910,14 @@ fn parse_markdown_renders_pipe_table_blocks_as_markdown_tables() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "markdown"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "markdown",
+        ])
         .output()
         .expect("run glyphrush parse markdown table");
 
@@ -2750,7 +2941,14 @@ fn parse_markdown_renders_whitespace_table_blocks_as_markdown_tables() {
     fs::write(&pdf_path, minimal_pdf_with_ruled_table()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "markdown"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "markdown",
+        ])
         .output()
         .expect("run glyphrush parse markdown whitespace table");
 
@@ -2812,7 +3010,14 @@ fn parse_text_emits_warnings_to_stderr_for_incomplete_ocr_pages() {
     fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "text"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "text",
+        ])
         .output()
         .expect("run glyphrush parse text without ocr sidecar");
 
@@ -2831,7 +3036,14 @@ fn parse_markdown_emits_warnings_to_stderr_for_incomplete_ocr_pages() {
     fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "markdown"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "markdown",
+        ])
         .output()
         .expect("run glyphrush parse markdown without ocr sidecar");
 
@@ -2850,7 +3062,14 @@ fn parse_without_ocr_sidecar_warns_when_ocr_is_required() {
     fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["parse", pdf_path.to_str().unwrap(), "--format", "json"])
+        .args([
+            "--backend",
+            "lopdf",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+        ])
         .output()
         .expect("run glyphrush parse without ocr sidecar");
 
@@ -2881,6 +3100,8 @@ fn parse_with_ocr_sidecar_populates_ocr_span_for_required_page() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "parse",
             pdf_path.to_str().unwrap(),
             "--format",
@@ -2931,6 +3152,8 @@ fn parse_with_ocr_sidecar_escalates_image_backed_broken_native_text() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "parse",
             pdf_path.to_str().unwrap(),
             "--format",
@@ -3043,6 +3266,8 @@ fn parse_with_ocr_command_times_out_slow_adapter() {
     let start = Instant::now();
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "parse",
             pdf_path.to_str().unwrap(),
             "--format",
@@ -3079,6 +3304,8 @@ fn ocr_check_command_smoke_reports_nonempty_output() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "ocr-check",
             pdf_path.to_str().unwrap(),
             "--page-index",
@@ -3129,6 +3356,8 @@ fn ocr_check_rejects_rendered_image_command_input_without_render_preflight() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "ocr-check",
             pdf_path.to_str().unwrap(),
             "--page-index",
@@ -3173,6 +3402,8 @@ fn ocr_check_strict_rejects_empty_command_output_after_writing_json() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "ocr-check",
             pdf_path.to_str().unwrap(),
             "--page-index",
@@ -3211,6 +3442,8 @@ fn ocr_check_classifies_tesseract_language_data_failure_as_missing_dependency() 
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "ocr-check",
             pdf_path.to_str().unwrap(),
             "--page-index",
@@ -3887,7 +4120,7 @@ fn bench_reports_timing_and_fallback_counts() {
     let pdf_path = write_test_pdf("bench", "Hello Glyphrush");
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["bench", pdf_path.to_str().unwrap()])
+        .args(["--backend", "lopdf", "bench", pdf_path.to_str().unwrap()])
         .output()
         .expect("run glyphrush bench");
 
@@ -3975,7 +4208,13 @@ fn bench_require_quality_rejects_speed_only_reports_after_writing_json() {
     let pdf_path = write_test_pdf("bench-require-quality", "Speed only");
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["bench", pdf_path.to_str().unwrap(), "--require-quality"])
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--require-quality",
+        ])
         .output()
         .expect("run glyphrush bench requiring quality");
 
@@ -4028,6 +4267,8 @@ fn bench_single_pdf_jobs_preserve_page_order_for_quality_checks() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--jobs",
@@ -4063,6 +4304,8 @@ fn bench_runs_named_external_baseline_and_reports_metrics() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4130,6 +4373,8 @@ fn bench_require_speedup_rejects_slow_glyphrush_after_writing_json() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4192,6 +4437,8 @@ fn bench_require_speedup_claim_rejects_speed_only_report_after_writing_json() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4240,6 +4487,8 @@ fn bench_includes_external_baseline_description_when_available() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4278,6 +4527,8 @@ fn bench_reports_external_baseline_description_probe_failures() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4321,6 +4572,8 @@ fn bench_directory_summary_reports_external_baseline_description_probe_status() 
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -4360,6 +4613,8 @@ fn bench_reports_external_baseline_output_digest_and_text_stats() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4412,6 +4667,8 @@ fn bench_reports_failed_external_baseline_without_hiding_glyphrush_metrics() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4462,6 +4719,8 @@ fn bench_reports_missing_dependency_external_baseline_kind() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4500,6 +4759,8 @@ fn bench_require_baselines_rejects_failed_baseline_after_writing_json() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4547,6 +4808,8 @@ fn bench_does_not_quality_score_failed_external_baseline() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--eval-manifest",
@@ -4596,6 +4859,8 @@ fn bench_reports_timed_out_external_baseline_without_hanging() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4666,6 +4931,8 @@ fn bench_with_eval_manifest_embeds_quality_summary() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--span-geometry",
@@ -4747,6 +5014,8 @@ fn bench_with_eval_manifest_selects_matching_document_from_full_corpus_manifest(
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--eval-manifest",
@@ -4797,6 +5066,8 @@ fn bench_with_eval_manifest_scores_quality_from_bench_artifact() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--cache-dir",
@@ -4853,6 +5124,8 @@ fn bench_with_eval_manifest_scores_baseline_output_quality() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4914,6 +5187,8 @@ fn bench_require_baseline_quality_rejects_failed_baseline_quality_after_writing_
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -4980,6 +5255,8 @@ fn bench_with_eval_manifest_scores_baseline_page_required_text() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -5039,6 +5316,8 @@ fn bench_with_eval_manifest_scores_baseline_reading_order() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -5113,6 +5392,8 @@ fn bench_with_eval_manifest_scores_baseline_table_structure() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline",
@@ -5163,6 +5444,8 @@ fn bench_with_ocr_sidecar_reports_applied_ocr_pages() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--ocr-sidecar",
@@ -5196,7 +5479,7 @@ fn bench_reports_fallback_action_counts_for_table_recovery() {
     fs::write(&pdf_path, minimal_pdf_with_ruled_table()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["bench", pdf_path.to_str().unwrap()])
+        .args(["--backend", "lopdf", "bench", pdf_path.to_str().unwrap()])
         .output()
         .expect("run glyphrush bench on table-like PDF");
 
@@ -5223,7 +5506,7 @@ fn bench_reports_warnings_for_incomplete_ocr_pages() {
     fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["bench", pdf_path.to_str().unwrap()])
+        .args(["--backend", "lopdf", "bench", pdf_path.to_str().unwrap()])
         .output()
         .expect("run glyphrush bench without ocr sidecar");
 
@@ -5291,6 +5574,8 @@ fn bench_with_eval_manifest_uses_ocr_sidecar_for_quality_checks() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--ocr-sidecar",
@@ -5343,6 +5628,8 @@ fn bench_with_eval_manifest_exits_nonzero_when_quality_fails() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--eval-manifest",
@@ -5398,6 +5685,8 @@ fn bench_with_eval_manifest_reports_silent_failure_summary() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--eval-manifest",
@@ -5454,6 +5743,8 @@ fn bench_directory_with_eval_manifest_embeds_quality_summary() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--eval-manifest",
@@ -5515,6 +5806,8 @@ fn bench_directory_with_eval_manifest_reports_silent_failure_summary() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--eval-manifest",
@@ -5574,6 +5867,8 @@ fn bench_directory_with_eval_manifest_reports_benchmark_category_summaries() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--eval-manifest",
@@ -5688,6 +5983,8 @@ fn bench_directory_with_eval_category_rejects_empty_selection_after_writing_json
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--eval-manifest",
@@ -5749,6 +6046,8 @@ fn bench_directory_with_eval_manifest_rejects_manifest_documents_outside_corpus(
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--eval-manifest",
@@ -5796,6 +6095,8 @@ fn bench_cache_probe_reports_cold_miss_and_warm_hit_in_one_run() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--cache-dir",
@@ -5921,6 +6222,8 @@ fn bench_directory_reports_sorted_documents_and_aggregate_counts() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--span-geometry",
@@ -6039,7 +6342,14 @@ fn bench_directory_jobs_preserve_stable_document_order() {
     fs::write(dir.join("b.pdf"), minimal_pdf("Second")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["bench", dir.to_str().unwrap(), "--jobs", "2"])
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            dir.to_str().unwrap(),
+            "--jobs",
+            "2",
+        ])
         .output()
         .expect("run glyphrush bench on directory with parallel jobs");
 
@@ -6075,7 +6385,7 @@ fn bench_directory_reports_image_artifact_counts() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["bench", dir.to_str().unwrap()])
+        .args(["--backend", "lopdf", "bench", dir.to_str().unwrap()])
         .output()
         .expect("run glyphrush bench directory with image artifacts");
 
@@ -6105,7 +6415,7 @@ fn bench_directory_counts_empty_text_pages_inside_non_empty_documents() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["bench", dir.to_str().unwrap()])
+        .args(["--backend", "lopdf", "bench", dir.to_str().unwrap()])
         .output()
         .expect("run glyphrush bench on mixed text directory");
 
@@ -6141,7 +6451,7 @@ fn bench_directory_reports_warning_summary_for_incomplete_ocr_pages() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["bench", dir.to_str().unwrap()])
+        .args(["--backend", "lopdf", "bench", dir.to_str().unwrap()])
         .output()
         .expect("run glyphrush bench directory with missing OCR");
 
@@ -6250,6 +6560,8 @@ fn bench_directory_cache_probe_aggregates_cold_and_warm_runs() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--cache-dir",
@@ -6315,6 +6627,8 @@ fn bench_directory_aggregates_external_baseline_metrics() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -6404,6 +6718,8 @@ fn bench_directory_with_eval_manifest_aggregates_baseline_quality() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -6473,6 +6789,8 @@ fn bench_directory_require_baseline_quality_rejects_quality_failures_after_writi
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -6542,6 +6860,8 @@ fn bench_directory_with_eval_manifest_aggregates_baseline_quality_by_category() 
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -6740,6 +7060,8 @@ fn bench_directory_baseline_quality_summary_counts_failed_check_types() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -6804,6 +7126,8 @@ fn bench_directory_baseline_summary_separates_successful_and_failed_pages() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -6866,6 +7190,8 @@ fn bench_directory_require_baselines_rejects_partial_failures_after_writing_json
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -6900,6 +7226,8 @@ fn bench_directory_require_speedup_rejects_slow_glyphrush_after_writing_json() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -6990,6 +7318,8 @@ fn bench_directory_require_speedup_claim_accepts_quality_backed_speedup() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -7048,6 +7378,8 @@ fn bench_directory_baseline_summary_counts_timed_out_documents() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -7106,6 +7438,8 @@ fn bench_directory_baseline_summary_reports_successful_empty_outputs() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             dir.to_str().unwrap(),
             "--baseline",
@@ -7268,6 +7602,8 @@ printf 'mock baseline output'"#,
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "baseline-check",
             "--baseline",
             &format!("mock={}", healthy.display()),
@@ -7327,6 +7663,8 @@ printf 'unused'"#,
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "baseline-check",
             "--baseline",
             &format!("execution={}", execution_failed.display()),
@@ -7372,6 +7710,8 @@ printf 'unused'"#,
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "baseline-check",
             "--baseline",
             &format!("slow={}", slow.display()),
@@ -7399,7 +7739,13 @@ fn baseline_check_preset_describes_core_glyphrush_v0_baselines() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .current_dir(&workspace_root)
-        .args(["baseline-check", "--baseline-preset", "glyphrush-v0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "baseline-check",
+            "--baseline-preset",
+            "glyphrush-v0",
+        ])
         .output()
         .expect("run glyphrush baseline-check with baseline preset");
 
@@ -7443,6 +7789,8 @@ fn bench_reports_requested_baseline_preset() {
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .current_dir(&workspace_root)
         .args([
+            "--backend",
+            "lopdf",
             "bench",
             pdf_path.to_str().unwrap(),
             "--baseline-preset",
@@ -7484,6 +7832,8 @@ exit 127"#,
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "baseline-check",
             "--pdf",
             pdf_path.to_str().unwrap(),
@@ -7569,6 +7919,8 @@ printf 'partial smoke %s\n' "$(basename "$1")""#,
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "baseline-check",
             "--pdf",
             dir.to_str().unwrap(),
@@ -7672,6 +8024,8 @@ printf 'strict smoke output\n'"#,
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "baseline-check",
             "--strict",
             "--pdf",
@@ -7708,6 +8062,8 @@ exit 127"#,
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "baseline-check",
             "--strict",
             "--pdf",
@@ -7740,7 +8096,7 @@ fn inspect_directory_reports_sorted_pdf_inventory() {
     fs::write(dir.join("one.pdf"), minimal_pdf("One")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["inspect", dir.to_str().unwrap()])
+        .args(["--backend", "lopdf", "inspect", dir.to_str().unwrap()])
         .output()
         .expect("run glyphrush inspect on directory");
 
@@ -7794,7 +8150,13 @@ fn inspect_directory_pages_reports_sorted_corpus_triage() {
     fs::write(dir.join("a-native.pdf"), minimal_pdf("Native directory")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["inspect", dir.to_str().unwrap(), "--pages"])
+        .args([
+            "--backend",
+            "lopdf",
+            "inspect",
+            dir.to_str().unwrap(),
+            "--pages",
+        ])
         .output()
         .expect("run glyphrush inspect --pages on directory");
 
@@ -7858,7 +8220,15 @@ fn inspect_directory_pages_jobs_preserve_sorted_corpus_triage() {
     fs::write(dir.join("b-native.pdf"), minimal_pdf("Native jobs B")).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["inspect", dir.to_str().unwrap(), "--pages", "--jobs", "2"])
+        .args([
+            "--backend",
+            "lopdf",
+            "inspect",
+            dir.to_str().unwrap(),
+            "--pages",
+            "--jobs",
+            "2",
+        ])
         .output()
         .expect("run glyphrush inspect --pages on directory with jobs");
 
@@ -7898,6 +8268,8 @@ fn inspect_directory_pages_with_cache_dir_aggregates_hits_and_misses() {
 
     let first = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "inspect",
             dir.to_str().unwrap(),
             "--pages",
@@ -7916,6 +8288,8 @@ fn inspect_directory_pages_with_cache_dir_aggregates_hits_and_misses() {
 
     let second = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "inspect",
             dir.to_str().unwrap(),
             "--pages",
@@ -7951,7 +8325,13 @@ fn debug_page_explains_classifier_decision_for_a_page() {
     let pdf_path = write_test_pdf("debug", "Hello Glyphrush");
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
         .output()
         .expect("run glyphrush debug-page");
 
@@ -7991,7 +8371,13 @@ fn debug_page_reports_selected_page_artifact_identity_and_timings() {
     let pdf_path = write_test_pdf("debug-artifact-timings", "Timed Glyphrush page");
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
         .output()
         .expect("run glyphrush debug-page");
 
@@ -8031,7 +8417,13 @@ fn debug_page_extracts_only_requested_page() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
         .output()
         .expect("run glyphrush debug-page on one page of a multi-page PDF");
 
@@ -8059,7 +8451,13 @@ fn debug_page_detects_inherited_page_tree_rotation() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
         .output()
         .expect("run glyphrush debug-page on inherited rotation PDF");
 
@@ -8094,7 +8492,13 @@ fn debug_page_uses_inherited_page_tree_media_box() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
         .output()
         .expect("run glyphrush debug-page on inherited media box PDF");
 
@@ -8120,7 +8524,13 @@ fn debug_page_prefers_page_crop_box_for_effective_dimensions() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
         .output()
         .expect("run glyphrush debug-page on CropBox PDF");
 
@@ -8146,7 +8556,13 @@ fn debug_page_escalates_full_page_image_with_sparse_native_text() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
         .output()
         .expect("run glyphrush debug-page on hybrid image");
 
@@ -8211,6 +8627,8 @@ fn debug_page_accepts_ocr_sidecar_for_page_fallback_investigation() {
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "debug-page",
             pdf_path.to_str().unwrap(),
             "0",
@@ -8252,7 +8670,13 @@ fn debug_page_escalates_form_wrapped_image_with_sparse_native_text() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
         .output()
         .expect("run glyphrush debug-page on form-wrapped image");
 
@@ -8293,7 +8717,13 @@ fn debug_page_flags_image_heavy_page_with_substantial_native_text_for_layout_rev
     fs::write(&pdf_path, minimal_pdf_with_full_page_image_and_text(text)).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
         .output()
         .expect("run glyphrush debug-page on substantial hybrid image");
 
@@ -8330,7 +8760,13 @@ fn debug_page_flags_ruled_table_geometry_without_ocr() {
     fs::write(&pdf_path, minimal_pdf_with_ruled_table()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["debug-page", pdf_path.to_str().unwrap(), "0"])
+        .args([
+            "--backend",
+            "lopdf",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
         .output()
         .expect("run glyphrush debug-page on ruled table");
 
@@ -8385,7 +8821,12 @@ fn eval_manifest_passes_when_counts_and_required_text_match() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval");
 
@@ -8464,7 +8905,12 @@ fn eval_manifest_required_text_uses_layout_reflowed_text() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with layout-reflowed required text");
 
@@ -8517,7 +8963,12 @@ fn eval_manifest_page_required_text_is_page_local() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with page-local required text");
 
@@ -8564,7 +9015,12 @@ fn eval_manifest_fails_when_page_fingerprint_regresses() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with page fingerprint mismatch");
 
@@ -8706,6 +9162,8 @@ fn eval_manifest_category_filter_rejects_empty_selection_without_vacuous_pass() 
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args([
+            "--backend",
+            "lopdf",
             "eval",
             manifest_path.to_str().unwrap(),
             "--category",
@@ -8737,7 +9195,12 @@ fn eval_manifest_rejects_empty_document_set_without_vacuous_pass() {
     fs::write(&manifest_path, r#"{ "documents": [] }"#).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with empty manifest");
 
@@ -8792,7 +9255,12 @@ fn eval_manifest_reports_category_quality_summaries() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval");
 
@@ -8849,7 +9317,12 @@ fn eval_manifest_fails_when_required_categories_are_missing() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with required category coverage");
 
@@ -8904,7 +9377,12 @@ fn eval_manifest_fails_when_min_category_counts_are_not_met() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with minimum category coverage");
 
@@ -9017,7 +9495,14 @@ fn eval_manifest_jobs_preserve_manifest_order_and_report_worker_count() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap(), "--jobs", "2"])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+            "--jobs",
+            "2",
+        ])
         .output()
         .expect("run glyphrush eval with jobs");
 
@@ -9086,7 +9571,12 @@ fn eval_manifest_uses_backend_specific_expectation_overrides() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with backend-specific expectations");
 
@@ -9254,7 +9744,12 @@ fn eval_manifest_fails_when_source_provenance_regresses() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with stale source provenance");
 
@@ -9314,7 +9809,12 @@ fn eval_manifest_reports_required_warning_checks() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with warning expectations");
 
@@ -9358,7 +9858,12 @@ fn eval_manifest_fails_when_required_warning_is_missing() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with missing warning expectation");
 
@@ -9402,7 +9907,12 @@ fn eval_manifest_reports_route_count_checks() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with route count checks");
 
@@ -9461,7 +9971,12 @@ fn eval_manifest_fails_when_route_counts_regress() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing route count check");
 
@@ -9519,7 +10034,12 @@ fn eval_manifest_reports_quality_flag_count_checks() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with quality flag count checks");
 
@@ -9584,7 +10104,12 @@ fn eval_manifest_fails_when_quality_flag_counts_regress() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing quality flag count check");
 
@@ -9643,7 +10168,12 @@ fn eval_manifest_reports_image_artifact_count_checks() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with image artifact count checks");
 
@@ -9691,7 +10221,12 @@ fn eval_manifest_fails_when_image_artifact_count_regresses() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing image artifact count check");
 
@@ -9741,7 +10276,12 @@ fn eval_manifest_can_assert_page_image_artifact_count() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with page image artifact count checks");
 
@@ -9794,7 +10334,12 @@ fn eval_manifest_fails_when_page_image_artifact_count_regresses() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing page image artifact count check");
 
@@ -9837,7 +10382,12 @@ fn eval_manifest_reports_route_reason_count_checks() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with route reason count checks");
 
@@ -9887,7 +10437,12 @@ fn eval_manifest_fails_when_route_reason_counts_regress() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing route reason count check");
 
@@ -9936,7 +10491,12 @@ fn eval_manifest_reports_text_recall_scores() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with text recall");
 
@@ -10001,7 +10561,13 @@ fn eval_manifest_reports_span_bbox_scores() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap(), "--span-geometry"])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+            "--span-geometry",
+        ])
         .output()
         .expect("run glyphrush eval with span bbox");
 
@@ -10047,7 +10613,12 @@ fn eval_manifest_fails_when_text_recall_is_below_threshold() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing text recall");
 
@@ -10097,7 +10668,12 @@ fn eval_manifest_reports_reading_order_score() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with reading-order check");
 
@@ -10163,7 +10739,13 @@ fn eval_manifest_uses_span_geometry_layout_for_two_column_reading_order() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap(), "--span-geometry"])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+            "--span-geometry",
+        ])
         .output()
         .expect("run glyphrush eval with two-column reading-order check");
 
@@ -10208,7 +10790,12 @@ fn eval_manifest_fails_when_reading_order_score_is_below_threshold() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing reading-order check");
 
@@ -10259,7 +10846,12 @@ fn eval_manifest_reports_ocr_required_classification_scores() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with OCR-required classification");
 
@@ -10312,7 +10904,12 @@ fn eval_manifest_fails_when_ocr_required_recall_is_below_threshold() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing OCR-required classification");
 
@@ -10360,7 +10957,12 @@ fn eval_manifest_reports_quality_flag_classification_scores() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with quality-flag classification");
 
@@ -10418,7 +11020,12 @@ fn eval_manifest_fails_when_quality_flag_recall_is_below_threshold() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing quality-flag classification");
 
@@ -10469,7 +11076,12 @@ fn eval_manifest_reports_zero_silent_failures_when_flags_are_expected() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with silent-failure check");
 
@@ -10515,7 +11127,12 @@ fn eval_manifest_fails_when_quality_flags_are_not_expected() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing silent-failure check");
 
@@ -10564,7 +11181,12 @@ fn eval_manifest_fails_when_empty_text_output_page_is_not_expected() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with empty text output page");
 
@@ -10615,7 +11237,12 @@ fn eval_manifest_allows_expected_empty_text_output_pages() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with expected empty text output page");
 
@@ -10673,7 +11300,12 @@ fn eval_manifest_reports_table_structure_scores() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with table structure");
 
@@ -10740,7 +11372,12 @@ fn eval_manifest_recovers_whitespace_rows_from_ruled_table_signal() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with ruled table structure");
 
@@ -10801,7 +11438,13 @@ fn eval_manifest_recovers_positioned_table_rows_with_span_geometry() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap(), "--span-geometry"])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+            "--span-geometry",
+        ])
         .output()
         .expect("run glyphrush eval with positioned table structure");
 
@@ -10856,7 +11499,12 @@ fn eval_manifest_fails_when_table_cell_recall_is_below_threshold() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval with failing table structure");
 
@@ -10902,7 +11550,12 @@ fn eval_manifest_exits_nonzero_when_a_quality_gate_fails() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval");
 
@@ -10946,7 +11599,12 @@ fn eval_manifest_can_assert_page_route_and_required_quality_flags() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval");
 
@@ -11024,7 +11682,13 @@ fn eval_manifest_can_assert_page_layout_block_counts() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap(), "--span-geometry"])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+            "--span-geometry",
+        ])
         .output()
         .expect("run glyphrush eval with page layout block counts");
 
@@ -11092,7 +11756,12 @@ fn eval_manifest_fails_when_page_route_regresses() {
     .unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(["eval", manifest_path.to_str().unwrap()])
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
         .output()
         .expect("run glyphrush eval");
 
@@ -11170,10 +11839,11 @@ fn write_rendered_ocr_command_script(label: &str, log_path: &std::path::Path) ->
 }
 
 fn run_json<const N: usize>(args: [&str; N]) -> Value {
-    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
-        .args(args)
-        .output()
-        .expect("run glyphrush command");
+    let mut command = Command::new(env!("CARGO_BIN_EXE_glyphrush"));
+    if !args.iter().copied().any(|arg| arg == "--backend") {
+        command.args(["--backend", "lopdf"]);
+    }
+    let output = command.args(args).output().expect("run glyphrush command");
 
     assert!(
         output.status.success(),
