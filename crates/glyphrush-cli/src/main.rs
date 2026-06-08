@@ -51,7 +51,7 @@ const BASELINE_CHECK_REPORT_VERSION: &str = "glyphrush-baseline-check-report-v1"
 const BACKEND_CHECK_REPORT_VERSION: &str = "glyphrush-backend-check-report-v1";
 const OCR_CHECK_REPORT_VERSION: &str = "glyphrush-ocr-check-report-v1";
 const FEATURE_PARITY_REPORT_VERSION: &str = "glyphrush-feature-parity-report-v1";
-const FEATURE_PARITY_RECOMMENDED_GATE: &str = "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0";
+const FEATURE_PARITY_RECOMMENDED_GATE: &str = "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5";
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;

@@ -61,7 +61,7 @@ cargo run -p glyphrush-cli -- bench test/example.pdf --baseline-preset glyphrush
 cargo run -p glyphrush-cli -- bench test/example.pdf --require-baselines --baseline-preset glyphrush-v0
 cargo run -p glyphrush-cli -- bench test/example.pdf --require-baseline-quality --eval-manifest test/corpus.json --baseline-preset glyphrush-v0
 cargo run -p glyphrush-cli -- bench test/example.pdf --baseline-preset glyphrush-v0 --require-speedup liteparse=2.0
-cargo run -p glyphrush-cli -- bench test/example.pdf --eval-manifest test/corpus.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0
+cargo run -p glyphrush-cli -- bench test/example.pdf --eval-manifest test/corpus.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5
 cargo run -p glyphrush-cli -- bench test/example.pdf --baseline liteparse=tools/baselines/liteparse-text.sh
 cargo run -p glyphrush-cli -- bench test/example.pdf --baseline liteparse-no-ocr=tools/baselines/liteparse-no-ocr-text.sh
 cargo run -p glyphrush-cli -- baseline-check --baseline-preset glyphrush-v0
@@ -104,7 +104,7 @@ cargo run -p glyphrush-cli -- bench test/ --baseline-preset glyphrush-v0
 cargo run -p glyphrush-cli -- bench test/ --require-baselines --baseline-preset glyphrush-v0
 cargo run -p glyphrush-cli -- bench test/ --require-baseline-quality --eval-manifest test/corpus.json --baseline-preset glyphrush-v0
 cargo run -p glyphrush-cli -- bench test/ --baseline-preset glyphrush-v0 --require-speedup liteparse=2.0
-cargo run -p glyphrush-cli -- bench test/ --eval-manifest test/corpus.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0
+cargo run -p glyphrush-cli -- bench test/ --eval-manifest test/corpus.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5
 cargo run -p glyphrush-cli -- bench test/ --baseline liteparse=tools/baselines/liteparse-text.sh
 cargo run -p glyphrush-cli -- bench test/ --baseline liteparse-no-ocr=tools/baselines/liteparse-no-ocr-text.sh
 cargo run -p glyphrush-cli -- bench test/ --cache-dir .glyphrush-cache

@@ -14,7 +14,7 @@ cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --ocr-http-
 cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --cache-dir .glyphrush-cache
 cargo run -p glyphrush-cli -- bench test/your-file.pdf
 cargo run -p glyphrush-cli -- bench test/your-file.pdf --baseline-preset glyphrush-v0
-cargo run -p glyphrush-cli -- bench test/your-file.pdf --eval-manifest test/corpus.generated.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0
+cargo run -p glyphrush-cli -- bench test/your-file.pdf --eval-manifest test/corpus.generated.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5
 cargo run -p glyphrush-cli -- bench test/your-file.pdf --ocr-sidecar test/ocr
 cargo run -p glyphrush-cli -- bench test/your-file.pdf --ocr-command test/ocr-command.sh
 cargo run -p glyphrush-cli -- bench test/your-file.pdf --ocr-http-url http://127.0.0.1:8080/ocr
@@ -30,7 +30,7 @@ cargo run -p glyphrush-cli -- backend-check --pdf test/
 cargo run -p glyphrush-cli -- backend-check --pdf test/ --jobs 4
 cargo run -p glyphrush-cli -- bench test/
 cargo run -p glyphrush-cli -- bench test/ --baseline-preset glyphrush-v0
-cargo run -p glyphrush-cli --features pdfium -- --backend auto bench test/ --eval-manifest test/corpus.datasheets.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0
+cargo run -p glyphrush-cli --features pdfium -- --backend auto bench test/ --eval-manifest test/corpus.datasheets.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5
 cargo run -p glyphrush-cli -- bench test/ --ocr-sidecar test/ocr
 cargo run -p glyphrush-cli -- bench test/ --ocr-command test/ocr-command.sh
 cargo run -p glyphrush-cli -- bench test/ --ocr-http-url http://127.0.0.1:8080/ocr

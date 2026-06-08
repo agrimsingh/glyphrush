@@ -209,7 +209,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     );
     assert_eq!(
         json["recommended_gate"],
-        "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0"
+        "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5"
     );
     assert_eq!(json["readiness"]["native_text_speed_race_ready"], true);
     assert_eq!(json["readiness"]["full_liteparse_drop_in_ready"], false);
