@@ -8377,9 +8377,6 @@ fn image_xobject_artifacts(
     page_box: &PageBox,
 ) -> Vec<ExtractedImage> {
     let resources = page_resources(document, page_id);
-    let Ok(content) = Content::decode(content) else {
-        return Vec::new();
-    };
     let dimensions = page_box.dimensions();
     let page_area = dimensions.width * dimensions.height;
     if page_area <= 0.0 {
@@ -8392,8 +8389,231 @@ fn image_xobject_artifacts(
         page_area,
         images: Vec::new(),
     };
+
+    if let Some(draws) = raw_image_draw_ops(content) {
+        if let Some(resources) = resources {
+            for draw in draws {
+                collector.collect_drawn_xobject(resources, draw.name, draw.state, None, 1);
+            }
+        }
+        return collector.images;
+    }
+
+    let Ok(content) = Content::decode(content) else {
+        return Vec::new();
+    };
     collector.collect_content(&content, resources, PdfMatrix::identity(), None, 0);
     collector.images
+}
+
+struct RawImageDraw<'a> {
+    name: &'a [u8],
+    state: PdfMatrix,
+}
+
+enum RawImageOperand<'a> {
+    Number(f32),
+    Name(&'a [u8]),
+}
+
+enum RawImageToken<'a> {
+    Number(f32),
+    Name(&'a [u8]),
+    Operator(&'a [u8]),
+}
+
+fn raw_image_draw_ops(content: &[u8]) -> Option<Vec<RawImageDraw<'_>>> {
+    let mut state = PdfMatrix::identity();
+    let mut stack = Vec::new();
+    let mut operands = Vec::with_capacity(8);
+    let mut draws = Vec::new();
+
+    for token in RawImageTokens::new(content) {
+        match token {
+            RawImageToken::Number(value) => operands.push(RawImageOperand::Number(value)),
+            RawImageToken::Name(name) => operands.push(RawImageOperand::Name(name)),
+            RawImageToken::Operator(operator) => {
+                match operator {
+                    b"BI" | b"ID" => return None,
+                    b"q" => stack.push(state),
+                    b"Q" => {
+                        state = stack.pop().unwrap_or_else(PdfMatrix::identity);
+                    }
+                    b"cm" => {
+                        if let Some(matrix) = raw_image_matrix_from_operands(&operands) {
+                            state = state.multiply(matrix);
+                        }
+                    }
+                    b"Do" => {
+                        let name = raw_image_name_operand(&operands)?;
+                        if name.contains(&b'#') {
+                            return None;
+                        }
+                        draws.push(RawImageDraw { name, state });
+                    }
+                    _ => {}
+                }
+                operands.clear();
+            }
+        }
+    }
+
+    Some(draws)
+}
+
+fn raw_image_matrix_from_operands(operands: &[RawImageOperand<'_>]) -> Option<PdfMatrix> {
+    let start = operands.len().checked_sub(6)?;
+    let number = |offset: usize| match operands.get(start + offset)? {
+        RawImageOperand::Number(value) => Some(*value),
+        RawImageOperand::Name(_) => None,
+    };
+
+    Some(PdfMatrix {
+        a: number(0)?,
+        b: number(1)?,
+        c: number(2)?,
+        d: number(3)?,
+        e: number(4)?,
+        f: number(5)?,
+    })
+}
+
+fn raw_image_name_operand<'a>(operands: &[RawImageOperand<'a>]) -> Option<&'a [u8]> {
+    operands.last().and_then(|operand| match operand {
+        RawImageOperand::Name(name) => Some(*name),
+        RawImageOperand::Number(_) => None,
+    })
+}
+
+struct RawImageTokens<'a> {
+    content: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> RawImageTokens<'a> {
+    fn new(content: &'a [u8]) -> Self {
+        Self { content, offset: 0 }
+    }
+
+    fn skip_delimiters(&mut self) {
+        while self.offset < self.content.len() {
+            match self.content[self.offset] {
+                b'%' => {
+                    self.offset += 1;
+                    while self.offset < self.content.len()
+                        && !matches!(self.content[self.offset], b'\n' | b'\r')
+                    {
+                        self.offset += 1;
+                    }
+                }
+                byte if byte.is_ascii_whitespace()
+                    || matches!(byte, b'[' | b']' | b'{' | b'}' | b'<' | b'>') =>
+                {
+                    self.offset += 1;
+                }
+                _ => break,
+            }
+        }
+    }
+
+    fn skip_literal_string(&mut self) {
+        let mut depth = 1usize;
+        self.offset += 1;
+        while self.offset < self.content.len() && depth > 0 {
+            match self.content[self.offset] {
+                b'\\' => {
+                    self.offset = (self.offset + 2).min(self.content.len());
+                }
+                b'(' => {
+                    depth += 1;
+                    self.offset += 1;
+                }
+                b')' => {
+                    depth -= 1;
+                    self.offset += 1;
+                }
+                _ => self.offset += 1,
+            }
+        }
+    }
+
+    fn skip_hex_string(&mut self) {
+        self.offset += 1;
+        while self.offset < self.content.len() {
+            let byte = self.content[self.offset];
+            self.offset += 1;
+            if byte == b'>' {
+                break;
+            }
+        }
+    }
+}
+
+impl<'a> Iterator for RawImageTokens<'a> {
+    type Item = RawImageToken<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            self.skip_delimiters();
+            if self.offset >= self.content.len() {
+                return None;
+            }
+
+            match self.content[self.offset] {
+                b'(' => {
+                    self.skip_literal_string();
+                    continue;
+                }
+                b'<' if self
+                    .content
+                    .get(self.offset + 1)
+                    .is_none_or(|byte| *byte != b'<') =>
+                {
+                    self.skip_hex_string();
+                    continue;
+                }
+                b'/' => {
+                    self.offset += 1;
+                    let start = self.offset;
+                    while self.offset < self.content.len()
+                        && !self.content[self.offset].is_ascii_whitespace()
+                        && !matches!(
+                            self.content[self.offset],
+                            b'[' | b']' | b'{' | b'}' | b'/' | b'(' | b')' | b'<' | b'>' | b'%'
+                        )
+                    {
+                        self.offset += 1;
+                    }
+                    if self.offset > start {
+                        return Some(RawImageToken::Name(&self.content[start..self.offset]));
+                    }
+                    continue;
+                }
+                _ => {}
+            }
+
+            let start = self.offset;
+            while self.offset < self.content.len()
+                && !self.content[self.offset].is_ascii_whitespace()
+                && !matches!(
+                    self.content[self.offset],
+                    b'[' | b']' | b'{' | b'}' | b'/' | b'(' | b')' | b'<' | b'>' | b'%'
+                )
+            {
+                self.offset += 1;
+            }
+
+            if self.offset > start {
+                let token = &self.content[start..self.offset];
+                if let Some(number) = raw_number_token(token) {
+                    return Some(RawImageToken::Number(number));
+                }
+                return Some(RawImageToken::Operator(token));
+            }
+
+            self.offset += 1;
+        }
+    }
 }
 
 struct ImageArtifactCollector<'a> {
@@ -9242,5 +9462,22 @@ mod unit_tests {
         let content = b"BT /F1 12 Tf 72 720 Td (line l S re text) Tj ET";
 
         assert_eq!(raw_ruled_table_line_density_hint(content), Some(0.0));
+    }
+
+    #[test]
+    fn raw_image_draw_ops_preserve_xobject_names_and_transforms() {
+        let content = b"q 10 0 0 20 30 40 cm /Im1 Do Q";
+        let draws = raw_image_draw_ops(content).expect("simple image ops are supported");
+
+        assert_eq!(draws.len(), 1);
+        assert_eq!(draws[0].name, b"Im1");
+        assert_eq!(draws[0].state.transform_point(1.0, 1.0), (40.0, 60.0));
+    }
+
+    #[test]
+    fn raw_image_draw_ops_defers_inline_images_to_full_decoder() {
+        let content = b"q BI /W 1 /H 1 /BPC 1 ID \x00 EI Q";
+
+        assert!(raw_image_draw_ops(content).is_none());
     }
 }
