@@ -15,6 +15,7 @@ The dependency-light backend extracts native text through `lopdf`, can preserve 
 ```sh
 cargo run -p glyphrush-cli -- eval test/corpus.datasheets.json --category datasheet --jobs 2
 bash scripts/verify.sh
+scripts/bench-liteparse.sh --dry-run
 ```
 
 `scripts/verify.sh` is the shared local/GitHub CI gate. It runs formatting, Python wrapper tests, the full Rust workspace test suite, clippy with warnings denied, strict `glyphrush-v0` baseline-preset metadata preflight, and the datasheet eval gate when ignored local PDFs exist under `test/`. In a fresh GitHub checkout those PDFs are absent by design, so CI skips only that local corpus gate rather than failing on non-committed benchmark files.
@@ -32,6 +33,7 @@ cargo run -p glyphrush-cli -- backend-check --pdf test/ --jobs 4
 cargo run -p glyphrush-cli -- --backend lopdf inspect test/example.pdf
 cargo run -p glyphrush-cli -- --backend lopdf backend-check
 cargo run -p glyphrush-cli --features pdfium -- --backend auto bench test/ --eval-manifest test/corpus.datasheets.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0
+GLYPHRUSH_BENCH_OUTPUT=.glyphrush-baselines/reports/liteparse-speed-gate.json scripts/bench-liteparse.sh
 cargo run -p glyphrush-cli --features pdfium -- --backend pdfium backend-check
 cargo run -p glyphrush-cli --features pdfium -- --backend pdfium backend-check --pdf test/
 cargo run -p glyphrush-cli --features pdfium -- --backend pdfium bench test/ --baseline-preset glyphrush-v0

@@ -3,7 +3,7 @@ use std::{
     io::{Read, Write},
     net::TcpListener,
     os::unix::fs::PermissionsExt,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Command,
     sync::mpsc::{self, Receiver},
     thread::JoinHandle,
@@ -277,6 +277,42 @@ fn feature_parity_reports_liteparse_capability_gaps() {
 
     let builtin_ocr = capability(capabilities, "bundled_builtin_ocr");
     assert_eq!(builtin_ocr["glyphrush_status"], "not_planned");
+}
+
+#[test]
+fn liteparse_benchmark_gate_script_dry_run_uses_quality_backed_pdfium_command() {
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("canonical repo root");
+    let output = Command::new(repo_root.join("scripts/bench-liteparse.sh"))
+        .arg("--dry-run")
+        .env("GLYPHRUSH_BENCH_JOBS", "3")
+        .env(
+            "GLYPHRUSH_BENCH_OUTPUT",
+            "/tmp/glyphrush-liteparse-gate.json",
+        )
+        .output()
+        .expect("run bench-liteparse dry run");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("cargo run -q -p glyphrush-cli"));
+    assert!(stdout.contains("--features pdfium"));
+    assert!(stdout.contains("--backend pdfium"));
+    assert!(stdout.contains("bench test/"));
+    assert!(stdout.contains("--eval-manifest test/corpus.datasheets.json"));
+    assert!(stdout.contains("--eval-category datasheet"));
+    assert!(stdout.contains("--baseline-preset glyphrush-v0"));
+    assert!(stdout.contains("--require-baselines"));
+    assert!(stdout.contains("--require-baseline-quality"));
+    assert!(stdout.contains("--require-speedup-claim liteparse=2.0"));
+    assert!(stdout.contains("--jobs 3"));
+    assert!(stdout.contains("> /tmp/glyphrush-liteparse-gate.json"));
 }
 
 #[cfg(feature = "pdfium")]
