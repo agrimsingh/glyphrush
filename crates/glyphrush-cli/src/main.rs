@@ -2809,15 +2809,26 @@ fn ocr_http_check_output(
             let success = response
                 .status_code
                 .is_some_and(|status| (200..300).contains(&status));
-            let empty_output = success && response.body.is_empty();
-            let error_kind = if empty_output {
+            let decoded_body = success.then(|| decode_ocr_http_response_body(&response));
+            let output_body = match decoded_body.as_ref() {
+                Some(Ok(text)) => text.as_bytes(),
+                _ => response.body.as_slice(),
+            };
+            let empty_output =
+                success && matches!(decoded_body.as_ref(), Some(Ok(text)) if text.is_empty());
+            let decode_failed = matches!(decoded_body, Some(Err(_)));
+            let error_kind = if decode_failed {
+                Some("http_response_decode_failed")
+            } else if empty_output {
                 Some("empty_output")
             } else if success {
                 None
             } else {
                 Some("http_status_failed")
             };
-            let error = if empty_output {
+            let error = if let Some(Err(error)) = decoded_body.as_ref() {
+                Some(format!("{error:#}"))
+            } else if empty_output {
                 Some("OCR HTTP output was empty".to_string())
             } else if success {
                 None
@@ -2836,7 +2847,7 @@ fn ocr_http_check_output(
                 pdf: pdf.display().to_string(),
                 page_index,
                 adapter: "ocr_http",
-                passed: success && !empty_output,
+                passed: success && !empty_output && !decode_failed,
                 success,
                 command: None,
                 http_url: Some(http_url.to_string()),
@@ -2846,10 +2857,10 @@ fn ocr_http_check_output(
                 timeout_ms,
                 wall_us: response.wall_us,
                 render_us: 0,
-                output_bytes: response.body.len() as u64,
-                stdout_sha256: Some(stdout_sha256(&response.body)),
-                stdout_line_count: stdout_line_count(&response.body),
-                stdout_word_count: stdout_word_count(&response.body),
+                output_bytes: output_body.len() as u64,
+                stdout_sha256: Some(stdout_sha256(output_body)),
+                stdout_line_count: stdout_line_count(output_body),
+                stdout_word_count: stdout_word_count(output_body),
                 stderr_bytes: 0,
                 empty_output,
                 stderr_preview: None,
@@ -10211,6 +10222,7 @@ fn run_ocr_command(
 #[derive(Debug)]
 struct OcrHttpResponse {
     status_code: Option<u16>,
+    content_type: Option<String>,
     body: Vec<u8>,
     wall_us: u128,
 }
@@ -10265,10 +10277,11 @@ fn run_ocr_http_request(
         .read_to_end(&mut response)
         .context("read OCR HTTP response")?;
     let wall_us = started.elapsed().as_micros().max(1);
-    let (status_code, body) = parse_http_response(&response)?;
+    let (status_code, content_type, body) = parse_http_response(&response)?;
 
     Ok(OcrHttpResponse {
         status_code: Some(status_code),
+        content_type,
         body,
         wall_us,
     })
@@ -10304,7 +10317,7 @@ fn parse_http_url(http_url: &str) -> Result<ParsedHttpUrl> {
     })
 }
 
-fn parse_http_response(response: &[u8]) -> Result<(u16, Vec<u8>)> {
+fn parse_http_response(response: &[u8]) -> Result<(u16, Option<String>, Vec<u8>)> {
     let header_end = response
         .windows(4)
         .position(|window| window == b"\r\n\r\n")
@@ -10321,8 +10334,36 @@ fn parse_http_response(response: &[u8]) -> Result<(u16, Vec<u8>)> {
         .context("OCR HTTP response missing status code")?
         .parse::<u16>()
         .context("parse OCR HTTP response status code")?;
+    let content_type = headers.lines().find_map(|line| {
+        let (name, value) = line.split_once(':')?;
+        name.eq_ignore_ascii_case("content-type")
+            .then(|| value.trim().to_string())
+    });
 
-    Ok((status_code, response[header_end..].to_vec()))
+    Ok((status_code, content_type, response[header_end..].to_vec()))
+}
+
+fn decode_ocr_http_response_body(response: &OcrHttpResponse) -> Result<String> {
+    if response
+        .content_type
+        .as_deref()
+        .map(|content_type| {
+            content_type
+                .to_ascii_lowercase()
+                .contains("application/json")
+        })
+        .unwrap_or(false)
+    {
+        let value: Value =
+            serde_json::from_slice(&response.body).context("decode OCR HTTP JSON response")?;
+        let text = value
+            .get("text")
+            .and_then(Value::as_str)
+            .context("OCR HTTP JSON response missing text field")?;
+        return Ok(text.to_string());
+    }
+
+    Ok(String::from_utf8_lossy(&response.body).into_owned())
 }
 
 fn ocr_http_error_kind(error: &anyhow::Error) -> &'static str {
@@ -10348,7 +10389,7 @@ fn run_ocr_http(
         bail!("OCR HTTP endpoint returned status {status_code}");
     }
 
-    Ok(String::from_utf8_lossy(&response.body).into_owned())
+    decode_ocr_http_response_body(&response)
 }
 
 fn sidecar_file_name(source_path: &Path, page_index: u32) -> String {
