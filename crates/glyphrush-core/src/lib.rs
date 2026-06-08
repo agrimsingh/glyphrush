@@ -2731,7 +2731,7 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
         return None;
     }
 
-    let mut rows = Vec::with_capacity(lines.len());
+    let mut rows: Vec<Vec<String>> = Vec::with_capacity(lines.len());
     rows.push(header.iter().map(|cell| (*cell).to_string()).collect());
     let mut rows_with_table_value_cells = 0;
     let mut data_row_count = 0;
@@ -2745,6 +2745,21 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
                 || !looks_like_wrapped_descriptor_fragment(&tokens)
             {
                 return None;
+            }
+            if data_row_count > 0
+                && tokens
+                    .first()
+                    .is_some_and(|token| starts_with_lowercase(token))
+            {
+                let continuation = tokens.join(" ");
+                if let Some(previous_row) = rows.last_mut() {
+                    if !previous_row[0].is_empty() {
+                        previous_row[0].push(' ');
+                    }
+                    previous_row[0].push_str(&continuation);
+                    merged_descriptor_rows += 1;
+                    continue;
+                }
             }
             pending_descriptor_tokens.extend(tokens);
             continue;

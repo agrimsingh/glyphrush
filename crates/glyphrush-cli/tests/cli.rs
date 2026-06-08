@@ -306,6 +306,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         table_recovery["notes"]
             .as_str()
             .unwrap()
+            .contains("trailing descriptor continuations")
+    );
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
             .contains("same-line fragmented positioned cells")
     );
     assert!(
