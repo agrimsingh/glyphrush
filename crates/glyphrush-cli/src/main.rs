@@ -46,6 +46,7 @@ const BENCH_REPORT_VERSION: &str = "glyphrush-bench-report-v1";
 const EVAL_REPORT_VERSION: &str = "glyphrush-eval-report-v1";
 const BASELINE_CHECK_REPORT_VERSION: &str = "glyphrush-baseline-check-report-v1";
 const BACKEND_CHECK_REPORT_VERSION: &str = "glyphrush-backend-check-report-v1";
+const OCR_CHECK_REPORT_VERSION: &str = "glyphrush-ocr-check-report-v1";
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
@@ -247,6 +248,19 @@ enum Commands {
         #[arg(long, default_value_t = 1)]
         jobs: usize,
     },
+    OcrCheck {
+        pdf: PathBuf,
+        #[arg(long)]
+        page_index: u32,
+        #[arg(long)]
+        ocr_sidecar: Option<PathBuf>,
+        #[arg(long)]
+        ocr_command: Option<PathBuf>,
+        #[arg(long, default_value_t = DEFAULT_OCR_TIMEOUT_MS)]
+        ocr_timeout_ms: u64,
+        #[arg(long)]
+        strict: bool,
+    },
     Manifest {
         pdf: PathBuf,
         #[arg(long)]
@@ -355,6 +369,37 @@ struct BackendSmokeOutput {
     documents: Vec<BackendSmokeOutput>,
     error_kind: Option<&'static str>,
     error: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct OcrCheckOutput {
+    report_version: &'static str,
+    parser_name: &'static str,
+    parser_version: &'static str,
+    strict: bool,
+    pdf: String,
+    page_index: u32,
+    adapter: &'static str,
+    passed: bool,
+    success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sidecar_path: Option<String>,
+    exit_status: Option<i32>,
+    timed_out: bool,
+    timeout_ms: u64,
+    wall_us: u128,
+    output_bytes: u64,
+    stdout_sha256: Option<String>,
+    stdout_line_count: usize,
+    stdout_word_count: usize,
+    stderr_bytes: u64,
+    empty_output: bool,
+    stderr_preview: Option<String>,
+    error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error_kind: Option<&'static str>,
 }
 
 #[derive(Debug, Serialize)]
@@ -2166,6 +2211,236 @@ fn backend_smoke_error_kind(error: &anyhow::Error) -> Option<&'static str> {
     }
 }
 
+fn ocr_check_output(
+    pdf: &Path,
+    page_index: u32,
+    ocr: OcrOptions<'_>,
+    strict: bool,
+) -> OcrCheckOutput {
+    if let Some(command) = ocr.command {
+        return ocr_command_check_output(pdf, page_index, command, ocr.timeout, strict);
+    }
+
+    if let Some(sidecar) = ocr.sidecar {
+        return ocr_sidecar_check_output(pdf, page_index, sidecar, ocr.timeout, strict);
+    }
+
+    OcrCheckOutput {
+        report_version: OCR_CHECK_REPORT_VERSION,
+        parser_name: PARSER_NAME,
+        parser_version: PARSER_VERSION,
+        strict,
+        pdf: pdf.display().to_string(),
+        page_index,
+        adapter: "none",
+        passed: false,
+        success: false,
+        command: None,
+        sidecar_path: None,
+        exit_status: None,
+        timed_out: false,
+        timeout_ms: duration_millis(ocr.timeout),
+        wall_us: 0,
+        output_bytes: 0,
+        stdout_sha256: None,
+        stdout_line_count: 0,
+        stdout_word_count: 0,
+        stderr_bytes: 0,
+        empty_output: true,
+        stderr_preview: None,
+        error: Some("ocr-check requires --ocr-sidecar or --ocr-command".to_string()),
+        error_kind: Some("missing_adapter"),
+    }
+}
+
+fn ocr_command_check_output(
+    pdf: &Path,
+    page_index: u32,
+    command: &Path,
+    timeout: Duration,
+    strict: bool,
+) -> OcrCheckOutput {
+    let timeout_ms = duration_millis(timeout);
+    let mut process = ProcessCommand::new(command);
+    process.arg(pdf).arg(page_index.to_string());
+
+    match command_output_with_timeout(process, timeout) {
+        Ok(timed_output) => {
+            let output = timed_output.output;
+            let success = output.status.success() && !timed_output.timed_out;
+            let empty_output = success && output.stdout.is_empty();
+            let error_kind = if empty_output {
+                Some("empty_output")
+            } else {
+                baseline_process_error_kind(&output, timed_output.timed_out)
+            };
+            let error = ocr_command_check_error(&output, timed_output.timed_out, empty_output);
+
+            OcrCheckOutput {
+                report_version: OCR_CHECK_REPORT_VERSION,
+                parser_name: PARSER_NAME,
+                parser_version: PARSER_VERSION,
+                strict,
+                pdf: pdf.display().to_string(),
+                page_index,
+                adapter: "ocr_command",
+                passed: success && !empty_output,
+                success,
+                command: Some(command.display().to_string()),
+                sidecar_path: None,
+                exit_status: output.status.code(),
+                timed_out: timed_output.timed_out,
+                timeout_ms,
+                wall_us: timed_output.wall_us,
+                output_bytes: output.stdout.len() as u64,
+                stdout_sha256: Some(stdout_sha256(&output.stdout)),
+                stdout_line_count: stdout_line_count(&output.stdout),
+                stdout_word_count: stdout_word_count(&output.stdout),
+                stderr_bytes: output.stderr.len() as u64,
+                empty_output,
+                stderr_preview: stderr_preview(&output.stderr),
+                error,
+                error_kind,
+            }
+        }
+        Err(error) => OcrCheckOutput {
+            report_version: OCR_CHECK_REPORT_VERSION,
+            parser_name: PARSER_NAME,
+            parser_version: PARSER_VERSION,
+            strict,
+            pdf: pdf.display().to_string(),
+            page_index,
+            adapter: "ocr_command",
+            passed: false,
+            success: false,
+            command: Some(command.display().to_string()),
+            sidecar_path: None,
+            exit_status: None,
+            timed_out: false,
+            timeout_ms,
+            wall_us: 0,
+            output_bytes: 0,
+            stdout_sha256: None,
+            stdout_line_count: 0,
+            stdout_word_count: 0,
+            stderr_bytes: 0,
+            empty_output: true,
+            stderr_preview: None,
+            error: Some(format!("{}: {error}", command.display())),
+            error_kind: Some("spawn_failed"),
+        },
+    }
+}
+
+fn ocr_sidecar_check_output(
+    pdf: &Path,
+    page_index: u32,
+    sidecar: &Path,
+    timeout: Duration,
+    strict: bool,
+) -> OcrCheckOutput {
+    let sidecar_path = sidecar.join(sidecar_file_name(pdf, page_index));
+    let started = Instant::now();
+    let read = fs::read(&sidecar_path);
+    let wall_us = started.elapsed().as_micros().max(1);
+    let timeout_ms = duration_millis(timeout);
+
+    match read {
+        Ok(output) => {
+            let empty_output = output.is_empty();
+            OcrCheckOutput {
+                report_version: OCR_CHECK_REPORT_VERSION,
+                parser_name: PARSER_NAME,
+                parser_version: PARSER_VERSION,
+                strict,
+                pdf: pdf.display().to_string(),
+                page_index,
+                adapter: "ocr_sidecar",
+                passed: !empty_output,
+                success: true,
+                command: None,
+                sidecar_path: Some(sidecar_path.display().to_string()),
+                exit_status: None,
+                timed_out: false,
+                timeout_ms,
+                wall_us,
+                output_bytes: output.len() as u64,
+                stdout_sha256: Some(stdout_sha256(&output)),
+                stdout_line_count: stdout_line_count(&output),
+                stdout_word_count: stdout_word_count(&output),
+                stderr_bytes: 0,
+                empty_output,
+                stderr_preview: None,
+                error: empty_output.then(|| "OCR sidecar output was empty".to_string()),
+                error_kind: empty_output.then_some("empty_output"),
+            }
+        }
+        Err(error) => OcrCheckOutput {
+            report_version: OCR_CHECK_REPORT_VERSION,
+            parser_name: PARSER_NAME,
+            parser_version: PARSER_VERSION,
+            strict,
+            pdf: pdf.display().to_string(),
+            page_index,
+            adapter: "ocr_sidecar",
+            passed: false,
+            success: false,
+            command: None,
+            sidecar_path: Some(sidecar_path.display().to_string()),
+            exit_status: None,
+            timed_out: false,
+            timeout_ms,
+            wall_us,
+            output_bytes: 0,
+            stdout_sha256: None,
+            stdout_line_count: 0,
+            stdout_word_count: 0,
+            stderr_bytes: 0,
+            empty_output: true,
+            stderr_preview: None,
+            error: Some(format!(
+                "read OCR sidecar {}: {error}",
+                sidecar_path.display()
+            )),
+            error_kind: Some("sidecar_read_failed"),
+        },
+    }
+}
+
+fn ocr_command_check_error(
+    output: &ProcessOutput,
+    timed_out: bool,
+    empty_output: bool,
+) -> Option<String> {
+    if timed_out {
+        Some("OCR command timed out".to_string())
+    } else if !output.status.success() {
+        Some(format!(
+            "OCR command exited with status {:?}",
+            output.status.code()
+        ))
+    } else if empty_output {
+        Some("OCR command output was empty".to_string())
+    } else {
+        None
+    }
+}
+
+fn ocr_check_error(output: &OcrCheckOutput) -> Option<String> {
+    if output.adapter == "none" {
+        return Some("ocr-check requires --ocr-sidecar or --ocr-command".to_string());
+    }
+
+    if output.strict && !output.passed {
+        return Some(format!(
+            "ocr-check strict failed: {}",
+            output.error_kind.unwrap_or("unknown")
+        ));
+    }
+
+    None
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -2450,6 +2725,26 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             write_json(&output)?;
             if smoke_failed {
                 bail!("backend smoke failed");
+            }
+        }
+        Commands::OcrCheck {
+            pdf,
+            page_index,
+            ocr_sidecar,
+            ocr_command,
+            ocr_timeout_ms,
+            strict,
+        } => {
+            let ocr = OcrOptions::new(
+                ocr_sidecar.as_deref(),
+                ocr_command.as_deref(),
+                ocr_timeout_ms,
+            )?;
+            let output = ocr_check_output(&pdf, page_index, ocr, strict);
+            let error = ocr_check_error(&output);
+            write_json(&output)?;
+            if let Some(error) = error {
+                bail!("{error}");
             }
         }
         Commands::Manifest {
@@ -4478,13 +4773,25 @@ fn baseline_smoke_error(output: &ProcessOutput, timed_out: bool) -> Option<Strin
 fn baseline_process_error_kind(output: &ProcessOutput, timed_out: bool) -> Option<&'static str> {
     if timed_out {
         Some("timeout")
-    } else if output.status.code() == Some(127) {
+    } else if output.status.code() == Some(127)
+        || (!output.status.success() && process_stderr_indicates_missing_dependency(&output.stderr))
+    {
         Some("missing_dependency")
     } else if !output.status.success() {
         Some("execution_failed")
     } else {
         None
     }
+}
+
+fn process_stderr_indicates_missing_dependency(stderr: &[u8]) -> bool {
+    let stderr = String::from_utf8_lossy(stderr).to_ascii_lowercase();
+    stderr.contains("command not found")
+        || stderr.contains("no such file or directory")
+        || stderr.contains("error opening data file")
+        || stderr.contains("tessdata_prefix")
+        || stderr.contains("failed loading language")
+        || stderr.contains("couldn't load any languages")
 }
 
 fn duration_millis(duration: Duration) -> u64 {

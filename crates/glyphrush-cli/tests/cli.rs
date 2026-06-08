@@ -2640,6 +2640,131 @@ fn parse_with_ocr_command_times_out_slow_adapter() {
 }
 
 #[test]
+fn ocr_check_command_smoke_reports_nonempty_output() {
+    let dir = temp_dir("ocr-check-command-success");
+    let pdf_path = dir.join("scan.pdf");
+    let log_path = dir.join("ocr.log");
+    fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
+    let command = write_ocr_command_script("ocr-check-command-adapter", &log_path);
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "ocr-check",
+            pdf_path.to_str().unwrap(),
+            "--page-index",
+            "0",
+            "--ocr-command",
+            command.to_str().unwrap(),
+            "--strict",
+        ])
+        .output()
+        .expect("run glyphrush ocr-check with command adapter");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("ocr-check output is json");
+
+    assert_eq!(json["report_version"], "glyphrush-ocr-check-report-v1");
+    assert_eq!(json["adapter"], "ocr_command");
+    assert_eq!(json["passed"], true);
+    assert_eq!(json["success"], true);
+    assert_eq!(json["exit_status"], 0);
+    assert_eq!(json["timed_out"], false);
+    assert_eq!(json["empty_output"], false);
+    assert_eq!(json["output_bytes"], 23);
+    assert_eq!(json["stdout_word_count"], 5);
+    assert_eq!(json["stderr_bytes"], 0);
+    assert_eq!(json["error_kind"], Value::Null);
+    assert_eq!(
+        json["stdout_sha256"].as_str().unwrap().len(),
+        64,
+        "json: {json}"
+    );
+    let log = fs::read_to_string(&log_path).expect("read ocr check log");
+    assert!(log.contains(pdf_path.to_str().unwrap()));
+    assert!(log.contains(":0"));
+}
+
+#[test]
+fn ocr_check_strict_rejects_empty_command_output_after_writing_json() {
+    let dir = temp_dir("ocr-check-empty-command");
+    let pdf_path = dir.join("scan.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
+    let command = write_baseline_script("ocr-check-empty", "true");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "ocr-check",
+            pdf_path.to_str().unwrap(),
+            "--page-index",
+            "0",
+            "--ocr-command",
+            command.to_str().unwrap(),
+            "--strict",
+        ])
+        .output()
+        .expect("run glyphrush strict ocr-check with empty command output");
+
+    assert!(!output.status.success());
+    let json: Value = serde_json::from_slice(&output.stdout).expect("ocr-check output is json");
+
+    assert_eq!(json["adapter"], "ocr_command");
+    assert_eq!(json["success"], true);
+    assert_eq!(json["passed"], false);
+    assert_eq!(json["empty_output"], true);
+    assert_eq!(json["error_kind"], "empty_output");
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("ocr-check strict failed"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn ocr_check_classifies_tesseract_language_data_failure_as_missing_dependency() {
+    let dir = temp_dir("ocr-check-missing-tessdata");
+    let pdf_path = dir.join("scan.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
+    let command = write_baseline_script(
+        "ocr-check-missing-tessdata",
+        "printf 'Error opening data file /tmp/tessdata/eng.traineddata\\nFailed loading language '\\''eng'\\''\\nTesseract couldn'\\''t load any languages!\\n' >&2\nexit 1",
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "ocr-check",
+            pdf_path.to_str().unwrap(),
+            "--page-index",
+            "0",
+            "--ocr-command",
+            command.to_str().unwrap(),
+            "--strict",
+        ])
+        .output()
+        .expect("run glyphrush strict ocr-check with missing tessdata");
+
+    assert!(!output.status.success());
+    let json: Value = serde_json::from_slice(&output.stdout).expect("ocr-check output is json");
+
+    assert_eq!(json["adapter"], "ocr_command");
+    assert_eq!(json["success"], false);
+    assert_eq!(json["passed"], false);
+    assert_eq!(json["exit_status"], 1);
+    assert_eq!(json["error_kind"], "missing_dependency");
+    assert!(
+        json["stderr_preview"]
+            .as_str()
+            .unwrap()
+            .contains("eng.traineddata"),
+        "json: {json}"
+    );
+}
+
+#[test]
 fn parse_with_cache_dir_reports_miss_then_hit_for_same_pdf() {
     let dir = temp_dir("parse-cache");
     let pdf_path = dir.join("cache.pdf");
