@@ -453,6 +453,51 @@ fn positioned_character_spans_reflow_into_readable_words() {
 }
 
 #[test]
+fn positioned_overlapping_fragments_do_not_duplicate_prefix_text() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-overlap-duplicates".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: "Wide Operating Voltage Typical dropout for load".to_string(),
+            native_spans: vec![
+                span("Wide Operating ", 72.0, 100.0, 160.0, 112.0),
+                span("Vo", 164.0, 100.0, 170.0, 112.0),
+                span("Vo", 169.6, 101.0, 174.5, 113.0),
+                span("ltage ", 175.0, 100.0, 198.0, 112.0),
+                span("Ty", 212.0, 100.0, 219.0, 112.0),
+                span("Typical ", 218.5, 101.0, 248.0, 113.0),
+                span("dropout ", 252.0, 100.0, 290.0, 112.0),
+                span("fo", 294.0, 100.0, 301.0, 112.0),
+                span("for ", 300.5, 101.0, 314.0, 113.0),
+                span("load", 318.0, 100.0, 338.0, 112.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                native_span_count: 10,
+                native_text_bytes: 48,
+                glyph_count: 43,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let text = artifact.pages[0]
+        .layout_blocks
+        .iter()
+        .map(|block| block.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    assert!(text.contains("Wide Operating Voltage Typical dropout for load"));
+    assert!(!text.contains("VoVoltage"));
+    assert!(!text.contains("TyTypical"));
+    assert!(!text.contains("fofor"));
+}
+
+#[test]
 fn positioned_table_spans_preserve_rows_when_table_recovery_runs() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table".to_string(),

@@ -1451,6 +1451,16 @@ fn text_line_from_positioned_row(row: &[&TextSpan]) -> String {
         if text.trim().is_empty() {
             continue;
         }
+        let overlaps_previous = previous_x1.is_some_and(|x1| span.bbox.x0 < x1);
+        let text = if overlaps_previous {
+            non_duplicate_overlapping_fragment(&output, text)
+        } else {
+            text.to_string()
+        };
+        if text.trim().is_empty() {
+            previous_x1 = Some(previous_x1.map_or(span.bbox.x1, |x1: f32| x1.max(span.bbox.x1)));
+            continue;
+        }
 
         if !output.is_empty()
             && !output.ends_with(char::is_whitespace)
@@ -1459,11 +1469,31 @@ fn text_line_from_positioned_row(row: &[&TextSpan]) -> String {
         {
             output.push(' ');
         }
-        output.push_str(text);
-        previous_x1 = Some(span.bbox.x1);
+        output.push_str(&text);
+        previous_x1 = Some(previous_x1.map_or(span.bbox.x1, |x1: f32| x1.max(span.bbox.x1)));
     }
 
     output.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn non_duplicate_overlapping_fragment(output: &str, fragment: &str) -> String {
+    let candidate = fragment.trim_start();
+    let output = output.trim_end();
+
+    let prefix_ends = candidate
+        .char_indices()
+        .skip(1)
+        .map(|(idx, _)| idx)
+        .chain(std::iter::once(candidate.len()))
+        .collect::<Vec<_>>();
+
+    for end in prefix_ends.into_iter().rev() {
+        if output.ends_with(&candidate[..end]) {
+            return candidate[end..].to_string();
+        }
+    }
+
+    fragment.to_string()
 }
 
 fn positioned_word_gap_threshold(row: &[&TextSpan]) -> f32 {

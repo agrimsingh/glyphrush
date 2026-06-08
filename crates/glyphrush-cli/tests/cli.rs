@@ -510,7 +510,7 @@ fn liteparse_benchmark_gate_script_dry_run_uses_quality_backed_pdfium_command() 
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("cargo run -q -p glyphrush-cli"));
+    assert!(stdout.contains("cargo run -q --release -p glyphrush-cli"));
     assert!(stdout.contains("--features pdfium"));
     assert!(stdout.contains("--backend pdfium"));
     assert!(stdout.contains("bench test/"));

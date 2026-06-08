@@ -29,7 +29,7 @@ baseline_timeout_ms="${GLYPHRUSH_BENCH_BASELINE_TIMEOUT_MS:-120000}"
 output="${GLYPHRUSH_BENCH_OUTPUT:-}"
 
 cmd=(
-  cargo run -q -p glyphrush-cli
+  cargo run -q --release -p glyphrush-cli
   --features "$features"
   --
   --backend "$backend"
