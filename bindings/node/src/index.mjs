@@ -145,6 +145,9 @@ export function featureParity(options = {}) {
   if (options.requireSpeedEvidence) {
     command.push("--require-speed-evidence");
   }
+  if (options.requireCoveragePreset !== undefined) {
+    command.push("--require-coverage-preset", options.requireCoveragePreset);
+  }
   return JSON.parse(run(command, options.env));
 }
 

@@ -348,6 +348,7 @@ def feature_parity(
     backend: str | None = None,
     bench_report: str | os.PathLike[str] | None = None,
     require_speed_evidence: bool = False,
+    require_coverage_preset: str | None = None,
     env: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     command = _base_command(binary, backend)
@@ -356,6 +357,8 @@ def feature_parity(
         command.extend(["--bench-report", _path(bench_report)])
     if require_speed_evidence:
         command.append("--require-speed-evidence")
+    if require_coverage_preset is not None:
+        command.extend(["--require-coverage-preset", require_coverage_preset])
     return json.loads(_run(command, env=env))
 
 

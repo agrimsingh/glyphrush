@@ -30,6 +30,7 @@ const parity = featureParity({
   binary: "target/debug/glyphrush",
   benchReport: ".glyphrush-baselines/reports/liteparse-speed-gate.json",
   requireSpeedEvidence: true,
+  requireCoveragePreset: "glyphrush-v0",
 });
 const quality = evalManifest("test/corpus.json", { binary: "target/debug/glyphrush" });
 const speed = bench("test/example.pdf", { binary: "target/debug/glyphrush" });
@@ -46,7 +47,7 @@ If `binary` is omitted, the wrapper uses `GLYPHRUSH_BIN` and then falls back to 
 
 `ocrCheck()`, `backendCheck()`, and `baselineCheck()` delegate to the native preflight surfaces for OCR adapters, parser backends, and external comparison wrappers.
 
-`featureParity()` delegates to `glyphrush feature-parity` and returns the conservative LiteParse capability matrix. Pass `benchReport` with `requireSpeedEvidence: true` to require the saved benchmark report to contain passing, quality-backed `liteparse` and `liteparse-no-ocr` speedup claims.
+`featureParity()` delegates to `glyphrush feature-parity` and returns the conservative LiteParse capability matrix. Pass `benchReport` with `requireSpeedEvidence: true` to require the saved benchmark report to contain passing, quality-backed `liteparse` and `liteparse-no-ocr` speedup claims. Add `requireCoveragePreset: "glyphrush-v0"` to also fail unless the saved benchmark covers the core v0 PDF categories.
 
 `evalManifest()` delegates to `glyphrush eval <manifest>` and returns the native quality report, including silent-failure, text-recall, reading-order, table, category, and cache diagnostics when the manifest asks for them.
 

@@ -361,6 +361,7 @@ test("featureParity delegates to native report and decodes JSON", async () => {
       backend: "lopdf",
       benchReport: path.join(root, "bench.json"),
       requireSpeedEvidence: true,
+      requireCoveragePreset: "glyphrush-v0",
     });
 
     assert.deepEqual(report.argv, [
@@ -370,6 +371,8 @@ test("featureParity delegates to native report and decodes JSON", async () => {
       "--bench-report",
       path.join(root, "bench.json"),
       "--require-speed-evidence",
+      "--require-coverage-preset",
+      "glyphrush-v0",
     ]);
   });
 });

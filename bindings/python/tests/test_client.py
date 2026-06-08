@@ -372,6 +372,7 @@ class GlyphrushClientTests(unittest.TestCase):
                 backend="lopdf",
                 bench_report=root / "bench.json",
                 require_speed_evidence=True,
+                require_coverage_preset="glyphrush-v0",
             )
 
         self.assertEqual(
@@ -383,6 +384,8 @@ class GlyphrushClientTests(unittest.TestCase):
                 "--bench-report",
                 str(root / "bench.json"),
                 "--require-speed-evidence",
+                "--require-coverage-preset",
+                "glyphrush-v0",
             ],
         )
 
