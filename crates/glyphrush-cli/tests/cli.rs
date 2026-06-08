@@ -754,6 +754,50 @@ fn liteparse_benchmark_gate_script_dry_run_uses_quality_backed_pdfium_command() 
     assert!(stdout.contains("> /tmp/glyphrush-liteparse-gate.json"));
 }
 
+#[test]
+fn verify_script_dry_run_exposes_opt_in_pdfium_speed_path_gate() {
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("canonical repo root");
+    let output = Command::new(repo_root.join("scripts/verify.sh"))
+        .arg("--dry-run")
+        .env("GLYPHRUSH_VERIFY_PDFIUM", "1")
+        .output()
+        .expect("run verify dry run");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("cargo fmt --all -- --check"));
+    assert!(stdout.contains("cargo test --workspace"));
+    assert!(stdout.contains("cargo clippy --workspace --all-targets -- -D warnings"));
+    assert!(stdout.contains("cargo test -p glyphrush-cli --features pdfium"));
+    assert!(
+        stdout.contains("feature_parity_counts_pdfium_ocr_runtime_caps_and_cache_as_implemented")
+    );
+    assert!(
+        stdout
+            .contains("parse_pdfium_ocr_command_rendered_image_invokes_adapter_only_for_ocr_pages")
+    );
+}
+
+#[test]
+fn ci_workflow_enables_pdfium_speed_path_verification() {
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("canonical repo root");
+    let workflow =
+        fs::read_to_string(repo_root.join(".github/workflows/ci.yml")).expect("read CI workflow");
+
+    assert!(workflow.contains("GLYPHRUSH_VERIFY_PDFIUM: \"1\""));
+    assert!(workflow.contains("bash scripts/verify.sh"));
+}
+
 #[cfg(feature = "pdfium")]
 #[test]
 fn backend_check_reports_feature_gated_pdfium_backend() {

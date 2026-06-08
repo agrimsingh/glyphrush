@@ -20,6 +20,8 @@ scripts/bench-liteparse.sh --dry-run
 
 `scripts/verify.sh` is the shared local/GitHub CI gate. It runs formatting, Python and Node wrapper tests, the full Rust workspace test suite, clippy with warnings denied, strict `glyphrush-v0` baseline-preset metadata preflight, and the datasheet eval gate when ignored local PDFs exist under `test/`. In a fresh GitHub checkout those PDFs are absent by design, so CI skips only that local corpus gate rather than failing on non-committed benchmark files.
 
+Use `scripts/verify.sh --dry-run` to print the exact gate commands without running them. Set `GLYPHRUSH_VERIFY_PDFIUM=1` to include the PDFium-feature checks that protect the recommended LiteParse speed-race path: selected-backend feature parity and rendered-image OCR handoff. GitHub CI sets this flag so the PDFium path does not drift while the default local gate remains dependency-light.
+
 ```sh
 cargo run -p glyphrush-cli -- inspect test/example.pdf
 cargo run -p glyphrush-cli -- inspect test/example.pdf --pages
