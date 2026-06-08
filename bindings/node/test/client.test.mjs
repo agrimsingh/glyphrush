@@ -344,9 +344,21 @@ test("featureParity delegates to native report and decodes JSON", async () => {
     const { featureParity } = await import("../src/index.mjs");
     const fake = await writeFakeGlyphrush(root);
 
-    const report = featureParity({ binary: fake, backend: "lopdf" });
+    const report = featureParity({
+      binary: fake,
+      backend: "lopdf",
+      benchReport: path.join(root, "bench.json"),
+      requireSpeedEvidence: true,
+    });
 
-    assert.deepEqual(report.argv, ["--backend", "lopdf", "feature-parity"]);
+    assert.deepEqual(report.argv, [
+      "--backend",
+      "lopdf",
+      "feature-parity",
+      "--bench-report",
+      path.join(root, "bench.json"),
+      "--require-speed-evidence",
+    ]);
   });
 });
 

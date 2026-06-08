@@ -54,6 +54,8 @@ const BACKEND_CHECK_REPORT_VERSION: &str = "glyphrush-backend-check-report-v1";
 const OCR_CHECK_REPORT_VERSION: &str = "glyphrush-ocr-check-report-v1";
 const FEATURE_PARITY_REPORT_VERSION: &str = "glyphrush-feature-parity-report-v1";
 const FEATURE_PARITY_RECOMMENDED_GATE: &str = "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5";
+const FEATURE_PARITY_REQUIRED_SPEED_CLAIMS: [(&str, f64); 2] =
+    [("liteparse", 2.0), ("liteparse-no-ocr", 1.5)];
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
@@ -293,7 +295,12 @@ enum Commands {
         #[arg(long)]
         strict: bool,
     },
-    FeatureParity,
+    FeatureParity {
+        #[arg(long)]
+        bench_report: Option<PathBuf>,
+        #[arg(long)]
+        require_speed_evidence: bool,
+    },
     BackendCheck {
         #[arg(long)]
         pdf: Option<PathBuf>,
@@ -520,6 +527,8 @@ struct FeatureParityOutput {
     summary: FeatureParitySummary,
     readiness: FeatureParityReadiness,
     capabilities: Vec<FeatureParityCapability>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    benchmark_evidence: Option<FeatureParityBenchmarkEvidence>,
 }
 
 #[derive(Debug, Default, Serialize)]
@@ -576,6 +585,34 @@ struct FeatureParityCapability {
     hot_path: bool,
     quality_guard: &'static str,
     notes: &'static str,
+}
+
+#[derive(Debug, Serialize)]
+struct FeatureParityBenchmarkEvidence {
+    report_path: String,
+    report_version: Option<String>,
+    backend: Option<String>,
+    quality_status: Option<String>,
+    required_claim_count: usize,
+    claim_count: usize,
+    quality_backed_claim_count: usize,
+    claim_passed_count: usize,
+    evidence_passed: bool,
+    missing_required_claims: Vec<String>,
+    failed_required_claims: Vec<FeatureParityBenchmarkClaimEvidence>,
+    claims: Vec<FeatureParityBenchmarkClaimEvidence>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct FeatureParityBenchmarkClaimEvidence {
+    baseline: String,
+    required_glyphrush_speedup: Option<f64>,
+    actual_glyphrush_speedup: Option<f64>,
+    speed_comparable: Option<bool>,
+    speed_passed: Option<bool>,
+    quality_backed: Option<bool>,
+    claim_passed: Option<bool>,
+    status: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -2128,12 +2165,19 @@ fn baseline_preset_names(preset: Option<BaselinePreset>) -> Vec<&'static str> {
         .collect::<Vec<_>>()
 }
 
-fn feature_parity_output<B: PdfBackend>(backend: &B) -> FeatureParityOutput {
+fn feature_parity_output<B: PdfBackend>(
+    backend: &B,
+    bench_report: Option<&Path>,
+) -> Result<FeatureParityOutput> {
     let capabilities =
         liteparse_feature_parity_capabilities(backend.supports_page_render_for_ocr());
     let summary = feature_parity_summary(&capabilities);
     let readiness = feature_parity_readiness(&capabilities, &summary);
-    FeatureParityOutput {
+    let benchmark_evidence = bench_report
+        .map(feature_parity_benchmark_evidence)
+        .transpose()?;
+
+    Ok(FeatureParityOutput {
         report_version: FEATURE_PARITY_REPORT_VERSION,
         comparison_target: "liteparse",
         selected_backend: backend.name(),
@@ -2144,6 +2188,106 @@ fn feature_parity_output<B: PdfBackend>(backend: &B) -> FeatureParityOutput {
         summary,
         readiness,
         capabilities,
+        benchmark_evidence,
+    })
+}
+
+fn feature_parity_benchmark_evidence(path: &Path) -> Result<FeatureParityBenchmarkEvidence> {
+    let report: Value = serde_json::from_slice(
+        &fs::read(path).with_context(|| format!("read benchmark report {}", path.display()))?,
+    )
+    .with_context(|| format!("decode benchmark report {}", path.display()))?;
+    let claims = report
+        .get("speedup_claims")
+        .and_then(Value::as_array)
+        .map(|claims| {
+            claims
+                .iter()
+                .map(feature_parity_benchmark_claim_evidence)
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    let mut missing_required_claims = Vec::new();
+    let mut failed_required_claims = Vec::new();
+    let mut required_claims = Vec::new();
+
+    for (baseline, required_speedup) in FEATURE_PARITY_REQUIRED_SPEED_CLAIMS {
+        let Some(claim) = claims.iter().find(|claim| claim.baseline == baseline) else {
+            missing_required_claims.push(baseline.to_string());
+            continue;
+        };
+        required_claims.push(claim.clone());
+
+        let claim_passed = claim.claim_passed.unwrap_or(false);
+        let quality_backed = claim.quality_backed.unwrap_or(false);
+        let speedup_met = claim
+            .required_glyphrush_speedup
+            .is_some_and(|actual_required| actual_required >= required_speedup);
+        if !claim_passed || !quality_backed || !speedup_met {
+            failed_required_claims.push(claim.clone());
+        }
+    }
+
+    let quality_backed_claim_count = required_claims
+        .iter()
+        .filter(|claim| claim.quality_backed.unwrap_or(false))
+        .count();
+    let claim_passed_count = required_claims
+        .iter()
+        .filter(|claim| claim.claim_passed.unwrap_or(false))
+        .count();
+    let evidence_passed = missing_required_claims.is_empty()
+        && failed_required_claims.is_empty()
+        && quality_backed_claim_count == FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len()
+        && claim_passed_count == FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len();
+
+    Ok(FeatureParityBenchmarkEvidence {
+        report_path: path.display().to_string(),
+        report_version: report
+            .get("report_version")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        backend: report
+            .get("backend")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        quality_status: report
+            .get("quality_status")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        required_claim_count: FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len(),
+        claim_count: claims.len(),
+        quality_backed_claim_count,
+        claim_passed_count,
+        evidence_passed,
+        missing_required_claims,
+        failed_required_claims,
+        claims,
+    })
+}
+
+fn feature_parity_benchmark_claim_evidence(value: &Value) -> FeatureParityBenchmarkClaimEvidence {
+    FeatureParityBenchmarkClaimEvidence {
+        baseline: value
+            .get("baseline")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
+        required_glyphrush_speedup: value
+            .get("required_glyphrush_speedup")
+            .and_then(Value::as_f64),
+        actual_glyphrush_speedup: value
+            .get("actual_glyphrush_speedup")
+            .and_then(Value::as_f64),
+        speed_comparable: value.get("speed_comparable").and_then(Value::as_bool),
+        speed_passed: value.get("speed_passed").and_then(Value::as_bool),
+        quality_backed: value.get("quality_backed").and_then(Value::as_bool),
+        claim_passed: value.get("claim_passed").and_then(Value::as_bool),
+        status: value
+            .get("status")
+            .and_then(Value::as_str)
+            .map(str::to_string),
     }
 }
 
@@ -3800,8 +3944,22 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 bail!("{error}");
             }
         }
-        Commands::FeatureParity => {
-            write_json(&feature_parity_output(backend))?;
+        Commands::FeatureParity {
+            bench_report,
+            require_speed_evidence,
+        } => {
+            let output = feature_parity_output(backend, bench_report.as_deref())?;
+            let speed_evidence_failed = require_speed_evidence
+                && !output
+                    .benchmark_evidence
+                    .as_ref()
+                    .is_some_and(|evidence| evidence.evidence_passed);
+            write_json(&output)?;
+            if speed_evidence_failed {
+                bail!(
+                    "feature-parity speed evidence did not satisfy quality-backed LiteParse claims"
+                );
+            }
         }
         Commands::BackendCheck { pdf, jobs } => {
             let output = backend_check_output(backend, pdf.as_deref(), jobs);

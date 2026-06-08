@@ -330,10 +330,16 @@ def feature_parity(
     *,
     binary: str | os.PathLike[str] | None = None,
     backend: str | None = None,
+    bench_report: str | os.PathLike[str] | None = None,
+    require_speed_evidence: bool = False,
     env: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     command = _base_command(binary, backend)
     command.append("feature-parity")
+    if bench_report is not None:
+        command.extend(["--bench-report", _path(bench_report)])
+    if require_speed_evidence:
+        command.append("--require-speed-evidence")
     return json.loads(_run(command, env=env))
 
 

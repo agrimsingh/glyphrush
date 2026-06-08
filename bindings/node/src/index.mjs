@@ -135,6 +135,12 @@ export function ocrCheck(pdf, options = {}) {
 export function featureParity(options = {}) {
   const command = baseCommand(options);
   command.push("feature-parity");
+  if (options.benchReport !== undefined) {
+    command.push("--bench-report", pathString(options.benchReport));
+  }
+  if (options.requireSpeedEvidence) {
+    command.push("--require-speed-evidence");
+  }
   return JSON.parse(run(command, options.env));
 }
 

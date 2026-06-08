@@ -296,6 +296,150 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(builtin_ocr["glyphrush_status"], "not_planned");
 }
 
+#[test]
+fn feature_parity_can_require_quality_backed_liteparse_benchmark_evidence() {
+    let dir = temp_dir("feature-parity-bench-evidence");
+    let report_path = dir.join("bench.json");
+    fs::write(
+        &report_path,
+        r#"{
+          "report_version": "glyphrush-bench-report-v1",
+          "backend": "pdfium",
+          "quality_status": "checked",
+          "speedup_claims": [
+            {
+              "baseline": "liteparse",
+              "required_glyphrush_speedup": 2.0,
+              "actual_glyphrush_speedup": 3.2,
+              "speed_comparable": true,
+              "speed_passed": true,
+              "glyphrush_quality_checked": true,
+              "glyphrush_quality_passed": true,
+              "baseline_quality_checked": true,
+              "baseline_quality_passed": true,
+              "quality_backed": true,
+              "claim_passed": true,
+              "status": "passed"
+            },
+            {
+              "baseline": "liteparse-no-ocr",
+              "required_glyphrush_speedup": 1.5,
+              "actual_glyphrush_speedup": 1.8,
+              "speed_comparable": true,
+              "speed_passed": true,
+              "glyphrush_quality_checked": true,
+              "glyphrush_quality_passed": true,
+              "baseline_quality_checked": true,
+              "baseline_quality_passed": true,
+              "quality_backed": true,
+              "claim_passed": true,
+              "status": "passed"
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "feature-parity",
+            "--bench-report",
+            report_path.to_str().unwrap(),
+            "--require-speed-evidence",
+        ])
+        .output()
+        .expect("run glyphrush feature-parity with benchmark evidence");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
+
+    assert_eq!(
+        json["benchmark_evidence"]["report_path"],
+        report_path.to_string_lossy().as_ref()
+    );
+    assert_eq!(
+        json["benchmark_evidence"]["report_version"],
+        "glyphrush-bench-report-v1"
+    );
+    assert_eq!(json["benchmark_evidence"]["backend"], "pdfium");
+    assert_eq!(json["benchmark_evidence"]["quality_status"], "checked");
+    assert_eq!(json["benchmark_evidence"]["required_claim_count"], 2);
+    assert_eq!(json["benchmark_evidence"]["quality_backed_claim_count"], 2);
+    assert_eq!(json["benchmark_evidence"]["claim_passed_count"], 2);
+    assert_eq!(json["benchmark_evidence"]["evidence_passed"], true);
+    assert_eq!(
+        json["benchmark_evidence"]["missing_required_claims"],
+        serde_json::json!([])
+    );
+}
+
+#[test]
+fn feature_parity_speed_evidence_gate_fails_when_liteparse_claim_is_missing() {
+    let dir = temp_dir("feature-parity-bench-evidence-missing");
+    let report_path = dir.join("bench.json");
+    fs::write(
+        &report_path,
+        r#"{
+          "report_version": "glyphrush-bench-report-v1",
+          "backend": "pdfium",
+          "quality_status": "checked",
+          "speedup_claims": [
+            {
+              "baseline": "liteparse",
+              "required_glyphrush_speedup": 2.0,
+              "actual_glyphrush_speedup": 3.2,
+              "speed_comparable": true,
+              "speed_passed": true,
+              "glyphrush_quality_checked": true,
+              "glyphrush_quality_passed": true,
+              "baseline_quality_checked": true,
+              "baseline_quality_passed": true,
+              "quality_backed": true,
+              "claim_passed": true,
+              "status": "passed"
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "feature-parity",
+            "--bench-report",
+            report_path.to_str().unwrap(),
+            "--require-speed-evidence",
+        ])
+        .output()
+        .expect("run glyphrush feature-parity with incomplete benchmark evidence");
+
+    assert!(
+        !output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity failure output is json");
+
+    assert_eq!(json["benchmark_evidence"]["evidence_passed"], false);
+    assert_eq!(
+        json["benchmark_evidence"]["missing_required_claims"],
+        serde_json::json!(["liteparse-no-ocr"])
+    );
+    assert!(String::from_utf8_lossy(&output.stderr).contains("quality-backed LiteParse claims"));
+}
+
 #[cfg(feature = "pdfium")]
 #[test]
 fn feature_parity_counts_pdfium_rendered_ocr_handoff_as_implemented() {

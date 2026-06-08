@@ -354,7 +354,12 @@ class GlyphrushClientTests(unittest.TestCase):
             root = Path(tmp)
             fake = write_fake_glyphrush(root)
 
-            report = glyphrush.feature_parity(binary=fake, backend="lopdf")
+            report = glyphrush.feature_parity(
+                binary=fake,
+                backend="lopdf",
+                bench_report=root / "bench.json",
+                require_speed_evidence=True,
+            )
 
         self.assertEqual(
             report["argv"],
@@ -362,6 +367,9 @@ class GlyphrushClientTests(unittest.TestCase):
                 "--backend",
                 "lopdf",
                 "feature-parity",
+                "--bench-report",
+                str(root / "bench.json"),
+                "--require-speed-evidence",
             ],
         )
 

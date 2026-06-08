@@ -27,6 +27,7 @@ cargo run -p glyphrush-cli -- inspect test/example.pdf --pages --jobs 4
 cargo run -p glyphrush-cli -- inspect test/example.pdf --pages --cache-dir .glyphrush-cache
 cargo run -p glyphrush-cli -- backend-check
 cargo run -p glyphrush-cli -- feature-parity
+cargo run -p glyphrush-cli -- feature-parity --bench-report .glyphrush-baselines/reports/liteparse-speed-gate.json --require-speed-evidence
 cargo run -p glyphrush-cli -- backend-check --pdf test/example.pdf
 cargo run -p glyphrush-cli -- backend-check --pdf test/
 cargo run -p glyphrush-cli -- backend-check --pdf test/ --jobs 4
