@@ -113,6 +113,40 @@ class GlyphrushClientTests(unittest.TestCase):
             ],
         )
 
+    def test_eval_manifest_delegates_to_native_quality_gate_and_decodes_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            manifest = root / "corpus.json"
+            manifest.write_text('{"documents":[]}')
+
+            report = glyphrush.eval_manifest(
+                manifest,
+                binary=fake,
+                backend="lopdf",
+                category="datasheet",
+                span_geometry=True,
+                cache_dir=root / "cache",
+                jobs=4,
+            )
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "--backend",
+                "lopdf",
+                "eval",
+                str(manifest),
+                "--category",
+                "datasheet",
+                "--span-geometry",
+                "--cache-dir",
+                str(root / "cache"),
+                "--jobs",
+                "4",
+            ],
+        )
+
     def test_cli_failure_raises_with_exit_status_and_stderr(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

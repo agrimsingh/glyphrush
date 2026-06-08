@@ -35,6 +35,16 @@ export function inspectPages(pdf, options = {}) {
   return JSON.parse(run(command, options.env));
 }
 
+export function evalManifest(manifest, options = {}) {
+  const command = baseCommand(options);
+  command.push("eval", pathString(manifest));
+  if (options.category !== undefined) {
+    command.push("--category", options.category);
+  }
+  appendCommonOptions(command, options);
+  return JSON.parse(run(command, options.env));
+}
+
 function baseCommand(options) {
   const command = [pathString(options.binary ?? process.env.GLYPHRUSH_BIN ?? "glyphrush")];
   if (options.backend !== undefined) {

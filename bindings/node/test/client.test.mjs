@@ -112,6 +112,38 @@ test("inspectPages delegates to native page triage and decodes JSON", async () =
   });
 });
 
+test("evalManifest delegates to native quality gate and decodes JSON", async () => {
+  await withTempDir(async (root) => {
+    const { evalManifest } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+    const manifest = path.join(root, "corpus.json");
+    await writeFile(manifest, '{"documents":[]}');
+
+    const report = evalManifest(manifest, {
+      binary: fake,
+      backend: "lopdf",
+      category: "datasheet",
+      spanGeometry: true,
+      cacheDir: path.join(root, "cache"),
+      jobs: 4,
+    });
+
+    assert.deepEqual(report.argv, [
+      "--backend",
+      "lopdf",
+      "eval",
+      manifest,
+      "--category",
+      "datasheet",
+      "--span-geometry",
+      "--cache-dir",
+      path.join(root, "cache"),
+      "--jobs",
+      "4",
+    ]);
+  });
+});
+
 test("CLI failures raise GlyphrushError with exit status and stderr", async () => {
   await withTempDir(async (root) => {
     const fake = await writeFakeGlyphrush(root);
