@@ -13,6 +13,8 @@ use std::{
     time::{Duration, Instant, UNIX_EPOCH},
 };
 
+#[cfg(feature = "pdfium")]
+use std::cell::OnceCell;
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
 #[cfg(feature = "pdfium")]
@@ -68,9 +70,26 @@ const MAX_OCR_RENDER_HEIGHT: i32 = 2400;
 static GLOBAL_ALLOCATOR: CountingAllocator = CountingAllocator;
 
 static ALLOCATED_BYTES_TOTAL: AtomicU64 = AtomicU64::new(0);
+#[cfg(all(test, feature = "pdfium"))]
+static PDFIUM_TEST_FILE_LOAD_COUNT: AtomicU64 = AtomicU64::new(0);
 
 thread_local! {
     static ALLOCATED_BYTES_THREAD: Cell<u64> = const { Cell::new(0) };
+}
+
+#[cfg(feature = "pdfium")]
+thread_local! {
+    static PDFIUM_RUNTIME: OnceCell<&'static Pdfium> = const { OnceCell::new() };
+}
+
+#[cfg(all(test, feature = "pdfium"))]
+fn reset_pdfium_test_file_load_count() {
+    PDFIUM_TEST_FILE_LOAD_COUNT.store(0, Ordering::Relaxed);
+}
+
+#[cfg(all(test, feature = "pdfium"))]
+fn pdfium_test_file_load_count() -> u64 {
+    PDFIUM_TEST_FILE_LOAD_COUNT.load(Ordering::Relaxed)
 }
 
 struct CountingAllocator;
@@ -2355,7 +2374,7 @@ fn backend_smoke_directory_output<B: PdfBackend + Sync>(
 ) -> BackendSmokeOutput {
     let started = Instant::now();
     let result = discover_pdfs(path).map(|pdfs| {
-        let worker_count = jobs.max(1).min(pdfs.len().max(1));
+        let worker_count = document_worker_count(backend, jobs, pdfs.len());
         let documents = if worker_count == 1 {
             pdfs.into_iter()
                 .map(|pdf| backend_smoke_pdf_output(backend, &pdf.path, pdf.label))
@@ -3709,6 +3728,9 @@ trait PdfBackend {
 
     fn name(&self) -> &'static str;
     fn version(&self) -> &'static str;
+    fn supports_parallel_documents(&self) -> bool {
+        true
+    }
     fn load_document(&self, path: &Path) -> Result<Self::Document>;
     fn page_count(&self, document: &Self::Document) -> usize;
     fn extract_pages(
@@ -3792,7 +3814,7 @@ struct PdfiumBackend;
 
 #[cfg(feature = "pdfium")]
 struct PdfiumDocument {
-    path: PathBuf,
+    pdf_document: PdfDocument<'static>,
     page_count: usize,
 }
 
@@ -3808,11 +3830,16 @@ impl PdfBackend for PdfiumBackend {
         PDFIUM_BACKEND_VERSION
     }
 
+    fn supports_parallel_documents(&self) -> bool {
+        false
+    }
+
     fn load_document(&self, path: &Path) -> Result<Self::Document> {
-        let page_count = load_pdfium_page_count(path)?;
+        let pdf_document = load_pdfium_document_from_file(path)?;
+        let page_count = pdfium_page_count(&pdf_document)?;
 
         Ok(PdfiumDocument {
-            path: path.to_path_buf(),
+            pdf_document,
             page_count,
         })
     }
@@ -3891,7 +3918,7 @@ fn inspect_corpus_pages<B: PdfBackend + Sync>(
     jobs: usize,
 ) -> Result<CorpusInspectPagesOutput> {
     let pdfs = discover_pdfs(path)?;
-    let worker_count = jobs.max(1).min(pdfs.len().max(1));
+    let worker_count = document_worker_count(backend, jobs, pdfs.len());
     let documents = if worker_count == 1 {
         pdfs.into_iter()
             .map(|pdf| inspect_corpus_pages_document(backend, pdf, cache_dir))
@@ -4109,7 +4136,7 @@ fn bench_corpus<B: PdfBackend + Sync>(
     }
 
     let pdfs = discover_pdfs(path)?;
-    let worker_count = config.jobs.max(1).min(pdfs.len().max(1));
+    let worker_count = document_worker_count(backend, config.jobs, pdfs.len());
     let documents = if worker_count == 1 {
         pdfs.into_iter()
             .map(|pdf| bench_corpus_document(backend, pdf, config, baseline_quality))
@@ -6120,7 +6147,7 @@ fn generate_eval_manifest<B: PdfBackend + Sync>(
     let min_category_counts = min_category_counts_from_specs(config.min_category_counts);
     let documents = if path.is_dir() {
         let pdfs = discover_pdfs(path)?;
-        let worker_count = config.jobs.max(1).min(pdfs.len().max(1));
+        let worker_count = document_worker_count(backend, config.jobs, pdfs.len());
         if worker_count == 1 {
             pdfs.into_iter()
                 .map(|pdf| {
@@ -7091,7 +7118,7 @@ fn eval_manifest<B: PdfBackend + Sync>(
             .documents
             .retain(|document| eval_manifest_document_category(document) == category);
     }
-    let worker_count = jobs.max(1).min(manifest.documents.len().max(1));
+    let worker_count = document_worker_count(backend, jobs, manifest.documents.len());
 
     let documents = if worker_count == 1 {
         manifest
@@ -8802,6 +8829,19 @@ fn effective_page_worker_count(options: ExtractionOptions, page_count: usize) ->
     options.page_jobs.max(1).min(page_count.max(1))
 }
 
+fn document_worker_count<B: PdfBackend>(
+    backend: &B,
+    requested_jobs: usize,
+    document_count: usize,
+) -> usize {
+    let worker_count = requested_jobs.max(1).min(document_count.max(1));
+    if backend.supports_parallel_documents() {
+        worker_count
+    } else {
+        1
+    }
+}
+
 fn load_document<B: PdfBackend>(backend: &B, path: &Path) -> Result<(B::Document, String)> {
     let fingerprint = document_fingerprint(path)?;
     let document = backend.load_document(path)?;
@@ -9079,13 +9119,28 @@ fn bind_pdfium_runtime() -> Result<Pdfium> {
 }
 
 #[cfg(feature = "pdfium")]
-fn load_pdfium_page_count(path: &Path) -> Result<usize> {
-    let pdfium = bind_pdfium_runtime()?;
-    let document = pdfium
-        .load_pdf_from_file(path, None)
-        .with_context(|| format!("load PDF with PDFium {}", path.display()))?;
+fn pdfium_runtime() -> Result<&'static Pdfium> {
+    PDFIUM_RUNTIME.with(|runtime| {
+        if let Some(pdfium) = runtime.get() {
+            return Ok(*pdfium);
+        }
 
-    pdfium_page_count(&document)
+        let pdfium = Box::leak(Box::new(bind_pdfium_runtime()?));
+        runtime
+            .set(pdfium)
+            .map_err(|_| anyhow!("PDFium runtime already initialized"))?;
+        Ok(pdfium)
+    })
+}
+
+#[cfg(feature = "pdfium")]
+fn load_pdfium_document_from_file(path: &Path) -> Result<PdfDocument<'static>> {
+    #[cfg(all(test, feature = "pdfium"))]
+    PDFIUM_TEST_FILE_LOAD_COUNT.fetch_add(1, Ordering::Relaxed);
+
+    pdfium_runtime()?
+        .load_pdf_from_file(path, None)
+        .with_context(|| format!("load PDF with PDFium {}", path.display()))
 }
 
 #[cfg(feature = "pdfium")]
@@ -9100,15 +9155,15 @@ fn extract_pdfium_pages(
     ocr: OcrOptions<'_>,
     options: ExtractionOptions,
 ) -> Result<Vec<ExtractedPage>> {
-    let pdfium = bind_pdfium_runtime()?;
-    let pdf_document = pdfium
-        .load_pdf_from_file(&document.path, None)
-        .with_context(|| format!("load PDF with PDFium {}", document.path.display()))?;
-    let page_count = pdfium_page_count(&pdf_document)?;
-
-    (0..page_count)
+    (0..document.page_count)
         .map(|page_index| {
-            extract_pdfium_loaded_page(&pdf_document, source_path, ocr, options, page_index as u32)
+            extract_pdfium_loaded_page(
+                &document.pdf_document,
+                source_path,
+                ocr,
+                options,
+                page_index as u32,
+            )
         })
         .collect()
 }
@@ -9125,12 +9180,13 @@ fn extract_pdfium_page_by_index(
         bail!("page index {page_index} not found");
     }
 
-    let pdfium = bind_pdfium_runtime()?;
-    let pdf_document = pdfium
-        .load_pdf_from_file(&document.path, None)
-        .with_context(|| format!("load PDF with PDFium {}", document.path.display()))?;
-
-    extract_pdfium_loaded_page(&pdf_document, source_path, ocr, options, page_index)
+    extract_pdfium_loaded_page(
+        &document.pdf_document,
+        source_path,
+        ocr,
+        options,
+        page_index,
+    )
 }
 
 #[cfg(feature = "pdfium")]
@@ -9336,10 +9392,7 @@ fn load_pdfium_ocr_if_needed(
 
 #[cfg(feature = "pdfium")]
 fn render_pdfium_pdf_page_to_temp_ppm(pdf: &Path, page_index: u32) -> Result<(PathBuf, u64)> {
-    let pdfium = bind_pdfium_runtime()?;
-    let document = pdfium
-        .load_pdf_from_file(pdf, None)
-        .with_context(|| format!("load PDF with PDFium {}", pdf.display()))?;
+    let document = load_pdfium_document_from_file(pdf)?;
     let page_count = pdfium_page_count(&document)?;
     if page_index as usize >= page_count {
         bail!("page index {page_index} not found");
@@ -11867,6 +11920,61 @@ fn sha256_hex(input: impl AsRef<[u8]>) -> String {
 mod unit_tests {
     use super::*;
 
+    #[cfg(feature = "pdfium")]
+    #[test]
+    fn pdfium_document_reuses_loaded_handle_for_full_document_extraction() -> Result<()> {
+        reset_pdfium_test_file_load_count();
+        let pdf_path = temp_pdf_path("pdfium-single-load");
+        fs::write(
+            &pdf_path,
+            minimal_unit_pdf_with_streams(&[
+                "BT /F1 12 Tf 72 720 Td (First page) Tj ET",
+                "BT /F1 12 Tf 72 720 Td (Second page) Tj ET",
+            ]),
+        )
+        .with_context(|| format!("write test PDF {}", pdf_path.display()))?;
+
+        let backend = PdfiumBackend;
+        let document = backend.load_document(&pdf_path)?;
+        assert_eq!(backend.page_count(&document), 2);
+
+        let pages = backend.extract_pages(
+            &document,
+            &pdf_path,
+            OcrOptions::new(
+                None,
+                None,
+                None,
+                OcrCommandInput::PdfPage,
+                DEFAULT_OCR_TIMEOUT_MS,
+            )?,
+            ExtractionOptions {
+                span_geometry: false,
+                page_jobs: 1,
+            },
+        )?;
+        assert_eq!(pages.len(), 2);
+        assert_eq!(
+            pdfium_test_file_load_count(),
+            1,
+            "full-document PDFium extraction should use the document opened during load_document"
+        );
+
+        let _ = fs::remove_file(&pdf_path);
+        Ok(())
+    }
+
+    #[test]
+    fn lopdf_document_worker_count_respects_requested_jobs() {
+        assert_eq!(document_worker_count(&LopdfBackend, 4, 3), 3);
+    }
+
+    #[cfg(feature = "pdfium")]
+    #[test]
+    fn pdfium_document_worker_count_serializes_corpus_jobs() {
+        assert_eq!(document_worker_count(&PdfiumBackend, 4, 3), 1);
+    }
+
     #[test]
     fn ruled_table_line_density_saturates_from_raw_ruling_hint_before_full_decode() {
         let mut content = String::new();
@@ -11961,5 +12069,71 @@ mod unit_tests {
         assert_eq!(filtered.len(), 2);
         assert_eq!(filtered[0].text, "First line");
         assert_eq!(filtered[1].text, "Second line");
+    }
+
+    #[cfg(feature = "pdfium")]
+    fn temp_pdf_path(label: &str) -> PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        std::env::temp_dir().join(format!("{label}-{}-{suffix}.pdf", std::process::id()))
+    }
+
+    #[cfg(feature = "pdfium")]
+    fn minimal_unit_pdf_with_streams(streams: &[&str]) -> Vec<u8> {
+        let page_count = streams.len();
+        assert!(page_count > 0);
+        let font_object_id = 3 + page_count;
+        let kids = (0..page_count)
+            .map(|index| format!("{} 0 R", index + 3))
+            .collect::<Vec<_>>()
+            .join(" ");
+        let mut objects = vec![
+            "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
+            format!("<< /Type /Pages /Kids [{kids}] /Count {page_count} >>"),
+        ];
+
+        for (index, stream) in streams.iter().enumerate() {
+            let content_object_id = 4 + page_count + index;
+            objects.push(format!(
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 {font_object_id} 0 R >> >> /Contents {content_object_id} 0 R >>"
+            ));
+            assert!(!stream.is_empty());
+        }
+
+        objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_string());
+        for stream in streams {
+            objects.push(format!(
+                "<< /Length {} >>\nstream\n{stream}\nendstream",
+                stream.len()
+            ));
+        }
+
+        let mut pdf = Vec::new();
+        writeln!(&mut pdf, "%PDF-1.4").unwrap();
+
+        let mut offsets = vec![0usize];
+        for (index, object) in objects.iter().enumerate() {
+            offsets.push(pdf.len());
+            writeln!(&mut pdf, "{} 0 obj", index + 1).unwrap();
+            writeln!(&mut pdf, "{object}").unwrap();
+            writeln!(&mut pdf, "endobj").unwrap();
+        }
+
+        let xref_start = pdf.len();
+        writeln!(&mut pdf, "xref").unwrap();
+        writeln!(&mut pdf, "0 {}", objects.len() + 1).unwrap();
+        writeln!(&mut pdf, "0000000000 65535 f ").unwrap();
+        for offset in offsets.iter().skip(1) {
+            writeln!(&mut pdf, "{offset:010} 00000 n ").unwrap();
+        }
+        writeln!(&mut pdf, "trailer").unwrap();
+        writeln!(&mut pdf, "<< /Size {} /Root 1 0 R >>", objects.len() + 1).unwrap();
+        writeln!(&mut pdf, "startxref").unwrap();
+        writeln!(&mut pdf, "{xref_start}").unwrap();
+        writeln!(&mut pdf, "%%EOF").unwrap();
+
+        pdf
     }
 }
