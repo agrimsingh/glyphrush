@@ -2399,7 +2399,7 @@ fn split_text_blocks(text: &str, run_table_recovery: bool) -> Vec<String> {
     for line in text.lines().map(str::trim_end) {
         if line.trim().is_empty() {
             if !current.is_empty() {
-                blocks.push(reflow_text_block(&current, run_table_recovery));
+                push_reflowed_text_blocks(&mut blocks, &current, run_table_recovery);
                 current.clear();
             }
         } else {
@@ -2408,10 +2408,56 @@ fn split_text_blocks(text: &str, run_table_recovery: bool) -> Vec<String> {
     }
 
     if !current.is_empty() {
-        blocks.push(reflow_text_block(&current, run_table_recovery));
+        push_reflowed_text_blocks(&mut blocks, &current, run_table_recovery);
     }
 
     merge_adjacent_fragment_blocks(blocks)
+}
+
+fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_table_recovery: bool) {
+    if let Some((caption, table_lines)) =
+        split_leading_text_table_caption(lines, run_table_recovery)
+    {
+        blocks.push(caption);
+        blocks.push(reflow_text_block(&table_lines, run_table_recovery));
+        return;
+    }
+
+    blocks.push(reflow_text_block(lines, run_table_recovery));
+}
+
+fn split_leading_text_table_caption(
+    lines: &[String],
+    run_table_recovery: bool,
+) -> Option<(String, Vec<String>)> {
+    if !run_table_recovery || lines.len() < 4 {
+        return None;
+    }
+
+    let caption = lines.first()?.trim();
+    if !looks_like_leading_text_table_caption(caption) {
+        return None;
+    }
+
+    let table_lines = lines[1..].iter().map(String::as_str).collect::<Vec<_>>();
+    if aligned_whitespace_table_rows(&table_lines).is_some()
+        || header_guided_whitespace_table_rows(&table_lines).is_some()
+    {
+        return Some((caption.to_string(), lines[1..].to_vec()));
+    }
+
+    None
+}
+
+fn looks_like_leading_text_table_caption(line: &str) -> bool {
+    let trimmed = line.trim();
+    !trimmed.is_empty()
+        && trimmed.chars().count() <= 120
+        && trimmed.chars().any(char::is_alphabetic)
+        && !trimmed.contains('|')
+        && !trimmed.contains('\t')
+        && !has_wide_space_gap(trimmed)
+        && !is_list_lines_str(&[trimmed])
 }
 
 fn reflow_text_block(lines: &[String], run_table_recovery: bool) -> String {

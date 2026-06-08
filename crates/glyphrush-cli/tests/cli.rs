@@ -312,6 +312,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         table_recovery["notes"]
             .as_str()
             .unwrap()
+            .contains("leading text-table captions outside table grids")
+    );
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
             .contains("trailing descriptor continuations")
     );
     assert!(
