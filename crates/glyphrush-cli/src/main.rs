@@ -24,12 +24,22 @@ use glyphrush_core::{
     classify_page, parse_extracted_pages,
 };
 use lopdf::{Dictionary, Document, Object, ObjectId, content::Content};
+#[cfg(feature = "pdfium")]
+use pdfium_render::prelude::{
+    PdfDocument, PdfPage, PdfPageObject, PdfPageObjectCommon, PdfPageObjectsCommon,
+    PdfPageXObjectFormObject, PdfPathSegmentType, PdfPathSegments, PdfQuadPoints, Pdfium,
+    PdfiumError,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 const LOPDF_BACKEND_NAME: &str = "lopdf";
 const LOPDF_BACKEND_VERSION: &str = "lopdf-adapter-v0";
+#[cfg(feature = "pdfium")]
+const PDFIUM_BACKEND_NAME: &str = "pdfium";
+#[cfg(feature = "pdfium")]
+const PDFIUM_BACKEND_VERSION: &str = "pdfium-adapter-v0";
 const PARSER_NAME: &str = "glyphrush";
 const PARSER_VERSION: &str = env!("CARGO_PKG_VERSION");
 const BENCH_REPORT_VERSION: &str = "glyphrush-bench-report-v1";
@@ -96,6 +106,8 @@ struct Cli {
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum BackendChoice {
     Lopdf,
+    #[cfg(feature = "pdfium")]
+    Pdfium,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -1746,9 +1758,26 @@ fn backend_check_output<B: PdfBackend + Sync>(
         },
         BackendCapabilityOutput {
             name: "pdfium",
+            #[cfg(feature = "pdfium")]
+            status: BackendStatus::Enabled,
+            #[cfg(not(feature = "pdfium"))]
             status: BackendStatus::NotWired,
             selected: selected_backend == "pdfium",
+            #[cfg(feature = "pdfium")]
+            version: Some(PDFIUM_BACKEND_VERSION),
+            #[cfg(not(feature = "pdfium"))]
             version: None,
+            #[cfg(feature = "pdfium")]
+            capabilities: BackendCapabilityMatrix {
+                open_pdf: true,
+                page_count: true,
+                native_text: true,
+                span_geometry: "page_text",
+                image_metadata: true,
+                render_pages: false,
+                builtin_ocr: false,
+            },
+            #[cfg(not(feature = "pdfium"))]
             capabilities: BackendCapabilityMatrix {
                 open_pdf: false,
                 page_count: false,
@@ -1759,7 +1788,14 @@ fn backend_check_output<B: PdfBackend + Sync>(
                 builtin_ocr: false,
             },
             limitations: vec![
+                #[cfg(not(feature = "pdfium"))]
                 "adapter_not_implemented",
+                #[cfg(feature = "pdfium")]
+                "no_page_rendering",
+                #[cfg(feature = "pdfium")]
+                "no_builtin_ocr",
+                #[cfg(feature = "pdfium")]
+                "page_level_span_geometry_only",
                 "license_packaging_spike_required",
             ],
         },
@@ -2091,6 +2127,8 @@ fn main() -> Result<()> {
 
     match cli.backend {
         BackendChoice::Lopdf => run_command(&LopdfBackend, cli.command),
+        #[cfg(feature = "pdfium")]
+        BackendChoice::Pdfium => run_command(&PdfiumBackend, cli.command),
     }
 }
 
@@ -2575,6 +2613,62 @@ impl PdfBackend for LopdfBackend {
         page_index: u32,
     ) -> Result<ExtractedPage> {
         extract_lopdf_page_by_index(document, source_path, ocr, options, page_index)
+    }
+}
+
+#[cfg(feature = "pdfium")]
+struct PdfiumBackend;
+
+#[cfg(feature = "pdfium")]
+struct PdfiumDocument {
+    path: PathBuf,
+    page_count: usize,
+}
+
+#[cfg(feature = "pdfium")]
+impl PdfBackend for PdfiumBackend {
+    type Document = PdfiumDocument;
+
+    fn name(&self) -> &'static str {
+        PDFIUM_BACKEND_NAME
+    }
+
+    fn version(&self) -> &'static str {
+        PDFIUM_BACKEND_VERSION
+    }
+
+    fn load_document(&self, path: &Path) -> Result<Self::Document> {
+        let page_count = load_pdfium_page_count(path)?;
+
+        Ok(PdfiumDocument {
+            path: path.to_path_buf(),
+            page_count,
+        })
+    }
+
+    fn page_count(&self, document: &Self::Document) -> usize {
+        document.page_count
+    }
+
+    fn extract_pages(
+        &self,
+        document: &Self::Document,
+        source_path: &Path,
+        ocr: OcrOptions<'_>,
+        options: ExtractionOptions,
+    ) -> Result<Vec<ExtractedPage>> {
+        extract_pdfium_pages(document, source_path, ocr, options)
+    }
+
+    fn extract_page(
+        &self,
+        document: &Self::Document,
+        source_path: &Path,
+        ocr: OcrOptions<'_>,
+        options: ExtractionOptions,
+        page_index: u32,
+    ) -> Result<ExtractedPage> {
+        extract_pdfium_page_by_index(document, source_path, ocr, options, page_index)
     }
 }
 
@@ -7362,6 +7456,319 @@ fn discover_pdfs(path: &Path) -> Result<Vec<DiscoveredPdf>> {
     }
 
     Ok(pdfs)
+}
+
+#[cfg(feature = "pdfium")]
+fn bind_pdfium_runtime() -> Result<Pdfium> {
+    pdfium_auto::bind_pdfium_silent().context("bind PDFium runtime")
+}
+
+#[cfg(feature = "pdfium")]
+fn load_pdfium_page_count(path: &Path) -> Result<usize> {
+    let pdfium = bind_pdfium_runtime()?;
+    let document = pdfium
+        .load_pdf_from_file(path, None)
+        .with_context(|| format!("load PDF with PDFium {}", path.display()))?;
+
+    pdfium_page_count(&document)
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_page_count(document: &PdfDocument<'_>) -> Result<usize> {
+    Ok(usize::from(document.pages().len()))
+}
+
+#[cfg(feature = "pdfium")]
+fn extract_pdfium_pages(
+    document: &PdfiumDocument,
+    source_path: &Path,
+    ocr: OcrOptions<'_>,
+    options: ExtractionOptions,
+) -> Result<Vec<ExtractedPage>> {
+    let pdfium = bind_pdfium_runtime()?;
+    let pdf_document = pdfium
+        .load_pdf_from_file(&document.path, None)
+        .with_context(|| format!("load PDF with PDFium {}", document.path.display()))?;
+    let page_count = pdfium_page_count(&pdf_document)?;
+
+    (0..page_count)
+        .map(|page_index| {
+            extract_pdfium_loaded_page(&pdf_document, source_path, ocr, options, page_index as u32)
+        })
+        .collect()
+}
+
+#[cfg(feature = "pdfium")]
+fn extract_pdfium_page_by_index(
+    document: &PdfiumDocument,
+    source_path: &Path,
+    ocr: OcrOptions<'_>,
+    options: ExtractionOptions,
+    page_index: u32,
+) -> Result<ExtractedPage> {
+    if page_index as usize >= document.page_count {
+        bail!("page index {page_index} not found");
+    }
+
+    let pdfium = bind_pdfium_runtime()?;
+    let pdf_document = pdfium
+        .load_pdf_from_file(&document.path, None)
+        .with_context(|| format!("load PDF with PDFium {}", document.path.display()))?;
+
+    extract_pdfium_loaded_page(&pdf_document, source_path, ocr, options, page_index)
+}
+
+#[cfg(feature = "pdfium")]
+fn extract_pdfium_loaded_page(
+    document: &PdfDocument<'_>,
+    source_path: &Path,
+    ocr: OcrOptions<'_>,
+    options: ExtractionOptions,
+    page_index: u32,
+) -> Result<ExtractedPage> {
+    let open_start = Instant::now();
+    let page = document
+        .pages()
+        .get(u16::try_from(page_index).context("page index exceeds PDFium range")?)
+        .with_context(|| format!("load PDFium page {page_index}"))?;
+    let open_us = open_start
+        .elapsed()
+        .as_micros()
+        .max(1)
+        .min(u64::MAX as u128) as u64;
+
+    let dimensions = PageDimensions::new(page.width().value, page.height().value);
+    let rotation_degrees = page
+        .rotation()
+        .map(|rotation| rotation.as_degrees() as i16)
+        .unwrap_or_default();
+
+    let native_extract_start = Instant::now();
+    let native_text = page
+        .text()
+        .map(|text| text.all())
+        .map_err(map_pdfium_text_error)
+        .with_context(|| format!("extract PDFium native text from page {page_index}"))?;
+    let native_extract_us = native_extract_start
+        .elapsed()
+        .as_micros()
+        .max(1)
+        .min(u64::MAX as u128) as u64;
+
+    let native_text_bytes = native_text.trim().len() as u32;
+    let native_span_count = native_text
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .count()
+        .max((native_text_bytes > 0) as usize) as u32;
+    let glyph_count = native_text.chars().filter(|ch| !ch.is_whitespace()).count() as u32;
+    let image_artifacts = pdfium_image_artifacts(&page, &dimensions);
+    let image_area_ratio = image_artifact_coverage_ratio(&image_artifacts, &dimensions);
+    let table_start = Instant::now();
+    let table_line_density =
+        table_line_density(&native_text).max(pdfium_ruled_table_line_density(&page));
+    let table_us = table_start
+        .elapsed()
+        .as_micros()
+        .max(1)
+        .min(u64::MAX as u128) as u64;
+
+    let signals = PageSignals {
+        page_index,
+        dimensions: dimensions.clone(),
+        native_span_count,
+        native_text_bytes,
+        glyph_count,
+        image_area_ratio,
+        duplicate_char_ratio: duplicate_char_ratio(&native_text),
+        bbox_overlap_ratio: 0.0,
+        broken_encoding_ratio: broken_encoding_ratio(&native_text),
+        rotation_degrees,
+        table_line_density,
+        annotation_count: page.annotations().len() as u32,
+        form_field_count: 0,
+        huge_object_count: 0,
+        span_geometry_capped: options.span_geometry,
+    };
+    let (ocr_text, ocr_us) = load_ocr_if_needed(source_path, ocr, &signals)?;
+
+    Ok(ExtractedPage {
+        page_index,
+        dimensions,
+        native_text,
+        native_spans: Vec::new(),
+        image_artifacts,
+        signals,
+        ocr_text,
+        timings: PageTimings {
+            open_us,
+            native_extract_us,
+            table_us,
+            ocr_us,
+            ..PageTimings::default()
+        },
+    })
+}
+
+#[cfg(feature = "pdfium")]
+fn map_pdfium_text_error(error: PdfiumError) -> anyhow::Error {
+    anyhow!(error)
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_image_artifacts(page: &PdfPage<'_>, dimensions: &PageDimensions) -> Vec<ExtractedImage> {
+    let mut images = Vec::new();
+    let mut image_index = 0;
+
+    for object in page.objects().iter() {
+        pdfium_collect_image_artifact(&object, dimensions, &mut image_index, &mut images);
+    }
+
+    images
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_ruled_table_line_density(page: &PdfPage<'_>) -> f32 {
+    let mut stroked_ruling_segments = 0u32;
+
+    for object in page.objects().iter() {
+        stroked_ruling_segments += pdfium_object_ruling_segments(&object);
+        if stroked_ruling_segments >= RULED_TABLE_SATURATION_SEGMENTS {
+            return 1.0;
+        }
+    }
+
+    ruling_density(stroked_ruling_segments)
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_object_ruling_segments(object: &PdfPageObject<'_>) -> u32 {
+    let mut stroked_ruling_segments = 0u32;
+
+    if let Some(path) = object.as_path_object()
+        && path.is_stroked().unwrap_or(true)
+    {
+        let mut current = None;
+        for segment in path.segments().iter() {
+            match segment.segment_type() {
+                PdfPathSegmentType::MoveTo => {
+                    current = Some((segment.x().value, segment.y().value));
+                }
+                PdfPathSegmentType::LineTo => {
+                    let end = (segment.x().value, segment.y().value);
+                    if let Some(start) = current
+                        && is_ruling_segment(start, end)
+                    {
+                        stroked_ruling_segments += 1;
+                    }
+                    current = Some(end);
+                }
+                PdfPathSegmentType::BezierTo | PdfPathSegmentType::Unknown => {
+                    current = None;
+                }
+            }
+        }
+
+        if stroked_ruling_segments == 0
+            && let Ok(bounds) = object.bounds()
+            && pdfium_bounds_look_like_ruling(bounds)
+        {
+            stroked_ruling_segments += 1;
+        }
+    }
+
+    if let Some(form) = object.as_x_object_form_object() {
+        for child in form.iter() {
+            stroked_ruling_segments += pdfium_object_ruling_segments(&child);
+            if stroked_ruling_segments >= RULED_TABLE_SATURATION_SEGMENTS {
+                break;
+            }
+        }
+    }
+
+    stroked_ruling_segments
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_bounds_look_like_ruling(bounds: PdfQuadPoints) -> bool {
+    is_ruling_segment(
+        (bounds.left().value, bounds.bottom().value),
+        (bounds.right().value, bounds.top().value),
+    )
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_collect_image_artifact(
+    object: &PdfPageObject<'_>,
+    dimensions: &PageDimensions,
+    image_index: &mut usize,
+    images: &mut Vec<ExtractedImage>,
+) {
+    if (object.as_image_object().is_some() || pdfium_object_form_contains_image(object))
+        && let Ok(bounds) = object.bounds()
+        && let Some(image) = pdfium_image_from_bounds(bounds, dimensions, *image_index)
+    {
+        images.push(image);
+        *image_index += 1;
+    }
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_object_form_contains_image(object: &PdfPageObject<'_>) -> bool {
+    let Some(form) = object.as_x_object_form_object() else {
+        return false;
+    };
+
+    pdfium_form_contains_image(form)
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_form_contains_image(form: &PdfPageXObjectFormObject<'_>) -> bool {
+    form.iter().any(|child| {
+        child.as_image_object().is_some()
+            || child
+                .as_x_object_form_object()
+                .is_some_and(pdfium_form_contains_image)
+    })
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_image_from_bounds(
+    bounds: PdfQuadPoints,
+    dimensions: &PageDimensions,
+    image_index: usize,
+) -> Option<ExtractedImage> {
+    let rect = bounds.to_rect();
+    let x0 = rect.left().value.min(rect.right().value).max(0.0);
+    let x1 = rect
+        .left()
+        .value
+        .max(rect.right().value)
+        .min(dimensions.width);
+    let y0 = rect.bottom().value.min(rect.top().value).max(0.0);
+    let y1 = rect
+        .bottom()
+        .value
+        .max(rect.top().value)
+        .min(dimensions.height);
+
+    if ![x0, x1, y0, y1].into_iter().all(f32::is_finite) || x1 <= x0 || y1 <= y0 {
+        return None;
+    }
+
+    let page_area = dimensions.width.max(0.0) * dimensions.height.max(0.0);
+    let image_area = (x1 - x0) * (y1 - y0);
+    let area_ratio = if page_area > f32::EPSILON {
+        (image_area / page_area).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+
+    Some(ExtractedImage {
+        bbox: BBox { x0, y0, x1, y1 },
+        area_ratio,
+        source_name: Some(format!("pdfium-image-{image_index:06}")),
+    })
 }
 
 fn extract_lopdf_pages(

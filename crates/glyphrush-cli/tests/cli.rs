@@ -107,6 +107,82 @@ fn backend_check_reports_lopdf_and_pending_pdfium_mupdf_candidates() {
     assert_eq!(backends[2]["selected"], false);
 }
 
+#[cfg(feature = "pdfium")]
+#[test]
+fn backend_check_reports_feature_gated_pdfium_backend() {
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["--backend", "pdfium", "backend-check"])
+        .output()
+        .expect("run glyphrush backend-check with pdfium backend");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("backend-check output is json");
+
+    assert_eq!(json["selected_backend"], "pdfium");
+    assert_eq!(json["enabled_backend_count"], 2);
+
+    let backends = json["backends"].as_array().unwrap();
+    let pdfium = backends
+        .iter()
+        .find(|backend| backend["name"] == "pdfium")
+        .expect("pdfium backend candidate exists");
+    assert_eq!(pdfium["status"], "enabled");
+    assert_eq!(pdfium["selected"], true);
+    assert_eq!(pdfium["version"], "pdfium-adapter-v0");
+    assert_eq!(pdfium["capabilities"]["open_pdf"], true);
+    assert_eq!(pdfium["capabilities"]["page_count"], true);
+    assert_eq!(pdfium["capabilities"]["native_text"], true);
+    assert_eq!(pdfium["capabilities"]["span_geometry"], "page_text");
+    assert_eq!(pdfium["capabilities"]["image_metadata"], true);
+    assert_eq!(pdfium["capabilities"]["render_pages"], false);
+    assert_eq!(pdfium["capabilities"]["builtin_ocr"], false);
+}
+
+#[cfg(feature = "pdfium")]
+#[test]
+fn pdfium_backend_flags_ruled_table_vector_paths() {
+    let dir = temp_dir("pdfium-ruled-table");
+    let pdf_path = dir.join("table.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_ruled_table()).unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "pdfium",
+            "debug-page",
+            pdf_path.to_str().unwrap(),
+            "0",
+        ])
+        .output()
+        .expect("run glyphrush pdfium debug-page");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("debug-page output is json");
+
+    assert!(
+        json["signals"]["table_line_density"].as_f64().unwrap() >= 0.25,
+        "signals: {}",
+        json["signals"]
+    );
+    assert_eq!(json["decision"]["run_table_recovery"], true);
+    assert_eq!(json["decision"]["reasons"][0], "table_line_density");
+    assert!(
+        json["quality"]["flags"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|flag| flag == "table_uncertain")
+    );
+}
+
 #[test]
 fn backend_check_smoke_pdf_reports_selected_backend_extraction_summary() {
     let pdf_path = write_test_pdf("backend-check-smoke", "Backend smoke text");
