@@ -296,6 +296,54 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(builtin_ocr["glyphrush_status"], "not_planned");
 }
 
+#[cfg(feature = "pdfium")]
+#[test]
+fn feature_parity_counts_pdfium_rendered_ocr_handoff_as_implemented() {
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["--backend", "pdfium", "feature-parity"])
+        .output()
+        .expect("run glyphrush feature-parity with pdfium backend");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
+
+    assert_eq!(json["selected_backend"], "pdfium");
+    assert_eq!(json["summary"]["implemented"], 5);
+    assert_eq!(json["summary"]["partial"], 5);
+    assert_eq!(
+        json["readiness"]["remaining_partial"],
+        serde_json::json!([
+            "span_geometry_layout",
+            "ocr",
+            "table_recovery",
+            "artifact_cache_snapshots",
+            "python_node_wasm_bindings"
+        ])
+    );
+
+    let capabilities = json["capabilities"].as_array().unwrap();
+    let page_render = capability(capabilities, "page_render_for_ocr");
+    assert_eq!(page_render["glyphrush_status"], "implemented");
+    assert_eq!(
+        page_render["quality_guard"],
+        "rendered_image_ocr_check_and_render_page_fallback_counts"
+    );
+    assert!(
+        page_render["notes"]
+            .as_str()
+            .unwrap()
+            .contains("PDFium renders only OCR-routed pages")
+    );
+
+    let ocr = capability(capabilities, "ocr");
+    assert_eq!(ocr["glyphrush_status"], "partial");
+}
+
 #[test]
 fn liteparse_benchmark_gate_script_dry_run_uses_quality_backed_pdfium_command() {
     let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))

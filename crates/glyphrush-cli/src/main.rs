@@ -2129,7 +2129,8 @@ fn baseline_preset_names(preset: Option<BaselinePreset>) -> Vec<&'static str> {
 }
 
 fn feature_parity_output<B: PdfBackend>(backend: &B) -> FeatureParityOutput {
-    let capabilities = liteparse_feature_parity_capabilities();
+    let capabilities =
+        liteparse_feature_parity_capabilities(backend.supports_page_render_for_ocr());
     let summary = feature_parity_summary(&capabilities);
     let readiness = feature_parity_readiness(&capabilities, &summary);
     FeatureParityOutput {
@@ -2146,7 +2147,33 @@ fn feature_parity_output<B: PdfBackend>(backend: &B) -> FeatureParityOutput {
     }
 }
 
-fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
+fn liteparse_feature_parity_capabilities(
+    supports_page_render_for_ocr: bool,
+) -> Vec<FeatureParityCapability> {
+    let page_render_for_ocr = if supports_page_render_for_ocr {
+        FeatureParityCapability {
+            id: "page_render_for_ocr",
+            area: "ocr",
+            liteparse: "render_pages_for_ocr",
+            glyphrush: "pdfium_rendered_image_command_or_http_input",
+            glyphrush_status: FeatureParityStatus::Implemented,
+            hot_path: false,
+            quality_guard: "rendered_image_ocr_check_and_render_page_fallback_counts",
+            notes: "PDFium renders only OCR-routed pages to temporary PPM files for command or HTTP adapters, records render timing and fallback-action counts, and removes temporary image files after OCR returns.",
+        }
+    } else {
+        FeatureParityCapability {
+            id: "page_render_for_ocr",
+            area: "ocr",
+            liteparse: "render_pages_for_ocr",
+            glyphrush: "pdfium_rendered_image_command_or_http_input",
+            glyphrush_status: FeatureParityStatus::Partial,
+            hot_path: false,
+            quality_guard: "ocr_check_render_backend_required",
+            notes: "Rendered-image OCR handoff exists for the PDFium backend; non-rendering backends report the limitation instead of silently switching OCR input contracts.",
+        }
+    };
+
     vec![
         FeatureParityCapability {
             id: "native_text_extraction",
@@ -2208,16 +2235,7 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             quality_guard: "requires_ocr_flag_when_unavailable",
             notes: "OCR is adapter-based, supports sidecar, command, and HTTP endpoint seams, and stays outside the default hot path.",
         },
-        FeatureParityCapability {
-            id: "page_render_for_ocr",
-            area: "ocr",
-            liteparse: "render_pages_for_ocr",
-            glyphrush: "pdfium_rendered_image_command_or_http_input",
-            glyphrush_status: FeatureParityStatus::Partial,
-            hot_path: false,
-            quality_guard: "ocr_check_render_backend_required",
-            notes: "Rendered-image OCR handoff exists for the PDFium backend; non-rendering backends report the limitation.",
-        },
+        page_render_for_ocr,
         FeatureParityCapability {
             id: "table_recovery",
             area: "tables",
@@ -3984,6 +4002,9 @@ trait PdfBackend {
     fn supports_parallel_documents(&self) -> bool {
         true
     }
+    fn supports_page_render_for_ocr(&self) -> bool {
+        false
+    }
     fn load_document(&self, path: &Path) -> Result<Self::Document>;
     fn page_count(&self, document: &Self::Document) -> usize;
     fn extract_pages(
@@ -4085,6 +4106,10 @@ impl PdfBackend for PdfiumBackend {
 
     fn supports_parallel_documents(&self) -> bool {
         false
+    }
+
+    fn supports_page_render_for_ocr(&self) -> bool {
+        true
     }
 
     fn load_document(&self, path: &Path) -> Result<Self::Document> {
