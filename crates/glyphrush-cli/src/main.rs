@@ -2244,7 +2244,7 @@ fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "table_uncertain_flag_and_table_structure_eval",
-            notes: "Current table support is conservative, tied to explicit uncertainty flags, and preserves blank cells for delimited text, fixed-width whitespace, and aligned positioned rows when table recovery is routed.",
+            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, and aligned positioned rows when table recovery is routed, and exposes structured grids to eval text anchors.",
         },
         FeatureParityCapability {
             id: "artifact_cache_snapshots",
@@ -8886,7 +8886,7 @@ fn quality_text_from_page(page: &PageArtifact) -> String {
     } else {
         page.layout_blocks
             .iter()
-            .map(|block| block.text.trim().to_string())
+            .map(quality_text_from_layout_block)
             .filter(|text| !text.is_empty())
             .collect::<Vec<_>>()
     };
@@ -8900,6 +8900,38 @@ fn quality_text_from_page(page: &PageArtifact) -> String {
     }
 
     parts.join("\n")
+}
+
+fn quality_text_from_layout_block(block: &glyphrush_core::LayoutBlock) -> String {
+    if block.kind == LayoutBlockKind::Table
+        && let Some(table) = block.table.as_ref()
+        && let Some(text) = structured_table_text(table)
+    {
+        return text;
+    }
+
+    block.text.trim().to_string()
+}
+
+fn structured_table_text(table: &LayoutTable) -> Option<String> {
+    let rows = table_rows_from_grid(table);
+    let column_count = rows.iter().map(Vec::len).max()?;
+    if rows.len() < 2 || column_count < 2 {
+        return None;
+    }
+
+    Some(
+        rows.iter()
+            .map(|row| format_structured_table_text_row(row, column_count))
+            .collect::<Vec<_>>()
+            .join("\n"),
+    )
+}
+
+fn format_structured_table_text_row(row: &[String], column_count: usize) -> String {
+    let mut cells = row.to_vec();
+    cells.resize(column_count, String::new());
+    format!("| {} |", cells.join(" | "))
 }
 
 fn normalize_words(text: &str) -> Vec<String> {

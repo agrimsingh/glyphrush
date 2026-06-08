@@ -3380,6 +3380,52 @@ fn parse_json_preserves_empty_cells_for_aligned_whitespace_table_blocks() {
 }
 
 #[test]
+fn eval_required_text_can_match_empty_cells_from_structured_table_rows() {
+    let dir = temp_dir("eval-structured-table-text");
+    let pdf_path = dir.join("aligned-table.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_aligned_whitespace_ruled_table()).unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "aligned-table.pdf",
+              "expect": {
+                "required_text": ["| A |  | missing value |", "| B | 2 |  |"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush eval on structured blank-cell table");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("eval output is json");
+
+    assert_eq!(json["quality_passed"], true);
+    assert_eq!(
+        json["documents"][0]["checks"]["required_text"]["actual"]["missing"],
+        Value::Array(vec![])
+    );
+}
+
+#[test]
 fn parse_json_emits_structured_cells_for_positioned_table_blocks() {
     let dir = temp_dir("parse-json-positioned-table-cells");
     let pdf_path = dir.join("positioned-table.pdf");
