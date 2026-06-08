@@ -11347,6 +11347,73 @@ fn eval_manifest_uses_span_geometry_layout_for_two_column_reading_order() {
 }
 
 #[test]
+fn eval_manifest_uses_span_geometry_layout_for_full_width_heading_before_two_columns() {
+    let dir = temp_dir("eval-heading-two-column-reading-order");
+    let pdf_path = dir.join("heading-two-column.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream(
+            "BT /F1 12 Tf 72 730 Td (FULL WIDTH TITLE) Tj ET \
+             BT /F1 12 Tf 72 700 Td (Left column starts) Tj ET \
+             BT /F1 12 Tf 330 700 Td (Right column starts) Tj ET \
+             BT /F1 12 Tf 72 680 Td (Left column continues) Tj ET \
+             BT /F1 12 Tf 330 680 Td (Right column continues) Tj ET",
+        ),
+    )
+    .unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "heading-two-column.pdf",
+              "expect": {
+                "reading_order": {
+                  "expected_sequence": [
+                    "FULL WIDTH TITLE",
+                    "Left column starts",
+                    "Left column continues",
+                    "Right column starts",
+                    "Right column continues"
+                  ],
+                  "min_score": 1.0
+                }
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+            "--span-geometry",
+        ])
+        .output()
+        .expect("run glyphrush eval with heading plus two-column reading-order check");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("eval output is json");
+
+    assert_eq!(json["passed"], true);
+    assert_eq!(json["failed_checks"], 0);
+    assert_eq!(
+        json["documents"][0]["checks"]["reading_order"]["actual"]["score"],
+        1.0
+    );
+}
+
+#[test]
 fn eval_manifest_fails_when_reading_order_score_is_below_threshold() {
     let dir = temp_dir("eval-reading-order-fail");
     let pdf_path = dir.join("sample.pdf");

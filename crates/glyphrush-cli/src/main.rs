@@ -2190,11 +2190,11 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             id: "span_geometry_layout",
             area: "layout",
             liteparse: "layout_projection_and_character_geometry",
-            glyphrush: "bounded_span_geometry_and_conservative_layout_blocks",
+            glyphrush: "bounded_span_geometry_and_full_width_aware_layout_blocks",
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "layout_uncertain_flag_and_reading_order_eval",
-            notes: "Glyphrush avoids always-on per-character metadata and escalates layout work when signals require it.",
+            notes: "Glyphrush avoids always-on per-character metadata, preserves full-width bands before clearly separated two-column sections when span geometry is available, and escalates layout work when signals require it.",
         },
         FeatureParityCapability {
             id: "ocr",

@@ -1385,6 +1385,10 @@ fn group_spans_for_reading_order_from_refs<'a>(
     span_refs: Vec<&'a TextSpan>,
     dimensions: &PageDimensions,
 ) -> Vec<Vec<&'a TextSpan>> {
+    if let Some(groups) = group_span_refs_by_full_width_bands(&span_refs, dimensions) {
+        return groups;
+    }
+
     if let Some((left_column, right_column)) = split_two_columns(&span_refs, dimensions) {
         let mut groups = group_span_refs_by_vertical_gaps(left_column);
         groups.extend(group_span_refs_by_vertical_gaps(right_column));
@@ -1392,6 +1396,80 @@ fn group_spans_for_reading_order_from_refs<'a>(
     }
 
     group_span_refs_by_vertical_gaps(span_refs)
+}
+
+fn group_span_refs_by_full_width_bands<'a>(
+    span_refs: &[&'a TextSpan],
+    dimensions: &PageDimensions,
+) -> Option<Vec<Vec<&'a TextSpan>>> {
+    if span_refs.len() < 5
+        || !span_refs
+            .iter()
+            .any(|span| is_full_width_layout_span(span, dimensions))
+    {
+        return None;
+    }
+
+    let mut sorted_spans = span_refs.to_vec();
+    sorted_spans.sort_by(|left, right| {
+        left.bbox
+            .y0
+            .total_cmp(&right.bbox.y0)
+            .then_with(|| left.bbox.x0.total_cmp(&right.bbox.x0))
+            .then_with(|| left.text.cmp(&right.text))
+    });
+
+    let mut groups = Vec::new();
+    let mut pending_band = Vec::new();
+    let mut split_columns = false;
+
+    for span in sorted_spans {
+        if is_full_width_layout_span(span, dimensions) {
+            append_column_aware_band_groups(
+                &mut groups,
+                std::mem::take(&mut pending_band),
+                dimensions,
+                &mut split_columns,
+            );
+            groups.push(vec![span]);
+        } else {
+            pending_band.push(span);
+        }
+    }
+
+    append_column_aware_band_groups(&mut groups, pending_band, dimensions, &mut split_columns);
+
+    split_columns.then_some(groups)
+}
+
+fn append_column_aware_band_groups<'a>(
+    groups: &mut Vec<Vec<&'a TextSpan>>,
+    spans: Vec<&'a TextSpan>,
+    dimensions: &PageDimensions,
+    split_columns: &mut bool,
+) {
+    if spans.is_empty() {
+        return;
+    }
+
+    if let Some((left_column, right_column)) = split_two_columns(&spans, dimensions) {
+        *split_columns = true;
+        groups.extend(group_span_refs_by_vertical_gaps(left_column));
+        groups.extend(group_span_refs_by_vertical_gaps(right_column));
+    } else {
+        groups.extend(group_span_refs_by_vertical_gaps(spans));
+    }
+}
+
+fn is_full_width_layout_span(span: &TextSpan, dimensions: &PageDimensions) -> bool {
+    if dimensions.width <= 0.0 {
+        return false;
+    }
+
+    let width = span.bbox.x1 - span.bbox.x0;
+    width >= dimensions.width * 0.6
+        && span.bbox.x0 <= dimensions.width * 0.2
+        && span.bbox.x1 >= dimensions.width * 0.8
 }
 
 fn split_two_columns<'a>(
