@@ -237,6 +237,8 @@ enum Commands {
         require_baseline_quality: bool,
         #[arg(long, value_name = "BASELINE=RATIO")]
         require_speedup: Vec<BenchmarkSpeedupRequirement>,
+        #[arg(long, value_name = "BASELINE=RATIO")]
+        require_speedup_claim: Vec<BenchmarkSpeedupRequirement>,
         #[arg(long)]
         cache_probe: bool,
         #[arg(long)]
@@ -783,6 +785,7 @@ struct BenchmarkRequirements {
     require_baselines: bool,
     require_baseline_quality: bool,
     require_speedups: Vec<BenchmarkSpeedupRequirement>,
+    require_speedup_claims: Vec<BenchmarkSpeedupRequirement>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -1834,6 +1837,7 @@ struct BenchRunConfig<'a> {
     require_baselines: bool,
     require_baseline_quality: bool,
     required_speedups: &'a [BenchmarkSpeedupRequirement],
+    required_speedup_claims: &'a [BenchmarkSpeedupRequirement],
 }
 
 #[derive(Clone, Copy)]
@@ -2834,6 +2838,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             require_baselines,
             require_baseline_quality,
             require_speedup,
+            require_speedup_claim,
             cache_probe,
             span_geometry,
             baseline,
@@ -2867,6 +2872,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 require_baselines,
                 require_baseline_quality,
                 required_speedups: &require_speedup,
+                required_speedup_claims: &require_speedup_claim,
             };
             let run_configuration = run_configuration(ocr, options);
             let baseline_quality = eval_manifest_path
@@ -2912,7 +2918,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                     .unwrap_or_default();
                 output.speedup_claims = corpus_speedup_claims(
                     &output.baselines,
-                    &require_speedup,
+                    &combined_speedup_claim_requirements(&require_speedup, &require_speedup_claim),
                     &output.quality_status,
                     output.quality.as_ref(),
                 );
@@ -2937,6 +2943,11 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 }
                 if let Some(error) =
                     corpus_baseline_speedup_requirement_error(&output.baselines, &require_speedup)
+                {
+                    bail!("{error}");
+                }
+                if let Some(error) =
+                    speedup_claim_requirement_error(&output.speedup_claims, &require_speedup_claim)
                 {
                     bail!("{error}");
                 }
@@ -2976,7 +2987,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                     .unwrap_or_default();
                 output.speedup_claims = speedup_claims(
                     &output.baselines,
-                    &require_speedup,
+                    &combined_speedup_claim_requirements(&require_speedup, &require_speedup_claim),
                     &output.quality_status,
                     output.quality.as_ref(),
                 );
@@ -3000,6 +3011,11 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 }
                 if let Some(error) =
                     baseline_speedup_requirement_error(&output.baselines, &require_speedup)
+                {
+                    bail!("{error}");
+                }
+                if let Some(error) =
+                    speedup_claim_requirement_error(&output.speedup_claims, &require_speedup_claim)
                 {
                     bail!("{error}");
                 }
@@ -4038,6 +4054,7 @@ fn benchmark_requirements(config: BenchRunConfig<'_>) -> BenchmarkRequirements {
         require_baselines: config.require_baselines,
         require_baseline_quality: config.require_baseline_quality,
         require_speedups: config.required_speedups.to_vec(),
+        require_speedup_claims: config.required_speedup_claims.to_vec(),
     }
 }
 
@@ -4062,6 +4079,7 @@ fn run_cache_probe<B: PdfBackend>(
         require_baselines: false,
         require_baseline_quality: false,
         required_speedups: &[],
+        required_speedup_claims: &[],
     };
     let warm_bench = bench_pdf(backend, path, warm_config, None)?;
     let warm = cache_probe_run_from_bench(&warm_bench);
@@ -4649,6 +4667,15 @@ fn corpus_baseline_quality_requirement_error(
     })
 }
 
+fn combined_speedup_claim_requirements(
+    speedups: &[BenchmarkSpeedupRequirement],
+    speedup_claims: &[BenchmarkSpeedupRequirement],
+) -> Vec<BenchmarkSpeedupRequirement> {
+    let mut requirements = speedups.to_vec();
+    requirements.extend_from_slice(speedup_claims);
+    requirements
+}
+
 fn speedup_claims(
     baselines: &[BaselineBenchOutput],
     requirements: &[BenchmarkSpeedupRequirement],
@@ -4770,6 +4797,43 @@ fn speedup_claim(input: BenchmarkSpeedupClaimInput<'_>) -> BenchmarkSpeedupClaim
         quality_backed,
         claim_passed: matches!(status, BenchmarkSpeedupClaimStatus::Passed),
         status,
+    }
+}
+
+fn speedup_claim_requirement_error(
+    claims: &[BenchmarkSpeedupClaim],
+    requirements: &[BenchmarkSpeedupRequirement],
+) -> Option<String> {
+    for requirement in requirements {
+        let Some(claim) = claims.iter().find(|claim| {
+            claim.baseline == requirement.baseline
+                && claim.required_glyphrush_speedup == requirement.min_glyphrush_speedup
+        }) else {
+            return Some(format!(
+                "bench speedup claim required: baseline {} claim was not evaluated",
+                requirement.baseline
+            ));
+        };
+        if !claim.claim_passed {
+            return Some(format!(
+                "bench speedup claim required: baseline {} status {}",
+                requirement.baseline,
+                speedup_claim_status_label(claim.status)
+            ));
+        }
+    }
+
+    None
+}
+
+fn speedup_claim_status_label(status: BenchmarkSpeedupClaimStatus) -> &'static str {
+    match status {
+        BenchmarkSpeedupClaimStatus::Passed => "passed",
+        BenchmarkSpeedupClaimStatus::BaselineNotRun => "baseline_not_run",
+        BenchmarkSpeedupClaimStatus::NotSpeedComparable => "not_speed_comparable",
+        BenchmarkSpeedupClaimStatus::SpeedupFailed => "speedup_failed",
+        BenchmarkSpeedupClaimStatus::QualityNotChecked => "quality_not_checked",
+        BenchmarkSpeedupClaimStatus::QualityFailed => "quality_failed",
     }
 }
 

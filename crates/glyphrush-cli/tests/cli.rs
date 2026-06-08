@@ -3988,6 +3988,51 @@ fn bench_require_speedup_rejects_slow_glyphrush_after_writing_json() {
 }
 
 #[test]
+fn bench_require_speedup_claim_rejects_speed_only_report_after_writing_json() {
+    let pdf_path = write_test_pdf("bench-require-speedup-claim", "Claim speed only");
+    let baseline = write_baseline_script("baseline-claim-speed-only", "printf 'speed only'");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--require-speedup-claim",
+            "mock=0.000001",
+        ])
+        .output()
+        .expect("run glyphrush bench requiring speedup claim");
+
+    assert!(!output.status.success());
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+    let claim = &json["speedup_claims"][0];
+
+    assert_eq!(
+        json["requirements"]["require_speedup_claims"],
+        serde_json::json!([
+            {
+                "baseline": "mock",
+                "min_glyphrush_speedup": 0.000001
+            }
+        ])
+    );
+    assert_eq!(claim["baseline"], "mock");
+    assert_eq!(claim["speed_comparable"], true);
+    assert_eq!(claim["speed_passed"], true);
+    assert_eq!(claim["glyphrush_quality_checked"], false);
+    assert_eq!(claim["baseline_quality_checked"], false);
+    assert_eq!(claim["quality_backed"], false);
+    assert_eq!(claim["claim_passed"], false);
+    assert_eq!(claim["status"], "quality_not_checked");
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("bench speedup claim required"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn bench_includes_external_baseline_description_when_available() {
     let pdf_path = write_test_pdf("bench-baseline-describe", "Hello Baseline Describe");
     let baseline = write_baseline_script(
@@ -6712,6 +6757,85 @@ fn bench_directory_require_speedup_rejects_slow_glyphrush_after_writing_json() {
         "stderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );
+}
+
+#[test]
+fn bench_directory_require_speedup_claim_accepts_quality_backed_speedup() {
+    let dir = temp_dir("bench-dir-require-speedup-claim");
+    fs::write(dir.join("b.pdf"), minimal_pdf("Second Claim Quality")).unwrap();
+    fs::write(dir.join("a.pdf"), minimal_pdf("First Claim Quality")).unwrap();
+    let baseline = write_baseline_script(
+        "baseline-dir-claim-quality",
+        "case \"$1\" in *a.pdf) printf 'First Claim Quality';; *) printf 'Second Claim Quality';; esac",
+    );
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "a.pdf",
+              "expect": {
+                "required_text": ["First Claim Quality"]
+              }
+            },
+            {
+              "path": "b.pdf",
+              "expect": {
+                "required_text": ["Second Claim Quality"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            dir.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+            "--require-speedup-claim",
+            "mock=0.000001",
+        ])
+        .output()
+        .expect("run glyphrush directory bench requiring speedup claim");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+    let claim = &json["speedup_claims"][0];
+
+    assert_eq!(
+        json["requirements"]["require_speedup_claims"],
+        serde_json::json!([
+            {
+                "baseline": "mock",
+                "min_glyphrush_speedup": 0.000001
+            }
+        ])
+    );
+    assert_eq!(json["quality_status"], "checked");
+    assert_eq!(json["quality"]["quality_passed"], true);
+    assert_eq!(json["baselines"][0]["quality_status"], "checked");
+    assert_eq!(json["baselines"][0]["quality_failed_documents"], 0);
+    assert_eq!(claim["baseline"], "mock");
+    assert_eq!(claim["speed_comparable"], true);
+    assert_eq!(claim["speed_passed"], true);
+    assert_eq!(claim["glyphrush_quality_checked"], true);
+    assert_eq!(claim["glyphrush_quality_passed"], true);
+    assert_eq!(claim["baseline_quality_checked"], true);
+    assert_eq!(claim["baseline_quality_passed"], true);
+    assert_eq!(claim["quality_backed"], true);
+    assert_eq!(claim["claim_passed"], true);
+    assert_eq!(claim["status"], "passed");
 }
 
 #[test]
