@@ -1011,7 +1011,7 @@ fn layout_blocks_from_positioned_table_runs(
         return None;
     }
 
-    let rows = group_positioned_table_rows(span_refs);
+    let rows = merge_wrapped_positioned_table_rows(group_positioned_table_rows(span_refs));
     let ranges = positioned_table_row_ranges(&rows);
     if ranges.is_empty() {
         if let Some(list_block) = list_block_from_positioned_rows(page_index, 0, &rows) {
@@ -1216,11 +1216,14 @@ fn table_block_from_positioned_rows(
     }
 
     let bbox = union_span_refs_bbox(&rows.iter().flatten().copied().collect::<Vec<_>>())?;
-    let text = rows
+    let table = table_payload_from_positioned_rows(rows)?;
+    let text = table
+        .rows
         .iter()
         .map(|row| {
-            row.iter()
-                .map(|span| span.text.trim())
+            row.cells
+                .iter()
+                .map(|cell| cell.text.trim())
                 .filter(|text| !text.is_empty())
                 .collect::<Vec<_>>()
                 .join(" ")
@@ -1233,7 +1236,7 @@ fn table_block_from_positioned_rows(
         bbox,
         text,
         kind: LayoutBlockKind::Table,
-        table: table_payload_from_positioned_rows(rows),
+        table: Some(table),
     })
 }
 
@@ -1299,12 +1302,18 @@ fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> 
         return None;
     }
 
-    let column_count = rows.iter().map(Vec::len).max()?;
-    if !(2..=8).contains(&column_count) || rows.iter().any(|row| row.len() > column_count) {
-        return None;
-    }
-
-    let reference_row = rows.iter().find(|row| row.len() == column_count)?;
+    let reference_row = rows
+        .iter()
+        .filter(|row| (2..=8).contains(&row.len()))
+        .filter(|row| {
+            row.windows(2)
+                .all(|window| window[0].bbox.x0 < window[1].bbox.x0)
+        })
+        .max_by(|left, right| {
+            left.len()
+                .cmp(&right.len())
+                .then_with(|| row_span_width(left).total_cmp(&row_span_width(right)))
+        })?;
     let columns = reference_row
         .iter()
         .map(|span| (span.bbox.x0, span.bbox.x1))
@@ -1314,22 +1323,52 @@ fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> 
     }
 
     let tolerance = table_column_x_tolerance(rows);
+    let column_count = columns.len();
     for row in rows {
-        let mut seen = vec![false; column_count];
+        let mut seen: Vec<Option<&TextSpan>> = vec![None; column_count];
         let mut previous_column = None;
+        let mut distinct_columns = 0;
         for span in row {
             let column_index = nearest_positioned_column_index(span, &columns, tolerance)?;
-            if seen[column_index]
-                || previous_column.is_some_and(|previous| column_index <= previous)
-            {
+            if let Some(previous_span) = seen[column_index] {
+                if !is_wrapped_same_column_cell(previous_span, span) {
+                    return None;
+                }
+                seen[column_index] = Some(span);
+                continue;
+            }
+            if previous_column.is_some_and(|previous| column_index < previous) {
                 return None;
             }
-            seen[column_index] = true;
+            seen[column_index] = Some(span);
             previous_column = Some(column_index);
+            distinct_columns += 1;
+        }
+        if distinct_columns < 2 {
+            return None;
         }
     }
 
     Some(columns)
+}
+
+fn row_span_width(row: &[&TextSpan]) -> f32 {
+    let Some(x0) = row.iter().map(|span| span.bbox.x0).min_by(f32::total_cmp) else {
+        return 0.0;
+    };
+    let Some(x1) = row.iter().map(|span| span.bbox.x1).max_by(f32::total_cmp) else {
+        return 0.0;
+    };
+    x1 - x0
+}
+
+fn is_wrapped_same_column_cell(previous: &TextSpan, span: &TextSpan) -> bool {
+    let previous_height = previous.bbox.y1 - previous.bbox.y0;
+    let span_height = span.bbox.y1 - span.bbox.y0;
+    let max_baseline_gap = (previous_height.max(span_height) * 1.25).max(8.0);
+    span.bbox.y0 >= previous.bbox.y0
+        && span_center_y(span) - span_center_y(previous) > previous_height.min(span_height) * 0.5
+        && span.bbox.y0 - previous.bbox.y1 <= max_baseline_gap
 }
 
 fn nearest_positioned_column_index(
@@ -1545,6 +1584,90 @@ fn group_positioned_table_rows(mut spans: Vec<&TextSpan>) -> Vec<Vec<&TextSpan>>
         });
     }
     rows
+}
+
+fn merge_wrapped_positioned_table_rows<'a>(rows: Vec<Vec<&'a TextSpan>>) -> Vec<Vec<&'a TextSpan>> {
+    let mut merged: Vec<Vec<&'a TextSpan>> = Vec::new();
+
+    for row in rows {
+        if let Some(previous) = merged.last_mut()
+            && looks_like_positioned_table_continuation_row(previous, &row)
+        {
+            previous.extend(row);
+            sort_positioned_table_row(previous);
+            continue;
+        }
+        merged.push(row);
+    }
+
+    merged
+}
+
+fn looks_like_positioned_table_continuation_row(previous: &[&TextSpan], row: &[&TextSpan]) -> bool {
+    if row.is_empty() || previous.len() < 2 || row.len() != 1 {
+        return false;
+    }
+
+    if previous
+        .first()
+        .is_some_and(|span| is_standalone_list_marker(span.text.trim()))
+        || row
+            .first()
+            .is_some_and(|span| is_standalone_list_marker(span.text.trim()))
+    {
+        return false;
+    }
+
+    let gap = positioned_row_vertical_gap(previous, row);
+    if gap < -1.0 || gap > positioned_table_continuation_gap_threshold(previous, row) {
+        return false;
+    }
+
+    let columns = columns_from_row(previous);
+    let tolerance = table_column_x_tolerance(&[previous.to_vec(), row.to_vec()]);
+    row.iter()
+        .all(|span| nearest_positioned_column_index(span, &columns, tolerance).is_some())
+}
+
+fn sort_positioned_table_row(row: &mut [&TextSpan]) {
+    row.sort_by(|left, right| {
+        left.bbox
+            .x0
+            .total_cmp(&right.bbox.x0)
+            .then_with(|| left.bbox.y0.total_cmp(&right.bbox.y0))
+            .then_with(|| left.text.cmp(&right.text))
+    });
+}
+
+fn positioned_row_vertical_gap(previous: &[&TextSpan], row: &[&TextSpan]) -> f32 {
+    let previous_bottom = previous
+        .iter()
+        .map(|span| span.bbox.y1)
+        .max_by(f32::total_cmp)
+        .unwrap_or(0.0);
+    let row_top = row
+        .iter()
+        .map(|span| span.bbox.y0)
+        .min_by(f32::total_cmp)
+        .unwrap_or(0.0);
+    row_top - previous_bottom
+}
+
+fn positioned_table_continuation_gap_threshold(previous: &[&TextSpan], row: &[&TextSpan]) -> f32 {
+    previous
+        .iter()
+        .chain(row.iter())
+        .map(|span| span.bbox.y1 - span.bbox.y0)
+        .filter(|height| *height > 0.0 && height.is_finite())
+        .max_by(f32::total_cmp)
+        .map(|height| (height * 0.75).max(8.0))
+        .unwrap_or(8.0)
+}
+
+fn columns_from_row(row: &[&TextSpan]) -> Vec<(f32, f32)> {
+    row.iter()
+        .map(|span| (span.bbox.x0, span.bbox.x1))
+        .collect()
 }
 
 fn table_row_y_tolerance(spans: &[&TextSpan]) -> f32 {

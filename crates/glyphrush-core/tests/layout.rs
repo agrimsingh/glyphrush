@@ -639,6 +639,96 @@ fn positioned_table_spans_preserve_empty_cells_when_rows_omit_blank_columns() {
 }
 
 #[test]
+fn positioned_table_recovery_merges_wrapped_descriptor_cells() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-table-wrapped-descriptors".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Parameter\n",
+                "Symbol\n",
+                "Typ\n",
+                "Max\n",
+                "Unit\n",
+                "Input\n",
+                "VIN\n",
+                "3.3\n",
+                "5.5\n",
+                "V\n",
+                "voltage\n",
+                "Quiescent\n",
+                "IQ\n",
+                "35\n",
+                "60\n",
+                "uA\n",
+                "current"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                span("Symbol", 220.0, 100.0, 270.0, 114.0),
+                span("Typ", 300.0, 100.0, 330.0, 114.0),
+                span("Max", 360.0, 100.0, 390.0, 114.0),
+                span("Unit", 420.0, 100.0, 450.0, 114.0),
+                span("Input", 72.0, 132.0, 110.0, 146.0),
+                span("VIN", 220.0, 132.0, 248.0, 146.0),
+                span("3.3", 300.0, 132.0, 326.0, 146.0),
+                span("5.5", 360.0, 132.0, 386.0, 146.0),
+                span("V", 420.0, 132.0, 430.0, 146.0),
+                span("voltage", 72.0, 148.0, 126.0, 162.0),
+                span("Quiescent", 72.0, 188.0, 138.0, 202.0),
+                span("IQ", 220.0, 188.0, 238.0, 202.0),
+                span("35", 300.0, 188.0, 318.0, 202.0),
+                span("60", 360.0, 188.0, 378.0, 202.0),
+                span("uA", 420.0, 188.0, 440.0, 202.0),
+                span("current", 72.0, 204.0, 124.0, 218.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 17,
+                native_text_bytes: 92,
+                glyph_count: 75,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        "Parameter Symbol Typ Max Unit\nInput voltage VIN 3.3 5.5 V\nQuiescent current IQ 35 60 uA"
+    );
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Parameter", "Symbol", "Typ", "Max", "Unit"],
+            vec!["Input voltage", "VIN", "3.3", "5.5", "V"],
+            vec!["Quiescent current", "IQ", "35", "60", "uA"],
+        ]
+    );
+    assert_eq!(table.rows[1].cells[0].bbox.as_ref().unwrap().y0, 132.0);
+    assert_eq!(table.rows[1].cells[0].bbox.as_ref().unwrap().y1, 162.0);
+}
+
+#[test]
 fn positioned_table_recovery_preserves_surrounding_text_blocks() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-with-context".to_string(),

@@ -273,6 +273,15 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         "cache_dir_snapshot_envelope_artifact_reuse"
     );
 
+    let table_recovery = capability(capabilities, "table_recovery");
+    assert_eq!(table_recovery["glyphrush_status"], "partial");
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
+            .contains("wrapped positioned descriptor cells")
+    );
+
     let ocr = capability(capabilities, "ocr");
     assert_eq!(ocr["liteparse"], "tesseract_or_http_ocr");
     assert_eq!(
