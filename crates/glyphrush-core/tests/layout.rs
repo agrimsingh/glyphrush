@@ -2178,6 +2178,181 @@ fn text_table_recovery_merges_leading_descriptor_cells_from_header_columns() {
 }
 
 #[test]
+fn text_table_recovery_extracts_embedded_pin_function_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-embedded-pin-function-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Figure 2. Typical Application Circuit of FP6183\n",
+                "Note1: To prevent oscillation, use minimum 1uF capacitors.\n",
+                "Functional Pin Description\n",
+                "Pin Name Pin No. Pin Function\n",
+                "VOUT 1 The FP6183 is stable with an output capacitor 1uF or greater.\n",
+                "GND 2 Common ground pin.\n",
+                "EN 3 Pull this pin high to enable IC.\n",
+                "VIN 4 Power is supplied to this device from this pin.\n",
+                "Exposed\n",
+                "pad EP The exposed pad must be soldered to a large PCB area and connected to GND."
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 10,
+                native_text_bytes: 372,
+                glyph_count: 295,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 3);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Paragraph);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        "Figure 2. Typical Application Circuit of FP6183\nNote1: To prevent oscillation, use minimum 1uF capacitors."
+    );
+    assert_eq!(page.layout_blocks[1].kind, LayoutBlockKind::Heading);
+    assert_eq!(page.layout_blocks[1].text, "Functional Pin Description");
+    assert_eq!(page.layout_blocks[2].kind, LayoutBlockKind::Table);
+
+    let table = page.layout_blocks[2].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Pin Name", "Pin No.", "Pin Function"],
+            vec![
+                "VOUT",
+                "1",
+                "The FP6183 is stable with an output capacitor 1uF or greater."
+            ],
+            vec!["GND", "2", "Common ground pin."],
+            vec!["EN", "3", "Pull this pin high to enable IC."],
+            vec![
+                "VIN",
+                "4",
+                "Power is supplied to this device from this pin."
+            ],
+            vec![
+                "Exposed pad",
+                "EP",
+                "The exposed pad must be soldered to a large PCB area and connected to GND."
+            ],
+        ]
+    );
+}
+
+#[test]
+fn text_table_recovery_merges_split_pin_function_rows_from_pdfium_text() {
+    let artifact = parse_extracted_pages(
+        "doc-pdfium-split-pin-function-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Figure 2. Typical Application Circuit of FP6183\n",
+                "Note1: To prevent oscillation, it is recommended to use minimum 1uF capacitors.\n",
+                "Functional Pin Description\n",
+                "Pin Name Pin No. Pin Function\n",
+                "VOUT 1\n",
+                "The FP6183 is stable with an output capacitor 1uF or greater. The larger output capacitor will be\n",
+                "required for application with larger load transients.\n",
+                "GND 2 Common ground pin.\n",
+                "EN 3\n",
+                "Pull this pin high to enable IC, pull this pin low to shutdown IC.\n",
+                "VIN 4\n",
+                "Power is supplied to this device from this pin.\n",
+                "Exposed\n",
+                "pad\n",
+                "EP\n",
+                "The exposed pad must be soldered to a large PCB area and connected to GND for maximum power\n",
+                "dissipation.\n",
+                "Block Diagram\n",
+                "VIN\n",
+                "Error Amp Current Limit"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 20,
+                native_text_bytes: 560,
+                glyph_count: 440,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_block = page
+        .layout_blocks
+        .iter()
+        .find(|block| block.kind == LayoutBlockKind::Table)
+        .expect("pin function table block");
+    assert!(!table_block.text.contains("Block Diagram"));
+
+    let table = table_block.table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Pin Name", "Pin No.", "Pin Function"],
+            vec![
+                "VOUT",
+                "1",
+                "The FP6183 is stable with an output capacitor 1uF or greater. The larger output capacitor will be required for application with larger load transients."
+            ],
+            vec!["GND", "2", "Common ground pin."],
+            vec![
+                "EN",
+                "3",
+                "Pull this pin high to enable IC, pull this pin low to shutdown IC."
+            ],
+            vec![
+                "VIN",
+                "4",
+                "Power is supplied to this device from this pin."
+            ],
+            vec![
+                "Exposed pad",
+                "EP",
+                "The exposed pad must be soldered to a large PCB area and connected to GND for maximum power dissipation."
+            ],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_merges_two_column_descriptor_value_rows() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-two-column-table".to_string(),
