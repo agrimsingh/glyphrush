@@ -311,6 +311,7 @@ fn liteparse_benchmark_gate_script_dry_run_uses_quality_backed_pdfium_command() 
     assert!(stdout.contains("--require-baselines"));
     assert!(stdout.contains("--require-baseline-quality"));
     assert!(stdout.contains("--require-speedup-claim liteparse=2.0"));
+    assert!(stdout.contains("--require-speedup-claim liteparse-no-ocr=1.5"));
     assert!(stdout.contains("--jobs 3"));
     assert!(stdout.contains("> /tmp/glyphrush-liteparse-gate.json"));
 }

@@ -32,7 +32,7 @@ cargo run -p glyphrush-cli -- backend-check --pdf test/
 cargo run -p glyphrush-cli -- backend-check --pdf test/ --jobs 4
 cargo run -p glyphrush-cli -- --backend lopdf inspect test/example.pdf
 cargo run -p glyphrush-cli -- --backend lopdf backend-check
-cargo run -p glyphrush-cli --features pdfium -- --backend auto bench test/ --eval-manifest test/corpus.datasheets.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0
+cargo run -p glyphrush-cli --features pdfium -- --backend auto bench test/ --eval-manifest test/corpus.datasheets.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5
 GLYPHRUSH_BENCH_OUTPUT=.glyphrush-baselines/reports/liteparse-speed-gate.json scripts/bench-liteparse.sh
 cargo run -p glyphrush-cli --features pdfium -- --backend pdfium backend-check
 cargo run -p glyphrush-cli --features pdfium -- --backend pdfium backend-check --pdf test/
