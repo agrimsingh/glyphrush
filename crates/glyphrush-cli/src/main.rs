@@ -163,6 +163,12 @@ const GLYPHRUSH_V0_COVERAGE_CATEGORIES: &[&str] = &[
 ];
 
 impl CoveragePreset {
+    fn name(self) -> &'static str {
+        match self {
+            Self::GlyphrushV0 => "glyphrush-v0",
+        }
+    }
+
     fn categories(self) -> &'static [&'static str] {
         match self {
             Self::GlyphrushV0 => GLYPHRUSH_V0_COVERAGE_CATEGORIES,
@@ -300,6 +306,8 @@ enum Commands {
         bench_report: Option<PathBuf>,
         #[arg(long)]
         require_speed_evidence: bool,
+        #[arg(long, value_enum)]
+        require_coverage_preset: Option<CoveragePreset>,
     },
     BackendCheck {
         #[arg(long)]
@@ -595,6 +603,8 @@ struct FeatureParityBenchmarkEvidence {
     quality_status: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     quality_categories: Vec<FeatureParityBenchmarkCategoryEvidence>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    coverage_requirement: Option<FeatureParityBenchmarkCoverageRequirement>,
     required_claim_count: usize,
     claim_count: usize,
     quality_backed_claim_count: usize,
@@ -616,6 +626,15 @@ struct FeatureParityBenchmarkCategoryEvidence {
     failed_checks: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     quality_passed: Option<bool>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct FeatureParityBenchmarkCoverageRequirement {
+    preset: String,
+    required_categories: Vec<String>,
+    present_categories: Vec<String>,
+    missing_categories: Vec<String>,
+    passed: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -2215,13 +2234,14 @@ fn baseline_preset_names(preset: Option<BaselinePreset>) -> Vec<&'static str> {
 fn feature_parity_output<B: PdfBackend>(
     backend: &B,
     bench_report: Option<&Path>,
+    coverage_preset: Option<CoveragePreset>,
 ) -> Result<FeatureParityOutput> {
     let capabilities =
         liteparse_feature_parity_capabilities(backend.supports_page_render_for_ocr());
     let summary = feature_parity_summary(&capabilities);
     let readiness = feature_parity_readiness(&capabilities, &summary);
     let benchmark_evidence = bench_report
-        .map(feature_parity_benchmark_evidence)
+        .map(|path| feature_parity_benchmark_evidence(path, coverage_preset))
         .transpose()?;
 
     Ok(FeatureParityOutput {
@@ -2239,7 +2259,10 @@ fn feature_parity_output<B: PdfBackend>(
     })
 }
 
-fn feature_parity_benchmark_evidence(path: &Path) -> Result<FeatureParityBenchmarkEvidence> {
+fn feature_parity_benchmark_evidence(
+    path: &Path,
+    coverage_preset: Option<CoveragePreset>,
+) -> Result<FeatureParityBenchmarkEvidence> {
     let report: Value = serde_json::from_slice(
         &fs::read(path).with_context(|| format!("read benchmark report {}", path.display()))?,
     )
@@ -2289,6 +2312,10 @@ fn feature_parity_benchmark_evidence(path: &Path) -> Result<FeatureParityBenchma
         && quality_backed_claim_count == FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len()
         && claim_passed_count == FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len();
 
+    let quality_categories = feature_parity_benchmark_quality_categories(&report);
+    let coverage_requirement = coverage_preset
+        .map(|preset| feature_parity_benchmark_coverage_requirement(preset, &quality_categories));
+
     Ok(FeatureParityBenchmarkEvidence {
         report_path: path.display().to_string(),
         report_version: report
@@ -2303,7 +2330,8 @@ fn feature_parity_benchmark_evidence(path: &Path) -> Result<FeatureParityBenchma
             .get("quality_status")
             .and_then(Value::as_str)
             .map(str::to_string),
-        quality_categories: feature_parity_benchmark_quality_categories(&report),
+        quality_categories,
+        coverage_requirement,
         required_claim_count: FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len(),
         claim_count: claims.len(),
         quality_backed_claim_count,
@@ -2313,6 +2341,38 @@ fn feature_parity_benchmark_evidence(path: &Path) -> Result<FeatureParityBenchma
         failed_required_claims,
         claims,
     })
+}
+
+fn feature_parity_benchmark_coverage_requirement(
+    preset: CoveragePreset,
+    quality_categories: &[FeatureParityBenchmarkCategoryEvidence],
+) -> FeatureParityBenchmarkCoverageRequirement {
+    let present_categories = quality_categories
+        .iter()
+        .map(|category| category.category.clone())
+        .collect::<Vec<_>>();
+    let present = present_categories
+        .iter()
+        .map(String::as_str)
+        .collect::<BTreeSet<_>>();
+    let required_categories = preset
+        .categories()
+        .iter()
+        .map(|category| (*category).to_string())
+        .collect::<Vec<_>>();
+    let missing_categories = required_categories
+        .iter()
+        .filter(|category| !present.contains(category.as_str()))
+        .cloned()
+        .collect::<Vec<_>>();
+
+    FeatureParityBenchmarkCoverageRequirement {
+        preset: preset.name().to_string(),
+        required_categories,
+        present_categories,
+        passed: missing_categories.is_empty(),
+        missing_categories,
+    }
 }
 
 fn feature_parity_benchmark_quality_categories(
@@ -4023,18 +4083,32 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
         Commands::FeatureParity {
             bench_report,
             require_speed_evidence,
+            require_coverage_preset,
         } => {
-            let output = feature_parity_output(backend, bench_report.as_deref())?;
+            let output =
+                feature_parity_output(backend, bench_report.as_deref(), require_coverage_preset)?;
             let speed_evidence_failed = require_speed_evidence
                 && !output
                     .benchmark_evidence
                     .as_ref()
                     .is_some_and(|evidence| evidence.evidence_passed);
+            let coverage_evidence_failed = require_coverage_preset.is_some()
+                && !output
+                    .benchmark_evidence
+                    .as_ref()
+                    .and_then(|evidence| evidence.coverage_requirement.as_ref())
+                    .is_some_and(|coverage| coverage.passed);
             write_json(&output)?;
             if speed_evidence_failed {
                 bail!(
                     "feature-parity speed evidence did not satisfy quality-backed LiteParse claims"
                 );
+            }
+            if coverage_evidence_failed {
+                let preset = require_coverage_preset
+                    .map(CoveragePreset::name)
+                    .unwrap_or("requested");
+                bail!("feature-parity benchmark evidence did not satisfy coverage preset {preset}");
             }
         }
         Commands::BackendCheck { pdf, jobs } => {
