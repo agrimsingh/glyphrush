@@ -418,6 +418,7 @@ struct OcrCheckOutput {
     timed_out: bool,
     timeout_ms: u64,
     wall_us: u128,
+    render_us: u64,
     output_bytes: u64,
     stdout_sha256: Option<String>,
     stdout_line_count: usize,
@@ -2248,14 +2249,15 @@ fn backend_smoke_error_kind(error: &anyhow::Error) -> Option<&'static str> {
     }
 }
 
-fn ocr_check_output(
+fn ocr_check_output<B: PdfBackend + ?Sized>(
+    backend: &B,
     pdf: &Path,
     page_index: u32,
     ocr: OcrOptions<'_>,
     strict: bool,
 ) -> OcrCheckOutput {
     if ocr.command_input == OcrCommandInput::RenderedImage {
-        return ocr_render_backend_required_check_output(pdf, page_index, ocr, strict);
+        return backend.ocr_check_rendered_image(pdf, page_index, ocr, strict);
     }
 
     if let Some(command) = ocr.command {
@@ -2282,6 +2284,7 @@ fn ocr_check_output(
         timed_out: false,
         timeout_ms: duration_millis(ocr.timeout),
         wall_us: 0,
+        render_us: 0,
         output_bytes: 0,
         stdout_sha256: None,
         stdout_line_count: 0,
@@ -2316,6 +2319,7 @@ fn ocr_render_backend_required_check_output(
         timed_out: false,
         timeout_ms: duration_millis(ocr.timeout),
         wall_us: 0,
+        render_us: 0,
         output_bytes: 0,
         stdout_sha256: None,
         stdout_line_count: 0,
@@ -2325,6 +2329,175 @@ fn ocr_render_backend_required_check_output(
         stderr_preview: None,
         error: Some("rendered-image OCR command input requires a rendering backend".to_string()),
         error_kind: Some("render_backend_required"),
+    }
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_ocr_check_rendered_image_output(
+    pdf: &Path,
+    page_index: u32,
+    ocr: OcrOptions<'_>,
+    strict: bool,
+) -> OcrCheckOutput {
+    let timeout_ms = duration_millis(ocr.timeout);
+    let started = Instant::now();
+    let Some(command) = ocr.command else {
+        return OcrCheckOutput {
+            report_version: OCR_CHECK_REPORT_VERSION,
+            parser_name: PARSER_NAME,
+            parser_version: PARSER_VERSION,
+            strict,
+            pdf: pdf.display().to_string(),
+            page_index,
+            adapter: "ocr_command_rendered_image",
+            passed: false,
+            success: false,
+            command: None,
+            sidecar_path: None,
+            exit_status: None,
+            timed_out: false,
+            timeout_ms,
+            wall_us: 0,
+            render_us: 0,
+            output_bytes: 0,
+            stdout_sha256: None,
+            stdout_line_count: 0,
+            stdout_word_count: 0,
+            stderr_bytes: 0,
+            empty_output: true,
+            stderr_preview: None,
+            error: Some("ocr-check requires --ocr-command".to_string()),
+            error_kind: Some("missing_adapter"),
+        };
+    };
+
+    let (rendered_path, render_us) = match render_pdfium_pdf_page_to_temp_ppm(pdf, page_index) {
+        Ok(rendered) => rendered,
+        Err(error) => {
+            return OcrCheckOutput {
+                report_version: OCR_CHECK_REPORT_VERSION,
+                parser_name: PARSER_NAME,
+                parser_version: PARSER_VERSION,
+                strict,
+                pdf: pdf.display().to_string(),
+                page_index,
+                adapter: "ocr_command_rendered_image",
+                passed: false,
+                success: false,
+                command: Some(command.display().to_string()),
+                sidecar_path: None,
+                exit_status: None,
+                timed_out: false,
+                timeout_ms,
+                wall_us: started.elapsed().as_micros(),
+                render_us: 0,
+                output_bytes: 0,
+                stdout_sha256: None,
+                stdout_line_count: 0,
+                stdout_word_count: 0,
+                stderr_bytes: 0,
+                empty_output: true,
+                stderr_preview: None,
+                error: Some(format!("{error:#}")),
+                error_kind: Some(pdfium_rendered_ocr_check_error_kind(&error)),
+            };
+        }
+    };
+
+    let mut process = ProcessCommand::new(command);
+    process.arg(&rendered_path).arg(page_index.to_string());
+    let command_result = command_output_with_timeout(process, ocr.timeout);
+    let cleanup_error = fs::remove_file(&rendered_path)
+        .with_context(|| format!("remove temporary OCR image {}", rendered_path.display()))
+        .err();
+    let wall_us = started.elapsed().as_micros();
+
+    match command_result {
+        Ok(timed_output) => {
+            let output = timed_output.output;
+            let command_success = output.status.success() && !timed_output.timed_out;
+            let empty_output = command_success && output.stdout.is_empty();
+            let cleanup_failed_after_success = command_success && cleanup_error.is_some();
+            let success = command_success && !cleanup_failed_after_success;
+            let error_kind = if cleanup_failed_after_success {
+                Some("cleanup_failed")
+            } else if empty_output {
+                Some("empty_output")
+            } else {
+                baseline_process_error_kind(&output, timed_output.timed_out)
+            };
+            let error = if let Some(error) = cleanup_error.filter(|_| cleanup_failed_after_success)
+            {
+                Some(format!("{error:#}"))
+            } else {
+                ocr_command_check_error(&output, timed_output.timed_out, empty_output)
+            };
+
+            OcrCheckOutput {
+                report_version: OCR_CHECK_REPORT_VERSION,
+                parser_name: PARSER_NAME,
+                parser_version: PARSER_VERSION,
+                strict,
+                pdf: pdf.display().to_string(),
+                page_index,
+                adapter: "ocr_command_rendered_image",
+                passed: success && !empty_output,
+                success,
+                command: Some(command.display().to_string()),
+                sidecar_path: None,
+                exit_status: output.status.code(),
+                timed_out: timed_output.timed_out,
+                timeout_ms,
+                wall_us,
+                render_us,
+                output_bytes: output.stdout.len() as u64,
+                stdout_sha256: Some(stdout_sha256(&output.stdout)),
+                stdout_line_count: stdout_line_count(&output.stdout),
+                stdout_word_count: stdout_word_count(&output.stdout),
+                stderr_bytes: output.stderr.len() as u64,
+                empty_output,
+                stderr_preview: stderr_preview(&output.stderr),
+                error,
+                error_kind,
+            }
+        }
+        Err(error) => OcrCheckOutput {
+            report_version: OCR_CHECK_REPORT_VERSION,
+            parser_name: PARSER_NAME,
+            parser_version: PARSER_VERSION,
+            strict,
+            pdf: pdf.display().to_string(),
+            page_index,
+            adapter: "ocr_command_rendered_image",
+            passed: false,
+            success: false,
+            command: Some(command.display().to_string()),
+            sidecar_path: None,
+            exit_status: None,
+            timed_out: false,
+            timeout_ms,
+            wall_us,
+            render_us,
+            output_bytes: 0,
+            stdout_sha256: None,
+            stdout_line_count: 0,
+            stdout_word_count: 0,
+            stderr_bytes: 0,
+            empty_output: true,
+            stderr_preview: None,
+            error: Some(format!("{}: {error}", command.display())),
+            error_kind: Some("spawn_failed"),
+        },
+    }
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_rendered_ocr_check_error_kind(error: &anyhow::Error) -> &'static str {
+    let error = format!("{error:#}");
+    if error.contains("page index") && error.contains("not found") {
+        "page_not_found"
+    } else {
+        "render_failed"
     }
 }
 
@@ -2367,6 +2540,7 @@ fn ocr_command_check_output(
                 timed_out: timed_output.timed_out,
                 timeout_ms,
                 wall_us: timed_output.wall_us,
+                render_us: 0,
                 output_bytes: output.stdout.len() as u64,
                 stdout_sha256: Some(stdout_sha256(&output.stdout)),
                 stdout_line_count: stdout_line_count(&output.stdout),
@@ -2394,6 +2568,7 @@ fn ocr_command_check_output(
             timed_out: false,
             timeout_ms,
             wall_us: 0,
+            render_us: 0,
             output_bytes: 0,
             stdout_sha256: None,
             stdout_line_count: 0,
@@ -2439,6 +2614,7 @@ fn ocr_sidecar_check_output(
                 timed_out: false,
                 timeout_ms,
                 wall_us,
+                render_us: 0,
                 output_bytes: output.len() as u64,
                 stdout_sha256: Some(stdout_sha256(&output)),
                 stdout_line_count: stdout_line_count(&output),
@@ -2466,6 +2642,7 @@ fn ocr_sidecar_check_output(
             timed_out: false,
             timeout_ms,
             wall_us,
+            render_us: 0,
             output_bytes: 0,
             stdout_sha256: None,
             stdout_line_count: 0,
@@ -2506,7 +2683,9 @@ fn ocr_check_error(output: &OcrCheckOutput) -> Option<String> {
         return Some("ocr-check requires --ocr-sidecar or --ocr-command".to_string());
     }
 
-    if output.adapter == "ocr_command_rendered_image" && output.error_kind.is_some() {
+    if output.adapter == "ocr_command_rendered_image"
+        && output.error_kind == Some("render_backend_required")
+    {
         return output.error.clone();
     }
 
@@ -2825,7 +3004,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 ocr_command_input,
                 ocr_timeout_ms,
             )?;
-            let output = ocr_check_output(&pdf, page_index, ocr, strict);
+            let output = ocr_check_output(backend, &pdf, page_index, ocr, strict);
             let error = ocr_check_error(&output);
             write_json(&output)?;
             if let Some(error) = error {
@@ -3003,6 +3182,15 @@ trait PdfBackend {
         options: ExtractionOptions,
         page_index: u32,
     ) -> Result<ExtractedPage>;
+    fn ocr_check_rendered_image(
+        &self,
+        pdf: &Path,
+        page_index: u32,
+        ocr: OcrOptions<'_>,
+        strict: bool,
+    ) -> OcrCheckOutput {
+        ocr_render_backend_required_check_output(pdf, page_index, ocr, strict)
+    }
 }
 
 struct LopdfBackend;
@@ -3108,6 +3296,16 @@ impl PdfBackend for PdfiumBackend {
         page_index: u32,
     ) -> Result<ExtractedPage> {
         extract_pdfium_page_by_index(document, source_path, ocr, options, page_index)
+    }
+
+    fn ocr_check_rendered_image(
+        &self,
+        pdf: &Path,
+        page_index: u32,
+        ocr: OcrOptions<'_>,
+        strict: bool,
+    ) -> OcrCheckOutput {
+        pdfium_ocr_check_rendered_image_output(pdf, page_index, ocr, strict)
     }
 }
 
@@ -8247,6 +8445,24 @@ fn load_pdfium_ocr_if_needed(
     }
 
     Ok((Some(text), render_us, ocr_us))
+}
+
+#[cfg(feature = "pdfium")]
+fn render_pdfium_pdf_page_to_temp_ppm(pdf: &Path, page_index: u32) -> Result<(PathBuf, u64)> {
+    let pdfium = bind_pdfium_runtime()?;
+    let document = pdfium
+        .load_pdf_from_file(pdf, None)
+        .with_context(|| format!("load PDF with PDFium {}", pdf.display()))?;
+    let page_count = pdfium_page_count(&document)?;
+    if page_index as usize >= page_count {
+        bail!("page index {page_index} not found");
+    }
+    let page = document
+        .pages()
+        .get(u16::try_from(page_index).context("page index exceeds PDFium range")?)
+        .with_context(|| format!("load PDFium page {page_index}"))?;
+
+    render_pdfium_page_to_temp_ppm(&page, pdf, page_index)
 }
 
 #[cfg(feature = "pdfium")]

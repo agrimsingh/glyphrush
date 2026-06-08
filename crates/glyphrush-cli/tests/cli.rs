@@ -306,6 +306,70 @@ fn parse_lopdf_rejects_rendered_image_ocr_command_without_render_backend() {
     );
 }
 
+#[cfg(feature = "pdfium")]
+#[test]
+fn ocr_check_pdfium_rendered_image_command_preflights_rendered_page() {
+    let dir = temp_dir("ocr-check-pdfium-rendered-image");
+    let pdf_path = dir.join("scan.pdf");
+    let log_path = dir.join("rendered-ocr.log");
+    fs::write(&pdf_path, minimal_pdf_with_full_page_image_and_text("")).unwrap();
+    let command = write_rendered_ocr_command_script("ocr-check-pdfium-rendered-image", &log_path);
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "pdfium",
+            "ocr-check",
+            pdf_path.to_str().unwrap(),
+            "--page-index",
+            "0",
+            "--ocr-command",
+            command.to_str().unwrap(),
+            "--ocr-command-input",
+            "rendered-image",
+            "--strict",
+        ])
+        .output()
+        .expect("run glyphrush pdfium ocr-check with rendered-image command");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("ocr-check output is json");
+
+    assert_eq!(json["adapter"], "ocr_command_rendered_image");
+    assert_eq!(json["passed"], true);
+    assert_eq!(json["success"], true);
+    assert_eq!(json["exit_status"], 0);
+    assert_eq!(json["timed_out"], false);
+    assert_eq!(json["empty_output"], false);
+    assert!(json["render_us"].as_u64().unwrap() > 0, "json: {json}");
+    assert!(json["wall_us"].as_u64().unwrap() > 0, "json: {json}");
+    assert_eq!(json["stdout_word_count"], 5);
+    assert_eq!(json["error_kind"], Value::Null);
+
+    let log = fs::read_to_string(&log_path).expect("read rendered OCR command log");
+    let lines = log.lines().collect::<Vec<_>>();
+    assert_eq!(lines.len(), 1, "log: {log}");
+    let columns = lines[0].split('\t').collect::<Vec<_>>();
+    assert_eq!(columns.len(), 4, "log line: {}", lines[0]);
+    assert!(
+        columns[0].ends_with(".ppm"),
+        "rendered path: {}",
+        columns[0]
+    );
+    assert_eq!(columns[1], "0");
+    assert_eq!(columns[2], "P6");
+    assert!(columns[3].parse::<usize>().unwrap() > 32);
+    assert!(
+        !PathBuf::from(columns[0]).exists(),
+        "temporary rendered image should be removed after ocr-check returns"
+    );
+}
+
 #[test]
 fn backend_check_smoke_pdf_reports_selected_backend_extraction_summary() {
     let pdf_path = write_test_pdf("backend-check-smoke", "Backend smoke text");
