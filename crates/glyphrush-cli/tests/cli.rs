@@ -288,7 +288,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         table_recovery["notes"]
             .as_str()
             .unwrap()
-            .contains("multi-cell wrapped positioned continuations")
+            .contains("cross-column section rows")
     );
 
     let ocr = capability(capabilities, "ocr");

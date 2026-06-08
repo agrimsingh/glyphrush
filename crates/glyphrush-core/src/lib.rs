@@ -1246,17 +1246,16 @@ fn table_payload_from_positioned_rows(rows: &[Vec<&TextSpan>]) -> Option<LayoutT
     let rows = rows
         .iter()
         .enumerate()
-        .map(|(row_index, row)| LayoutTableRow {
-            row_index,
-            bbox: union_span_refs_bbox(row),
-            cells: positioned_table_cells_from_row(row, &columns, tolerance),
-        })
-        .filter(|row| {
-            row.cells
-                .iter()
-                .filter(|cell| !cell.text.is_empty())
-                .count()
-                >= 2
+        .filter_map(|(row_index, row)| {
+            let cells = positioned_table_cells_from_row(row, &columns, tolerance);
+            let non_empty_cell_count = cells.iter().filter(|cell| !cell.text.is_empty()).count();
+            (non_empty_cell_count >= 2
+                || positioned_row_is_spanning_table_section(row, &columns, tolerance))
+            .then_some(LayoutTableRow {
+                row_index,
+                bbox: union_span_refs_bbox(row),
+                cells,
+            })
         })
         .collect::<Vec<_>>();
 
@@ -1298,7 +1297,7 @@ fn positioned_table_cells_from_row(
 }
 
 fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> {
-    if rows.len() < 2 || rows.iter().any(|row| row.len() < 2) {
+    if rows.len() < 2 {
         return None;
     }
 
@@ -1324,7 +1323,16 @@ fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> 
 
     let tolerance = table_column_x_tolerance(rows);
     let column_count = columns.len();
+    let mut regular_row_count = 0;
     for row in rows {
+        if positioned_row_is_spanning_table_section(row, &columns, tolerance) {
+            continue;
+        }
+
+        if row.len() < 2 {
+            return None;
+        }
+
         let mut seen: Vec<Option<&TextSpan>> = vec![None; column_count];
         let mut previous_column = None;
         let mut distinct_columns = 0;
@@ -1347,9 +1355,35 @@ fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> 
         if distinct_columns < 2 {
             return None;
         }
+        regular_row_count += 1;
     }
 
-    Some(columns)
+    (regular_row_count >= 2).then_some(columns)
+}
+
+fn positioned_row_is_spanning_table_section(
+    row: &[&TextSpan],
+    columns: &[(f32, f32)],
+    tolerance: f32,
+) -> bool {
+    if row.len() != 1 || columns.len() < 2 {
+        return false;
+    }
+
+    let span = row[0];
+    let text = span.text.trim();
+    if text.is_empty() || is_standalone_list_marker(text) {
+        return false;
+    }
+
+    let Some((first_x0, _)) = columns.first() else {
+        return false;
+    };
+    let Some((_, second_x1)) = columns.get(1) else {
+        return false;
+    };
+
+    (span.bbox.x0 - *first_x0).abs() <= tolerance && span.bbox.x1 >= *second_x1 - tolerance
 }
 
 fn row_span_width(row: &[&TextSpan]) -> f32 {
