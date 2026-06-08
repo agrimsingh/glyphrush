@@ -7365,6 +7365,111 @@ fn bench_directory_jobs_preserve_stable_document_order() {
 }
 
 #[test]
+fn bench_directory_parallel_wall_time_uses_worker_chunk_parser_time() {
+    let dir = temp_dir("bench-dir-parallel-wall-time");
+    fs::write(
+        dir.join("b.pdf"),
+        minimal_pdf_with_stream("0 0 m 10 10 l S"),
+    )
+    .unwrap();
+    fs::write(
+        dir.join("a.pdf"),
+        minimal_pdf_with_stream("0 0 m 10 10 l S"),
+    )
+    .unwrap();
+    let command = write_baseline_script(
+        "bench-dir-parallel-wall-time-ocr",
+        "sleep 0.4\nprintf 'Parallel OCR page %s' \"$2\"",
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            dir.to_str().unwrap(),
+            "--jobs",
+            "2",
+            "--ocr-command",
+            command.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush bench on directory with parallel OCR jobs");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+
+    let wall_us = json["wall_us"].as_u64().unwrap();
+    let summed_document_wall_us = json["documents"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|document| document["wall_us"].as_u64().unwrap())
+        .sum::<u64>();
+
+    assert_eq!(json["worker_count"], 2);
+    assert_eq!(json["document_count"], 2);
+    assert_eq!(json["ocr_applied_pages"], 2);
+    assert!(
+        wall_us.saturating_mul(4) < summed_document_wall_us.saturating_mul(3),
+        "parallel corpus wall_us should account for worker chunks, not sum document parser times: wall_us={wall_us}, summed_document_wall_us={summed_document_wall_us}"
+    );
+}
+
+#[test]
+fn bench_directory_wall_time_excludes_external_baseline_time() {
+    let dir = temp_dir("bench-dir-wall-excludes-baseline");
+    fs::write(dir.join("b.pdf"), minimal_pdf("Second baseline delay")).unwrap();
+    fs::write(dir.join("a.pdf"), minimal_pdf("First baseline delay")).unwrap();
+    let baseline = write_baseline_script("bench-dir-slow-baseline", "sleep 0.6\nprintf baseline");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            dir.to_str().unwrap(),
+            "--jobs",
+            "2",
+            "--baseline",
+            &format!("slow={}", baseline.display()),
+        ])
+        .output()
+        .expect("run glyphrush bench on directory with slow external baseline");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+
+    let wall_us = json["wall_us"].as_u64().unwrap();
+    let summed_document_wall_us = json["documents"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|document| document["wall_us"].as_u64().unwrap())
+        .sum::<u64>();
+
+    assert_eq!(json["worker_count"], 2);
+    assert!(
+        json["baselines"][0]["wall_us"].as_u64().unwrap() >= 1_000_000,
+        "baseline summary should include the deliberate sleep cost"
+    );
+    assert!(
+        wall_us < summed_document_wall_us.saturating_add(300_000),
+        "glyphrush corpus wall_us should exclude external baseline time: wall_us={wall_us}, summed_document_wall_us={summed_document_wall_us}"
+    );
+}
+
+#[test]
 fn bench_directory_reports_image_artifact_counts() {
     let dir = temp_dir("bench-dir-image-artifacts");
     fs::write(dir.join("a-native.pdf"), minimal_pdf("Native only")).unwrap();

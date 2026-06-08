@@ -4612,7 +4612,7 @@ fn bench_corpus<B: PdfBackend + Sync>(
     } else {
         bench_corpus_parallel(backend, pdfs, config, baseline_quality, worker_count)?
     };
-    let wall_us = documents.iter().map(|document| document.wall_us).sum();
+    let wall_us = corpus_parser_wall_us_from_documents(&documents, worker_count);
     let page_count = documents.iter().map(|document| document.page_count).sum();
     let artifact_bytes = documents
         .iter()
@@ -4784,6 +4784,23 @@ fn bench_corpus<B: PdfBackend + Sync>(
         cache_probe: cache_probe_output,
         documents,
     })
+}
+
+fn corpus_parser_wall_us_from_documents(
+    documents: &[CorpusBenchDocument],
+    worker_count: usize,
+) -> u128 {
+    let worker_count = worker_count.max(1);
+    documents
+        .chunks(worker_count)
+        .map(|chunk| {
+            chunk
+                .iter()
+                .map(|document| document.wall_us)
+                .max()
+                .unwrap_or_default()
+        })
+        .sum()
 }
 
 fn bench_corpus_parallel<B: PdfBackend + Sync>(
