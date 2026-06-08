@@ -1275,12 +1275,15 @@ fn positioned_table_cells_from_row(
         })
         .collect::<Vec<_>>();
 
+    let mut last_assigned: Option<(usize, &TextSpan)> = None;
     for span in row {
         let text = span.text.trim();
         if text.is_empty() {
             continue;
         }
-        if let Some(column_index) = nearest_positioned_column_index(span, columns, tolerance) {
+        if let Some(column_index) =
+            positioned_column_index_for_span(span, columns, tolerance, last_assigned)
+        {
             let cell = &mut cells[column_index];
             if !cell.text.is_empty() {
                 cell.text.push(' ');
@@ -1290,6 +1293,7 @@ fn positioned_table_cells_from_row(
                 Some(existing) => Some(union_bboxes(&existing, &span.bbox)),
                 None => Some(span.bbox.clone()),
             };
+            last_assigned = Some((column_index, span));
         }
     }
 
@@ -1301,22 +1305,19 @@ fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> 
         return None;
     }
 
-    let reference_row = rows
+    let columns = rows
         .iter()
-        .filter(|row| (2..=8).contains(&row.len()))
-        .filter(|row| {
-            row.windows(2)
-                .all(|window| window[0].bbox.x0 < window[1].bbox.x0)
+        .filter_map(|row| {
+            let columns = positioned_row_column_anchors(row);
+            ((2..=8).contains(&columns.len())
+                && columns.windows(2).all(|window| window[0].0 < window[1].0))
+            .then_some(columns)
         })
         .max_by(|left, right| {
-            left.len()
-                .cmp(&right.len())
-                .then_with(|| row_span_width(left).total_cmp(&row_span_width(right)))
+            left.len().cmp(&right.len()).then_with(|| {
+                positioned_columns_width(left).total_cmp(&positioned_columns_width(right))
+            })
         })?;
-    let columns = reference_row
-        .iter()
-        .map(|span| (span.bbox.x0, span.bbox.x1))
-        .collect::<Vec<_>>();
     if !columns.windows(2).all(|window| window[0].0 < window[1].0) {
         return None;
     }
@@ -1334,22 +1335,24 @@ fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> 
         }
 
         let mut seen: Vec<Option<&TextSpan>> = vec![None; column_count];
-        let mut previous_column = None;
+        let mut last_assigned: Option<(usize, &TextSpan)> = None;
         let mut distinct_columns = 0;
         for span in row {
-            let column_index = nearest_positioned_column_index(span, &columns, tolerance)?;
+            let column_index =
+                positioned_column_index_for_span(span, &columns, tolerance, last_assigned)?;
             if let Some(previous_span) = seen[column_index] {
-                if !is_wrapped_same_column_cell(previous_span, span) {
+                if !is_same_positioned_column_cell_fragment(previous_span, span) {
                     return None;
                 }
                 seen[column_index] = Some(span);
+                last_assigned = Some((column_index, span));
                 continue;
             }
-            if previous_column.is_some_and(|previous| column_index < previous) {
+            if last_assigned.is_some_and(|(previous, _)| column_index < previous) {
                 return None;
             }
             seen[column_index] = Some(span);
-            previous_column = Some(column_index);
+            last_assigned = Some((column_index, span));
             distinct_columns += 1;
         }
         if distinct_columns < 2 {
@@ -1359,6 +1362,58 @@ fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> 
     }
 
     (regular_row_count >= 2).then_some(columns)
+}
+
+fn positioned_row_column_anchors(row: &[&TextSpan]) -> Vec<(f32, f32)> {
+    let mut spans = row.to_vec();
+    spans.sort_by(|left, right| {
+        left.bbox
+            .x0
+            .total_cmp(&right.bbox.x0)
+            .then_with(|| left.bbox.y0.total_cmp(&right.bbox.y0))
+            .then_with(|| left.text.cmp(&right.text))
+    });
+
+    let mut anchors: Vec<PositionedColumnAnchor> = Vec::new();
+    for span in spans {
+        if let Some(anchor) = anchors.last_mut()
+            && is_same_positioned_column_cell_fragment(anchor.last_span, span)
+        {
+            anchor.x0 = anchor.x0.min(span.bbox.x0);
+            anchor.x1 = anchor.x1.max(span.bbox.x1);
+            anchor.last_span = span;
+            continue;
+        }
+
+        anchors.push(PositionedColumnAnchor {
+            x0: span.bbox.x0,
+            x1: span.bbox.x1,
+            last_span: span,
+        });
+    }
+
+    anchors
+        .into_iter()
+        .map(|anchor| (anchor.x0, anchor.x1))
+        .collect()
+}
+
+#[derive(Debug)]
+struct PositionedColumnAnchor<'a> {
+    x0: f32,
+    x1: f32,
+    last_span: &'a TextSpan,
+}
+
+fn positioned_columns_width(columns: &[(f32, f32)]) -> f32 {
+    let Some((x0, _)) = columns.first() else {
+        return 0.0;
+    };
+    let Some((_, x1)) = columns.last() else {
+        return 0.0;
+    };
+
+    x1 - x0
 }
 
 fn positioned_row_is_spanning_table_section(
@@ -1386,16 +1441,6 @@ fn positioned_row_is_spanning_table_section(
     (span.bbox.x0 - *first_x0).abs() <= tolerance && span.bbox.x1 >= *second_x1 - tolerance
 }
 
-fn row_span_width(row: &[&TextSpan]) -> f32 {
-    let Some(x0) = row.iter().map(|span| span.bbox.x0).min_by(f32::total_cmp) else {
-        return 0.0;
-    };
-    let Some(x1) = row.iter().map(|span| span.bbox.x1).max_by(f32::total_cmp) else {
-        return 0.0;
-    };
-    x1 - x0
-}
-
 fn is_wrapped_same_column_cell(previous: &TextSpan, span: &TextSpan) -> bool {
     let previous_height = previous.bbox.y1 - previous.bbox.y0;
     let span_height = span.bbox.y1 - span.bbox.y0;
@@ -1403,6 +1448,44 @@ fn is_wrapped_same_column_cell(previous: &TextSpan, span: &TextSpan) -> bool {
     span.bbox.y0 >= previous.bbox.y0
         && span_center_y(span) - span_center_y(previous) > previous_height.min(span_height) * 0.5
         && span.bbox.y0 - previous.bbox.y1 <= max_baseline_gap
+}
+
+fn is_same_positioned_column_cell_fragment(previous: &TextSpan, span: &TextSpan) -> bool {
+    is_wrapped_same_column_cell(previous, span)
+        || is_same_line_positioned_cell_fragment(previous, span)
+}
+
+fn is_same_line_positioned_cell_fragment(previous: &TextSpan, span: &TextSpan) -> bool {
+    let previous_height = previous.bbox.y1 - previous.bbox.y0;
+    let span_height = span.bbox.y1 - span.bbox.y0;
+    let y_tolerance = (previous_height.max(span_height) * 0.5).max(4.0);
+    let horizontal_gap = span.bbox.x0 - previous.bbox.x1;
+
+    (span_center_y(span) - span_center_y(previous)).abs() <= y_tolerance
+        && horizontal_gap >= -1.0
+        && horizontal_gap <= same_line_cell_fragment_gap_threshold(previous, span)
+}
+
+fn same_line_cell_fragment_gap_threshold(previous: &TextSpan, span: &TextSpan) -> f32 {
+    let previous_width = average_span_char_width(previous);
+    let span_width = average_span_char_width(span);
+    let width = match (previous_width, span_width) {
+        (Some(previous_width), Some(span_width)) => previous_width.max(span_width),
+        (Some(width), None) | (None, Some(width)) => width,
+        (None, None) => 6.0,
+    };
+
+    (width * 1.5).clamp(6.0, 16.0)
+}
+
+fn average_span_char_width(span: &TextSpan) -> Option<f32> {
+    let char_count = span.text.trim().chars().count();
+    if char_count == 0 {
+        return None;
+    }
+
+    let width = span.bbox.x1 - span.bbox.x0;
+    (width > 0.0 && width.is_finite()).then_some(width / char_count as f32)
 }
 
 fn nearest_positioned_column_index(
@@ -1423,6 +1506,19 @@ fn nearest_positioned_column_index(
                 .then_with(|| left.0.cmp(&right.0))
         })
         .and_then(|(column_index, distance)| (distance <= tolerance).then_some(column_index))
+}
+
+fn positioned_column_index_for_span(
+    span: &TextSpan,
+    columns: &[(f32, f32)],
+    tolerance: f32,
+    last_assigned: Option<(usize, &TextSpan)>,
+) -> Option<usize> {
+    nearest_positioned_column_index(span, columns, tolerance).or_else(|| {
+        last_assigned.and_then(|(column_index, previous_span)| {
+            is_same_positioned_column_cell_fragment(previous_span, span).then_some(column_index)
+        })
+    })
 }
 
 fn union_bboxes(left: &BBox, right: &BBox) -> BBox {
