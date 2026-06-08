@@ -2550,6 +2550,7 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
     let mut rows = Vec::with_capacity(lines.len());
     rows.push(header.iter().map(|cell| (*cell).to_string()).collect());
     let mut rows_with_table_value_cells = 0;
+    let mut data_row_count = 0;
     let mut merged_descriptor_rows = 0;
     let mut pending_descriptor_tokens: Vec<&str> = Vec::new();
 
@@ -2568,8 +2569,20 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
             return None;
         }
 
+        let merge_pending_descriptor = pending_descriptor_tokens.first().is_some_and(|_| {
+            tokens
+                .first()
+                .is_some_and(|token| starts_with_lowercase(token))
+        });
+        if !pending_descriptor_tokens.is_empty() && !merge_pending_descriptor {
+            let mut section_row = vec![String::new(); column_count];
+            section_row[0] = pending_descriptor_tokens.join(" ");
+            rows.push(section_row);
+            pending_descriptor_tokens.clear();
+        }
+
         let overflow = tokens.len() - column_count;
-        if overflow > 0 || !pending_descriptor_tokens.is_empty() {
+        if overflow > 0 || merge_pending_descriptor {
             merged_descriptor_rows += 1;
         }
 
@@ -2597,6 +2610,7 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
         {
             rows_with_table_value_cells += 1;
         }
+        data_row_count += 1;
         rows.push(row);
     }
 
@@ -2604,8 +2618,10 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
         return None;
     }
 
-    let data_row_count = rows.len().saturating_sub(1);
-    (merged_descriptor_rows > 0 && rows_with_table_value_cells == data_row_count).then_some(rows)
+    (data_row_count >= 2
+        && merged_descriptor_rows > 0
+        && rows_with_table_value_cells == data_row_count)
+        .then_some(rows)
 }
 
 fn looks_like_wrapped_descriptor_fragment(tokens: &[&str]) -> bool {
@@ -2760,12 +2776,11 @@ fn aligned_whitespace_row_is_section(
 fn aligned_whitespace_should_merge_descriptor(prefix: &str, first_cell: &str) -> bool {
     let prefix = prefix.trim();
     let first_cell = first_cell.trim();
-    !prefix.is_empty()
-        && !first_cell.is_empty()
-        && first_cell
-            .chars()
-            .next()
-            .is_some_and(|ch| ch.is_lowercase())
+    !prefix.is_empty() && !first_cell.is_empty() && starts_with_lowercase(first_cell)
+}
+
+fn starts_with_lowercase(text: &str) -> bool {
+    text.chars().next().is_some_and(|ch| ch.is_lowercase())
 }
 
 fn wide_space_segments(line: &str) -> Vec<AlignedTableSegment> {

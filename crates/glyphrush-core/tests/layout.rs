@@ -1322,6 +1322,62 @@ fn text_table_recovery_merges_wrapped_descriptor_lines_from_header_columns() {
 }
 
 #[test]
+fn text_table_recovery_preserves_header_guided_section_rows() {
+    let artifact = parse_extracted_pages(
+        "doc-header-guided-section-row".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Parameter Symbol Typ Max Unit\n",
+                "Input voltage VIN 3.3 5.5 V\n",
+                "Protection features\n",
+                "Current limit ILIM 650 900 mA\n",
+                "Thermal shutdown TSD 150 175 C"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 5,
+                native_text_bytes: 156,
+                glyph_count: 124,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Parameter", "Symbol", "Typ", "Max", "Unit"],
+            vec!["Input voltage", "VIN", "3.3", "5.5", "V"],
+            vec!["Protection features", "", "", "", ""],
+            vec!["Current limit", "ILIM", "650", "900", "mA"],
+            vec!["Thermal shutdown", "TSD", "150", "175", "C"],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_does_not_treat_wrapped_prose_as_header_guided_table() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-prose".to_string(),
