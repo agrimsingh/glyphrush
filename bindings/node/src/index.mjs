@@ -28,6 +28,10 @@ export function parseText(pdf, options = {}) {
   return parse(pdf, { ...options, outputFormat: "text" });
 }
 
+export function parseMarkdown(pdf, options = {}) {
+  return parse(pdf, { ...options, outputFormat: "markdown" });
+}
+
 export function inspectPages(pdf, options = {}) {
   const command = baseCommand(options);
   command.push("inspect", pathString(pdf), "--pages");

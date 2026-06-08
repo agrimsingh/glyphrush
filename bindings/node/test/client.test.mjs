@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { GlyphrushError, parse, parseText } from "../src/index.mjs";
+import { GlyphrushError, parse, parseMarkdown, parseText } from "../src/index.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +34,8 @@ async function writeFakeGlyphrush(root) {
       'const formatIndex = process.argv.indexOf("--format");',
       'if (formatIndex !== -1 && process.argv[formatIndex + 1] === "text") {',
       '  console.log("fake text output");',
+      '} else if (formatIndex !== -1 && process.argv[formatIndex + 1] === "markdown") {',
+      '  console.log("# fake markdown output");',
       "} else {",
       "  console.log(JSON.stringify({ argv: process.argv.slice(2) }));",
       "}",
@@ -81,6 +83,16 @@ test("parseText returns stdout without JSON decoding", async () => {
     await writeFile(pdf, "%PDF-1.4 fake");
 
     assert.equal(parseText(pdf, { binary: fake }), "fake text output\n");
+  });
+});
+
+test("parseMarkdown returns stdout without JSON decoding", async () => {
+  await withTempDir(async (root) => {
+    const fake = await writeFakeGlyphrush(root);
+    const pdf = path.join(root, "sample.pdf");
+    await writeFile(pdf, "%PDF-1.4 fake");
+
+    assert.equal(parseMarkdown(pdf, { binary: fake }), "# fake markdown output\n");
   });
 });
 

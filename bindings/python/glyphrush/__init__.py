@@ -75,6 +75,22 @@ def parse_text(
     )
 
 
+def parse_markdown(
+    pdf: str | os.PathLike[str],
+    *,
+    binary: str | os.PathLike[str] | None = None,
+    backend: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> str:
+    return parse(
+        pdf,
+        binary=binary,
+        backend=backend,
+        output_format="markdown",
+        env=env,
+    )
+
+
 def inspect_pages(
     pdf: str | os.PathLike[str],
     *,
@@ -446,5 +462,6 @@ __all__ = [
     "manifest",
     "ocr_check",
     "parse",
+    "parse_markdown",
     "parse_text",
 ]

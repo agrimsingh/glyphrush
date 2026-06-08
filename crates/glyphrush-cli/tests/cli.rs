@@ -322,6 +322,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         bindings["glyphrush"],
         "thin_python_node_parse_inspect_debug_eval_bench_manifest_preflight_wrappers_wasm_planned"
     );
+    assert!(
+        bindings["notes"]
+            .as_str()
+            .unwrap()
+            .contains("text and markdown derived-output helpers")
+    );
 
     let builtin_ocr = capability(capabilities, "bundled_builtin_ocr");
     assert_eq!(builtin_ocr["glyphrush_status"], "not_planned");

@@ -28,6 +28,8 @@ def write_fake_glyphrush(directory: Path) -> Path:
                 "",
                 "if '--format' in sys.argv and sys.argv[sys.argv.index('--format') + 1] == 'text':",
                 "    print('fake text output')",
+                "elif '--format' in sys.argv and sys.argv[sys.argv.index('--format') + 1] == 'markdown':",
+                "    print('# fake markdown output')",
                 "else:",
                 "    print(json.dumps({'argv': sys.argv[1:]}))",
             ]
@@ -82,6 +84,17 @@ class GlyphrushClientTests(unittest.TestCase):
             text = glyphrush.parse_text(pdf, binary=fake)
 
         self.assertEqual(text, "fake text output\n")
+
+    def test_parse_markdown_returns_stdout_without_json_decoding(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            pdf = root / "sample.pdf"
+            pdf.write_bytes(b"%PDF-1.4 fake")
+
+            markdown = glyphrush.parse_markdown(pdf, binary=fake)
+
+        self.assertEqual(markdown, "# fake markdown output\n")
 
     def test_inspect_pages_delegates_to_native_page_triage_and_decodes_json(self):
         with tempfile.TemporaryDirectory() as tmp:

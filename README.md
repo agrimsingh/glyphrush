@@ -134,6 +134,7 @@ artifact = glyphrush.parse(
     backend="lopdf",
 )
 text = glyphrush.parse_text("test/example.pdf", binary="target/debug/glyphrush")
+markdown = glyphrush.parse_markdown("test/example.pdf", binary="target/debug/glyphrush")
 triage = glyphrush.inspect_pages("test/example.pdf", binary="target/debug/glyphrush")
 quality = glyphrush.eval_manifest("test/corpus.json", binary="target/debug/glyphrush")
 speed = glyphrush.bench("test/example.pdf", binary="target/debug/glyphrush")
@@ -141,10 +142,11 @@ generated = glyphrush.manifest("test/", binary="target/debug/glyphrush", categor
 ```
 
 ```js
-import { bench, evalManifest, inspectPages, manifest, parse, parseText } from "./bindings/node/src/index.mjs";
+import { bench, evalManifest, inspectPages, manifest, parse, parseMarkdown, parseText } from "./bindings/node/src/index.mjs";
 
 const artifact = parse("test/example.pdf", { binary: "target/debug/glyphrush" });
 const text = parseText("test/example.pdf", { binary: "target/debug/glyphrush" });
+const markdown = parseMarkdown("test/example.pdf", { binary: "target/debug/glyphrush" });
 const triage = inspectPages("test/example.pdf", { binary: "target/debug/glyphrush" });
 const quality = evalManifest("test/corpus.json", { binary: "target/debug/glyphrush" });
 const speed = bench("test/example.pdf", { binary: "target/debug/glyphrush" });

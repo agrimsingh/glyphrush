@@ -7,6 +7,7 @@ import glyphrush
 
 artifact = glyphrush.parse("test/example.pdf", binary="target/debug/glyphrush")
 text = glyphrush.parse_text("test/example.pdf", binary="target/debug/glyphrush")
+markdown = glyphrush.parse_markdown("test/example.pdf", binary="target/debug/glyphrush")
 triage = glyphrush.inspect_pages("test/example.pdf", binary="target/debug/glyphrush")
 page = glyphrush.debug_page("test/example.pdf", 0, binary="target/debug/glyphrush")
 ocr = glyphrush.ocr_check("test/example.pdf", page_index=0, binary="target/debug/glyphrush")
@@ -23,6 +24,8 @@ generated = glyphrush.manifest("test/", binary="target/debug/glyphrush", categor
 ```
 
 If `binary` is omitted, the wrapper uses `GLYPHRUSH_BIN` and then falls back to `glyphrush` on `PATH`.
+
+`parse_text()` and `parse_markdown()` return the native CLI derived text views without JSON decoding.
 
 `inspect_pages()` delegates to `glyphrush inspect <pdf> --pages` and returns the native page-triage JSON, including routes, quality flags, OCR/layout/table diagnostics, cache status, and timing counters.
 

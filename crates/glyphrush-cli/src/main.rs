@@ -2440,7 +2440,7 @@ fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "bindings_must_share_native_core_artifact",
-            notes: "Dependency-free Python and Node wrappers delegate parse, inspect-page triage, debug-page, OCR/backend/baseline preflights, feature-parity reports, eval-manifest quality gates, benchmark reports, and manifest generation to the native CLI artifact paths; WASM remains planned and must wrap the same core.",
+            notes: "Dependency-free Python and Node wrappers delegate parse, text and markdown derived-output helpers, inspect-page triage, debug-page, OCR/backend/baseline preflights, feature-parity reports, eval-manifest quality gates, benchmark reports, and manifest generation to the native CLI artifact paths; WASM remains planned and must wrap the same core.",
         },
         FeatureParityCapability {
             id: "mupdf_backend",

@@ -14,11 +14,13 @@ import {
   manifest,
   ocrCheck,
   parse,
+  parseMarkdown,
   parseText,
 } from "glyphrush";
 
 const artifact = parse("test/example.pdf", { binary: "target/debug/glyphrush" });
 const text = parseText("test/example.pdf", { binary: "target/debug/glyphrush" });
+const markdown = parseMarkdown("test/example.pdf", { binary: "target/debug/glyphrush" });
 const triage = inspectPages("test/example.pdf", { binary: "target/debug/glyphrush" });
 const page = debugPage("test/example.pdf", 0, { binary: "target/debug/glyphrush" });
 const ocr = ocrCheck("test/example.pdf", { pageIndex: 0, binary: "target/debug/glyphrush" });
@@ -35,6 +37,8 @@ const generated = manifest("test/", { binary: "target/debug/glyphrush", category
 ```
 
 If `binary` is omitted, the wrapper uses `GLYPHRUSH_BIN` and then falls back to `glyphrush` on `PATH`.
+
+`parseText()` and `parseMarkdown()` return the native CLI derived text views without JSON decoding.
 
 `inspectPages()` delegates to `glyphrush inspect <pdf> --pages` and returns the native page-triage JSON, including routes, quality flags, OCR/layout/table diagnostics, cache status, and timing counters.
 
