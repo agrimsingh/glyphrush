@@ -2427,10 +2427,10 @@ fn liteparse_feature_parity_capabilities(
             area: "runtime",
             liteparse: "fresh_parse_by_default",
             glyphrush: "cache_dir_snapshot_envelope_artifact_reuse",
-            glyphrush_status: FeatureParityStatus::Partial,
+            glyphrush_status: FeatureParityStatus::Implemented,
             hot_path: false,
             quality_guard: "cache_key_includes_parser_backend_ocr_options",
-            notes: "JSON cache snapshots use explicit schema/parser/backend/source provenance, reuse artifacts on warm runs, and treat unreadable or invalid snapshots as explicit misses with cache_snapshot_ignored warnings; mmap-friendly snapshots remain a later runtime optimization.",
+            notes: "JSON cache snapshots use explicit schema/parser/backend/source provenance, reuse artifacts on warm runs, and treat unreadable or invalid snapshots as explicit misses with cache_snapshot_ignored warnings; mmap-friendly snapshots remain a later runtime optimization, not a LiteParse parity blocker.",
         },
         FeatureParityCapability {
             id: "python_node_wasm_bindings",

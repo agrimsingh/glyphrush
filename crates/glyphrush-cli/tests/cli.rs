@@ -205,8 +205,8 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         env!("CARGO_PKG_VERSION")
     );
     assert_eq!(json["summary"]["target_capability_count"], 12);
-    assert_eq!(json["summary"]["implemented"], 4);
-    assert_eq!(json["summary"]["partial"], 6);
+    assert_eq!(json["summary"]["implemented"], 5);
+    assert_eq!(json["summary"]["partial"], 5);
     assert_eq!(json["summary"]["planned"], 1);
     assert_eq!(json["summary"]["not_planned"], 1);
     assert_eq!(
@@ -243,7 +243,6 @@ fn feature_parity_reports_liteparse_capability_gaps() {
             "ocr",
             "page_render_for_ocr",
             "table_recovery",
-            "artifact_cache_snapshots",
             "python_node_wasm_bindings"
         ])
     );
@@ -269,7 +268,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(benchmark["glyphrush"], "strict_speedup_claim_gate");
 
     let cache = capability(capabilities, "artifact_cache_snapshots");
-    assert_eq!(cache["glyphrush_status"], "partial");
+    assert_eq!(cache["glyphrush_status"], "implemented");
     assert_eq!(
         cache["glyphrush"],
         "cache_dir_snapshot_envelope_artifact_reuse"
@@ -442,7 +441,7 @@ fn feature_parity_speed_evidence_gate_fails_when_liteparse_claim_is_missing() {
 
 #[cfg(feature = "pdfium")]
 #[test]
-fn feature_parity_counts_pdfium_rendered_ocr_handoff_as_implemented() {
+fn feature_parity_counts_pdfium_rendered_ocr_handoff_and_cache_as_implemented() {
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args(["--backend", "pdfium", "feature-parity"])
         .output()
@@ -457,15 +456,14 @@ fn feature_parity_counts_pdfium_rendered_ocr_handoff_as_implemented() {
         serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
 
     assert_eq!(json["selected_backend"], "pdfium");
-    assert_eq!(json["summary"]["implemented"], 5);
-    assert_eq!(json["summary"]["partial"], 5);
+    assert_eq!(json["summary"]["implemented"], 6);
+    assert_eq!(json["summary"]["partial"], 4);
     assert_eq!(
         json["readiness"]["remaining_partial"],
         serde_json::json!([
             "span_geometry_layout",
             "ocr",
             "table_recovery",
-            "artifact_cache_snapshots",
             "python_node_wasm_bindings"
         ])
     );
