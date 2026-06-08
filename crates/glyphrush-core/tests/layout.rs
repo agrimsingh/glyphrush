@@ -518,6 +518,137 @@ fn positioned_table_recovery_preserves_surrounding_text_blocks() {
 }
 
 #[test]
+fn positioned_bullet_list_rows_are_not_recovered_as_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-bullet-list".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "·\n",
+                "Portable and Battery\n",
+                "Powered Equipment\n",
+                "·\n",
+                "Notebook and Personal Computers"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("·", 72.0, 456.0, 78.0, 467.0),
+                span("Portable and Battery", 96.0, 458.0, 178.0, 466.0),
+                span("Powered Equipment", 178.0, 458.0, 272.0, 467.0),
+                span("·", 72.0, 474.0, 78.0, 485.0),
+                span("Notebook and Personal Computers", 96.0, 476.0, 244.0, 485.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 5,
+                native_text_bytes: 91,
+                glyph_count: 83,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::List);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        "· Portable and Battery Powered Equipment\n· Notebook and Personal Computers"
+    );
+    assert!(page.layout_blocks[0].table.is_none());
+}
+
+#[test]
+fn positioned_bullet_marker_rows_absorb_following_text_rows() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-bullet-list-split-markers".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "·\n",
+                "Cellular Phones\n",
+                "·\n",
+                "Portable and Battery\n",
+                "Powered Equipment"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("·", 72.0, 100.0, 78.0, 111.0),
+                span("Cellular Phones", 96.0, 116.0, 180.0, 124.0),
+                span("·", 72.0, 138.0, 78.0, 149.0),
+                span("Portable and Battery", 96.0, 154.0, 178.0, 162.0),
+                span("Powered Equipment", 96.0, 166.0, 190.0, 175.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 5,
+                native_text_bytes: 70,
+                glyph_count: 62,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::List);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        "· Cellular Phones\n· Portable and Battery Powered Equipment"
+    );
+    assert!(page.layout_blocks[0].table.is_none());
+}
+
+#[test]
+fn marker_only_list_lines_are_normalized_into_list_items() {
+    let artifact = parse_extracted_pages(
+        "doc-marker-only-list-lines".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "·\n",
+                "Cellular Phones\n",
+                "·\n",
+                "Portable and Battery\n",
+                "Powered Equipment\n",
+                "·\n",
+                "Notebook and Personal Computers"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 1,
+                native_text_bytes: 110,
+                glyph_count: 98,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::List);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        "· Cellular Phones\n· Portable and Battery Powered Equipment\n· Notebook and Personal Computers"
+    );
+    assert!(page.layout_blocks[0].table.is_none());
+}
+
+#[test]
 fn repeated_margin_blocks_are_classified_as_headers_and_footers() {
     let artifact = parse_extracted_pages(
         "doc-repeated-margins".to_string(),

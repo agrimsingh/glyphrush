@@ -1014,6 +1014,9 @@ fn layout_blocks_from_positioned_table_runs(
     let rows = group_positioned_table_rows(span_refs);
     let ranges = positioned_table_row_ranges(&rows);
     if ranges.is_empty() {
+        if let Some(list_block) = list_block_from_positioned_rows(page_index, 0, &rows) {
+            return Some(vec![list_block]);
+        }
         return None;
     }
 
@@ -1056,6 +1059,12 @@ fn append_positioned_text_blocks_from_rows(
     next_block_index: &mut usize,
     blocks: &mut Vec<LayoutBlock>,
 ) {
+    if let Some(block) = list_block_from_positioned_rows(page_index, *next_block_index, rows) {
+        blocks.push(block);
+        *next_block_index += 1;
+        return;
+    }
+
     let spans = rows.iter().flatten().copied().collect::<Vec<&TextSpan>>();
     for group in group_spans_for_reading_order_from_refs(spans, dimensions) {
         if let Some(block) =
@@ -1091,7 +1100,110 @@ fn positioned_table_row_ranges(rows: &[Vec<&TextSpan>]) -> Vec<(usize, usize)> {
 }
 
 fn positioned_rows_form_table(rows: &[Vec<&TextSpan>]) -> bool {
+    if positioned_rows_form_list(rows) {
+        return false;
+    }
+
     positioned_table_columns(rows).is_some()
+}
+
+fn list_block_from_positioned_rows(
+    page_index: u32,
+    block_index: usize,
+    rows: &[Vec<&TextSpan>],
+) -> Option<LayoutBlock> {
+    let items = positioned_list_items(rows)?;
+
+    let bbox = union_span_refs_bbox(&rows.iter().flatten().copied().collect::<Vec<_>>())?;
+    let text = items.join("\n");
+
+    Some(LayoutBlock {
+        block_id: format!("p{page_index:06}:b{block_index:06}"),
+        bbox,
+        text,
+        kind: LayoutBlockKind::List,
+        table: None,
+    })
+}
+
+fn positioned_rows_form_list(rows: &[Vec<&TextSpan>]) -> bool {
+    positioned_list_items(rows).is_some()
+}
+
+fn positioned_list_items(rows: &[Vec<&TextSpan>]) -> Option<Vec<String>> {
+    if rows.len() < 2 {
+        return None;
+    }
+
+    let mut items = Vec::new();
+    let mut current_item: Option<PositionedListItem> = None;
+
+    for row in rows {
+        let first = row.first()?;
+        if is_standalone_list_marker(first.text.trim()) {
+            flush_positioned_list_item(&mut items, current_item.take())?;
+            current_item = Some(PositionedListItem {
+                marker_x1: first.bbox.x1,
+                text: positioned_list_item_text(first.text.trim(), &row[1..]),
+            });
+        } else if let Some(item) = current_item.as_mut() {
+            let continuation_x0 = row
+                .iter()
+                .map(|span| span.bbox.x0)
+                .min_by(f32::total_cmp)
+                .unwrap_or(0.0);
+            if continuation_x0 <= item.marker_x1 {
+                return None;
+            }
+
+            append_positioned_row_text(&mut item.text, row);
+        } else {
+            return None;
+        }
+    }
+
+    flush_positioned_list_item(&mut items, current_item)?;
+
+    (items.len() >= 2).then_some(items)
+}
+
+#[derive(Debug)]
+struct PositionedListItem {
+    marker_x1: f32,
+    text: String,
+}
+
+fn flush_positioned_list_item(
+    items: &mut Vec<String>,
+    item: Option<PositionedListItem>,
+) -> Option<()> {
+    let Some(item) = item else {
+        return Some(());
+    };
+    list_item_has_body(&item.text).then(|| items.push(item.text))
+}
+
+fn positioned_list_item_text(marker: &str, rest: &[&TextSpan]) -> String {
+    let mut text = marker.to_string();
+    append_positioned_row_text(&mut text, rest);
+    text
+}
+
+fn append_positioned_row_text(text: &mut String, row: &[&TextSpan]) {
+    for fragment in row.iter().map(|span| span.text.trim()) {
+        if fragment.is_empty() {
+            continue;
+        }
+        if !text.is_empty() {
+            text.push(' ');
+        }
+        text.push_str(fragment);
+    }
+}
+
+fn list_item_has_body(item: &str) -> bool {
+    item.split_once(char::is_whitespace)
+        .is_some_and(|(_, rest)| !rest.trim().is_empty())
 }
 
 fn table_block_from_positioned_rows(
@@ -1617,10 +1729,13 @@ fn split_text_blocks(text: &str, run_table_recovery: bool) -> Vec<String> {
 }
 
 fn reflow_text_block(lines: &[String], run_table_recovery: bool) -> String {
+    if let Some(list_text) = normalized_list_text(lines) {
+        return list_text;
+    }
+
     if lines.len() <= 1
         || is_table_lines(lines)
         || (run_table_recovery && is_whitespace_table_lines(lines))
-        || is_list_lines(lines)
         || !should_reflow(lines)
     {
         return lines.join("\n");
@@ -1783,11 +1898,11 @@ fn append_reflow_fragment(output: &mut String, fragment: &str) {
 
 fn classify_layout_block(text: &str, run_table_recovery: bool) -> LayoutBlockKind {
     let lines = text.lines().collect::<Vec<_>>();
-    if is_table_lines_str(&lines) || (run_table_recovery && is_whitespace_table_lines_str(&lines)) {
-        return LayoutBlockKind::Table;
-    }
     if is_list_lines_str(&lines) {
         return LayoutBlockKind::List;
+    }
+    if is_table_lines_str(&lines) || (run_table_recovery && is_whitespace_table_lines_str(&lines)) {
+        return LayoutBlockKind::Table;
     }
     if lines.len() == 1 && is_heading_line(lines[0]) {
         return LayoutBlockKind::Heading;
@@ -2058,17 +2173,79 @@ fn is_list_lines(lines: &[String]) -> bool {
 }
 
 fn is_list_lines_str(lines: &[&str]) -> bool {
-    !lines.is_empty() && lines.iter().all(|line| is_list_line(line.trim_start()))
+    normalized_list_items(lines).is_some()
 }
 
-fn is_list_line(line: &str) -> bool {
-    line.starts_with("- ")
-        || line.starts_with("* ")
-        || line.starts_with("+ ")
-        || line
-            .split_once(". ")
-            .and_then(|(prefix, _)| prefix.parse::<u32>().ok())
-            .is_some()
+fn normalized_list_text(lines: &[String]) -> Option<String> {
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    normalized_list_items(&refs).map(|items| items.join("\n"))
+}
+
+fn normalized_list_items(lines: &[&str]) -> Option<Vec<String>> {
+    if lines.is_empty() {
+        return None;
+    }
+
+    let mut items = Vec::new();
+    let mut current_item: Option<String> = None;
+
+    for line in lines.iter().map(|line| line.trim()) {
+        if line.is_empty() {
+            return None;
+        }
+
+        if let Some(item) = list_item_start_text(line) {
+            flush_list_text_item(&mut items, current_item.take())?;
+            current_item = Some(item);
+        } else if let Some(item) = current_item.as_mut() {
+            append_text_fragment(item, line);
+        } else {
+            return None;
+        }
+    }
+
+    flush_list_text_item(&mut items, current_item)?;
+
+    (!items.is_empty()).then_some(items)
+}
+
+fn flush_list_text_item(items: &mut Vec<String>, item: Option<String>) -> Option<()> {
+    let Some(item) = item else {
+        return Some(());
+    };
+    list_item_has_body(&item).then(|| items.push(item))
+}
+
+fn list_item_start_text(line: &str) -> Option<String> {
+    if let Some((marker, rest)) = line.split_once(char::is_whitespace)
+        && is_standalone_list_marker(marker)
+    {
+        let rest = rest.trim();
+        return Some(if rest.is_empty() {
+            marker.to_string()
+        } else {
+            format!("{marker} {rest}")
+        });
+    }
+
+    if is_standalone_list_marker(line) {
+        return Some(line.to_string());
+    }
+
+    line.split_once(". ")
+        .and_then(|(prefix, _)| prefix.parse::<u32>().ok())
+        .map(|_| line.to_string())
+}
+
+fn append_text_fragment(text: &mut String, fragment: &str) {
+    if !text.is_empty() {
+        text.push(' ');
+    }
+    text.push_str(fragment);
+}
+
+fn is_standalone_list_marker(marker: &str) -> bool {
+    matches!(marker, "-" | "*" | "+" | "·" | "•" | "–")
 }
 
 fn is_heading_line(line: &str) -> bool {
