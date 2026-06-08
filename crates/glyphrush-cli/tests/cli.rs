@@ -272,7 +272,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         span_geometry["notes"]
             .as_str()
             .unwrap()
-            .contains("leading, middle, and trailing cross-column bands")
+            .contains("clearly separated 2-4 column reading order")
     );
 
     let cache = capability(capabilities, "artifact_cache_snapshots");

@@ -450,6 +450,53 @@ fn positioned_native_spans_preserve_two_column_reading_order() {
 }
 
 #[test]
+fn positioned_native_spans_preserve_three_column_reading_order() {
+    let artifact = parse_extracted_pages(
+        "doc-three-column-layout".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Left column starts\n",
+                "Left column continues\n",
+                "Middle column starts\n",
+                "Middle column continues\n",
+                "Right column starts\n",
+                "Right column continues"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("Left column starts", 48.0, 100.0, 156.0, 114.0),
+                span("Middle column starts", 230.0, 100.0, 350.0, 114.0),
+                span("Right column starts", 430.0, 100.0, 552.0, 114.0),
+                span("Left column continues", 48.0, 118.0, 178.0, 132.0),
+                span("Middle column continues", 230.0, 118.0, 370.0, 132.0),
+                span("Right column continues", 430.0, 118.0, 570.0, 132.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let blocks = &artifact.pages[0].layout_blocks;
+    assert_eq!(blocks.len(), 3);
+    assert_eq!(blocks[0].text, "Left column starts\nLeft column continues");
+    assert_eq!(
+        blocks[1].text,
+        "Middle column starts\nMiddle column continues"
+    );
+    assert_eq!(
+        blocks[2].text,
+        "Right column starts\nRight column continues"
+    );
+    assert_eq!(blocks[0].bbox.x0, 48.0);
+    assert_eq!(blocks[1].bbox.x0, 230.0);
+    assert_eq!(blocks[2].bbox.x0, 430.0);
+}
+
+#[test]
 fn positioned_native_spans_preserve_trailing_cross_column_note_after_two_columns() {
     let artifact = parse_extracted_pages(
         "doc-two-column-trailing-note".to_string(),

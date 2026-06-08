@@ -1981,9 +1981,11 @@ fn group_spans_for_reading_order_from_refs<'a>(
         return groups;
     }
 
-    if let Some((left_column, right_column)) = split_two_columns(&span_refs, dimensions) {
-        let mut groups = group_span_refs_by_vertical_gaps(left_column);
-        groups.extend(group_span_refs_by_vertical_gaps(right_column));
+    if let Some(columns) = split_layout_columns(&span_refs, dimensions) {
+        let mut groups = Vec::new();
+        for column in columns {
+            groups.extend(group_span_refs_by_vertical_gaps(column));
+        }
         return groups;
     }
 
@@ -2083,8 +2085,8 @@ fn is_column_section_separator_span(
             previous_band.iter().chain(following_band.iter()).copied(),
         )
         && has_section_separator_vertical_gap(span, previous_band, &following_band)
-        && split_two_columns(previous_band, dimensions).is_some()
-        && split_two_columns(&following_band, dimensions).is_some()
+        && split_layout_columns(previous_band, dimensions).is_some()
+        && split_layout_columns(&following_band, dimensions).is_some()
 }
 
 fn is_left_aligned_section_heading_span(span: &TextSpan, dimensions: &PageDimensions) -> bool {
@@ -2139,10 +2141,11 @@ fn append_column_aware_band_groups<'a>(
         return;
     }
 
-    if let Some((left_column, right_column)) = split_two_columns(&spans, dimensions) {
+    if let Some(columns) = split_layout_columns(&spans, dimensions) {
         *split_columns = true;
-        groups.extend(group_span_refs_by_vertical_gaps(left_column));
-        groups.extend(group_span_refs_by_vertical_gaps(right_column));
+        for column in columns {
+            groups.extend(group_span_refs_by_vertical_gaps(column));
+        }
     } else {
         groups.extend(group_span_refs_by_vertical_gaps(spans));
     }
@@ -2170,7 +2173,7 @@ fn is_cross_column_trailing_band_span(
         && following_spans.is_empty()
         && !has_same_row_neighbor(span, previous_band.iter().copied())
         && has_trailing_band_vertical_gap(span, previous_band)
-        && split_two_columns(previous_band, dimensions).is_some()
+        && split_layout_columns(previous_band, dimensions).is_some()
 }
 
 fn is_cross_column_leading_band_span(
@@ -2184,7 +2187,7 @@ fn is_cross_column_leading_band_span(
         && following_spans.len() >= 4
         && !has_same_row_neighbor(span, following_spans.iter().copied())
         && has_leading_band_vertical_gap(span, following_spans)
-        && split_two_columns(following_spans, dimensions).is_some()
+        && split_layout_columns(following_spans, dimensions).is_some()
 }
 
 fn is_cross_column_middle_band_span(
@@ -2213,8 +2216,8 @@ fn is_cross_column_middle_band_span(
             previous_band.iter().chain(following_band.iter()).copied(),
         )
         && has_section_separator_vertical_gap(span, previous_band, &following_band)
-        && split_two_columns(previous_band, dimensions).is_some()
-        && split_two_columns(&following_band, dimensions).is_some()
+        && split_layout_columns(previous_band, dimensions).is_some()
+        && split_layout_columns(&following_band, dimensions).is_some()
 }
 
 fn is_cross_column_layout_span_candidate(span: &TextSpan, dimensions: &PageDimensions) -> bool {
@@ -2254,10 +2257,10 @@ fn has_leading_band_vertical_gap(span: &TextSpan, following_spans: &[&TextSpan])
     following_top - span.bbox.y1 > (height * 0.75).max(8.0)
 }
 
-fn split_two_columns<'a>(
+fn split_layout_columns<'a>(
     spans: &[&'a TextSpan],
     dimensions: &PageDimensions,
-) -> Option<(Vec<&'a TextSpan>, Vec<&'a TextSpan>)> {
+) -> Option<Vec<Vec<&'a TextSpan>>> {
     if spans.len() < 4 || dimensions.width <= 0.0 {
         return None;
     }
@@ -2271,8 +2274,8 @@ fn split_two_columns<'a>(
             .then_with(|| left.text.cmp(&right.text))
     });
 
-    let mut best_split = None;
-    let mut best_gap = 0.0_f32;
+    let minimum_gap = layout_column_min_gap(spans, dimensions);
+    let mut split_indexes = Vec::new();
     for split_index in 2..=sorted_spans.len().saturating_sub(2) {
         let left = &sorted_spans[..split_index];
         let right = &sorted_spans[split_index..];
@@ -2284,23 +2287,34 @@ fn split_two_columns<'a>(
             continue;
         };
         let gap = right_min_x0 - left_max_x1;
-        if gap > best_gap {
-            best_gap = gap;
-            best_split = Some(split_index);
+        if gap >= minimum_gap {
+            split_indexes.push(split_index);
         }
     }
 
-    if best_gap < two_column_min_gap(spans, dimensions) {
+    if split_indexes.is_empty() || split_indexes.len() > 3 {
         return None;
     }
 
-    let split_index = best_split?;
-    let left = sorted_spans[..split_index].to_vec();
-    let right = sorted_spans[split_index..].to_vec();
-    Some((left, right))
+    let mut columns = Vec::new();
+    let mut start = 0;
+    for split_index in split_indexes {
+        if split_index - start < 2 {
+            continue;
+        }
+        columns.push(sorted_spans[start..split_index].to_vec());
+        start = split_index;
+    }
+
+    if sorted_spans.len() - start < 2 {
+        return None;
+    }
+    columns.push(sorted_spans[start..].to_vec());
+
+    ((2..=4).contains(&columns.len())).then_some(columns)
 }
 
-fn two_column_min_gap(spans: &[&TextSpan], dimensions: &PageDimensions) -> f32 {
+fn layout_column_min_gap(spans: &[&TextSpan], dimensions: &PageDimensions) -> f32 {
     let mut widths = spans
         .iter()
         .map(|span| span.bbox.x1 - span.bbox.x0)
