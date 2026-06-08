@@ -2924,6 +2924,39 @@ fn seed_datasheet_manifest_tracks_pdfium_package_pin_table() {
 }
 
 #[test]
+fn seed_datasheet_manifest_rejects_pdfium_description_prose_table_false_positive() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_AW37030D180DNR.pdf")
+        .expect("AW37030D180 datasheet expectation exists");
+
+    assert_eq!(
+        document["expect_by_backend"]["pdfium"]["pages"],
+        serde_json::json!([
+          {
+            "index": 0,
+            "layout_block_counts": {
+              "block_count": 6,
+              "paragraph_blocks": 6,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            }
+          }
+        ])
+    );
+}
+
+#[test]
 fn manifest_directory_jobs_preserve_stable_output() {
     let dir = temp_dir("manifest-directory-jobs");
     fs::write(dir.join("c.pdf"), minimal_pdf("Third manifest jobs")).unwrap();

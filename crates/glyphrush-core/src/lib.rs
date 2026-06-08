@@ -3670,6 +3670,7 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
         || header
             .iter()
             .any(|cell| cell.chars().count() > 24 || !looks_like_table_header_cell(cell))
+        || !header.iter().any(|cell| is_table_header_cue(cell))
     {
         return None;
     }
@@ -3812,6 +3813,35 @@ fn looks_like_table_header_cell(cell: &str) -> bool {
     }
 
     saw_alphanumeric
+}
+
+fn is_table_header_cue(cell: &str) -> bool {
+    let normalized = cell
+        .trim_matches(|ch: char| !ch.is_alphanumeric())
+        .to_ascii_lowercase();
+    matches!(
+        normalized.as_str(),
+        "parameter"
+            | "symbol"
+            | "min"
+            | "typ"
+            | "typical"
+            | "max"
+            | "unit"
+            | "condition"
+            | "conditions"
+            | "value"
+            | "rating"
+            | "ratings"
+            | "part"
+            | "number"
+            | "name"
+            | "no"
+            | "pin"
+            | "function"
+            | "package"
+            | "code"
+    )
 }
 
 fn looks_like_table_value_cell(cell: &str) -> bool {

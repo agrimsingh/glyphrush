@@ -368,6 +368,21 @@
         "pdfium": {
           "fallback_pages": 9,
           "image_artifact_count": 40,
+          "pages": [
+            {
+              "index": 0,
+              "layout_block_counts": {
+                "block_count": 6,
+                "paragraph_blocks": 6,
+                "heading_blocks": 0,
+                "list_blocks": 0,
+                "table_blocks": 0,
+                "figure_blocks": 0,
+                "header_blocks": 0,
+                "footer_blocks": 0
+              }
+            }
+          ],
           "route_counts": {
             "native_fast_path": 8,
             "needs_fallback": 5,

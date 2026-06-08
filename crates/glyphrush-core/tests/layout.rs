@@ -2754,6 +2754,43 @@ fn text_table_recovery_does_not_treat_wrapped_prose_as_header_guided_table() {
 }
 
 #[test]
+fn text_table_recovery_does_not_treat_datasheet_description_prose_as_table() {
+    let artifact = parse_extracted_pages(
+        "doc-datasheet-description-prose".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "General Description\n",
+                "AW37030YXXX is a low dropout voltage regulator\n",
+                "featuring low ON resistance, high PSRR, low Noise,\n",
+                "good load/line transient response and smooth soft-start.\n"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 4,
+                native_text_bytes: 180,
+                glyph_count: 150,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert!(
+        page.layout_blocks
+            .iter()
+            .all(|block| block.kind != LayoutBlockKind::Table)
+    );
+    assert!(page.layout_blocks.iter().all(|block| block.table.is_none()));
+}
+
+#[test]
 fn positioned_bullet_list_rows_are_not_recovered_as_tables() {
     let artifact = parse_extracted_pages(
         "doc-positioned-bullet-list".to_string(),
