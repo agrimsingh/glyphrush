@@ -8105,6 +8105,67 @@ fn eval_manifest_jobs_preserve_manifest_order_and_report_worker_count() {
 }
 
 #[test]
+fn eval_manifest_uses_backend_specific_expectation_overrides() {
+    let dir = temp_dir("eval-backend-specific-expectations");
+    let pdf_path = dir.join("sample.pdf");
+    fs::write(&pdf_path, minimal_pdf("Backend-specific manifest")).unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "sample.pdf",
+              "expect": {
+                "route_counts": {
+                  "native_fast_path": 0,
+                  "needs_fallback": 0,
+                  "ocr_fallback": 1,
+                  "unsupported": 0
+                }
+              },
+              "expect_by_backend": {
+                "lopdf": {
+                  "route_counts": {
+                    "native_fast_path": 1,
+                    "needs_fallback": 0,
+                    "ocr_fallback": 0,
+                    "unsupported": 0
+                  }
+                }
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["eval", manifest_path.to_str().unwrap()])
+        .output()
+        .expect("run glyphrush eval with backend-specific expectations");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("eval output is json");
+
+    assert_eq!(json["quality_passed"], true);
+    assert_eq!(
+        json["documents"][0]["checks"]["route_counts"]["expected"],
+        serde_json::json!({
+            "native_fast_path": 1,
+            "needs_fallback": 0,
+            "ocr_fallback": 0,
+            "unsupported": 0
+        })
+    );
+}
+
+#[test]
 fn eval_manifest_with_cache_dir_reports_cache_hit_and_miss_counts() {
     let dir = temp_dir("eval-cache-counts");
     fs::write(dir.join("b.pdf"), minimal_pdf("Second eval cache")).unwrap();

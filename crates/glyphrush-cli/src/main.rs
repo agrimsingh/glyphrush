@@ -1347,7 +1347,9 @@ struct EvalManifestDocument {
     source_size_bytes: Option<u64>,
     source_modified_unix_ms: Option<u64>,
     #[serde(default)]
-    expect: EvalExpectations,
+    expect: Value,
+    #[serde(default)]
+    expect_by_backend: BTreeMap<String, Value>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -4554,11 +4556,12 @@ fn load_baseline_quality_expectations(
         {
             continue;
         }
-        let required_text = baseline_required_text_expectations(&document.expect);
+        let expectations = base_eval_expectations(&document)?;
+        let required_text = baseline_required_text_expectations(&expectations);
         if required_text.is_empty()
-            && document.expect.text_recall.is_none()
-            && document.expect.reading_order.is_none()
-            && document.expect.table_structure.is_empty()
+            && expectations.text_recall.is_none()
+            && expectations.reading_order.is_none()
+            && expectations.table_structure.is_empty()
         {
             continue;
         }
@@ -4569,9 +4572,9 @@ fn load_baseline_quality_expectations(
             BaselineQualityExpectations {
                 category,
                 required_text,
-                text_recall: document.expect.text_recall,
-                reading_order: document.expect.reading_order,
-                table_structure: document.expect.table_structure,
+                text_recall: expectations.text_recall,
+                reading_order: expectations.reading_order,
+                table_structure: expectations.table_structure,
             },
         );
     }
@@ -4595,6 +4598,60 @@ fn baseline_required_text_expectations(expectations: &EvalExpectations) -> Vec<S
     }
 
     required_text
+}
+
+fn base_eval_expectations(document: &EvalManifestDocument) -> Result<EvalExpectations> {
+    decode_eval_expectations(
+        eval_expectation_object(&document.expect, "expect", &document.path)?,
+        &document.path,
+        "expect",
+    )
+}
+
+fn eval_expectations_for_backend(
+    document: &EvalManifestDocument,
+    backend: &str,
+) -> Result<EvalExpectations> {
+    let mut expectations = eval_expectation_object(&document.expect, "expect", &document.path)?;
+    if let Some(override_value) = document.expect_by_backend.get(backend) {
+        let override_expectations = eval_expectation_object(
+            override_value,
+            &format!("expect_by_backend.{backend}"),
+            &document.path,
+        )?;
+        merge_eval_expectations(&mut expectations, override_expectations);
+    }
+
+    decode_eval_expectations(
+        expectations,
+        &document.path,
+        &format!("expect plus expect_by_backend.{backend}"),
+    )
+}
+
+fn eval_expectation_object(value: &Value, label: &str, path: &str) -> Result<Value> {
+    match value {
+        Value::Null => Ok(json!({})),
+        Value::Object(_) => Ok(value.clone()),
+        _ => bail!("{label} for manifest document {path} must be a JSON object"),
+    }
+}
+
+fn merge_eval_expectations(base: &mut Value, overlay: Value) {
+    let Some(base_object) = base.as_object_mut() else {
+        unreachable!("eval expectations are normalized to an object before merge");
+    };
+    let Value::Object(overlay_object) = overlay else {
+        unreachable!("eval expectation override is normalized to an object before merge");
+    };
+    for (key, value) in overlay_object {
+        base_object.insert(key, value);
+    }
+}
+
+fn decode_eval_expectations(value: Value, path: &str, label: &str) -> Result<EvalExpectations> {
+    serde_json::from_value(value)
+        .with_context(|| format!("decode {label} for manifest document {path}"))
 }
 
 fn generate_eval_manifest<B: PdfBackend + Sync>(
@@ -5646,7 +5703,7 @@ fn eval_manifest_from_artifacts(
                 EvalArtifactSelection::MatchingArtifacts => continue,
             }
         };
-        documents.push(eval_document_from_artifact(document, artifact));
+        documents.push(eval_document_from_artifact(document, artifact)?);
     }
 
     if documents.is_empty() {
@@ -5894,14 +5951,15 @@ fn eval_document<B: PdfBackend>(
 ) -> Result<EvalDocumentOutput> {
     let pdf_path = resolve_manifest_path(manifest_dir, &document.path);
     let artifact = parse_pdf(backend, &pdf_path, ocr, cache_dir, options)?;
-    Ok(eval_document_from_artifact(document, &artifact))
+    eval_document_from_artifact(document, &artifact)
 }
 
 fn eval_document_from_artifact(
     document: EvalManifestDocument,
     artifact: &DocumentArtifact,
-) -> EvalDocumentOutput {
+) -> Result<EvalDocumentOutput> {
     let mut checks = BTreeMap::new();
+    let expect = eval_expectations_for_backend(&document, &artifact.metadata.backend)?;
 
     if let Some(expected) = &document.document_fingerprint {
         insert_check(
@@ -5927,10 +5985,10 @@ fn eval_document_from_artifact(
             artifact.metadata.source_modified_unix_ms,
         );
     }
-    if let Some(expected) = document.expect.page_count {
+    if let Some(expected) = expect.page_count {
         insert_check(&mut checks, "page_count", expected, artifact.pages.len());
     }
-    if let Some(expected) = document.expect.fallback_pages {
+    if let Some(expected) = expect.fallback_pages {
         insert_check(
             &mut checks,
             "fallback_pages",
@@ -5938,7 +5996,7 @@ fn eval_document_from_artifact(
             artifact.global_diagnostics.fallback_pages,
         );
     }
-    if let Some(expected) = document.expect.ocr_required_pages {
+    if let Some(expected) = expect.ocr_required_pages {
         insert_check(
             &mut checks,
             "ocr_required_pages",
@@ -5946,7 +6004,7 @@ fn eval_document_from_artifact(
             artifact.global_diagnostics.ocr_required_pages,
         );
     }
-    if let Some(expected) = document.expect.ocr_applied_pages {
+    if let Some(expected) = expect.ocr_applied_pages {
         insert_check(
             &mut checks,
             "ocr_applied_pages",
@@ -5954,7 +6012,7 @@ fn eval_document_from_artifact(
             artifact.global_diagnostics.ocr_applied_pages,
         );
     }
-    if let Some(expected) = document.expect.image_artifact_count {
+    if let Some(expected) = expect.image_artifact_count {
         insert_check(
             &mut checks,
             "image_artifact_count",
@@ -5962,7 +6020,7 @@ fn eval_document_from_artifact(
             image_artifact_count_from_artifact(artifact),
         );
     }
-    if let Some(expected) = document.expect.warnings_count {
+    if let Some(expected) = expect.warnings_count {
         insert_check(
             &mut checks,
             "warnings_count",
@@ -5970,7 +6028,7 @@ fn eval_document_from_artifact(
             artifact.global_diagnostics.warnings.len(),
         );
     }
-    if let Some(expected) = document.expect.route_counts {
+    if let Some(expected) = expect.route_counts {
         insert_check(
             &mut checks,
             "route_counts",
@@ -5978,7 +6036,7 @@ fn eval_document_from_artifact(
             route_counts_from_artifact(artifact),
         );
     }
-    if let Some(expected) = document.expect.quality_flag_counts {
+    if let Some(expected) = expect.quality_flag_counts {
         insert_check(
             &mut checks,
             "quality_flag_counts",
@@ -5986,49 +6044,49 @@ fn eval_document_from_artifact(
             quality_flag_counts_from_artifact(artifact),
         );
     }
-    if !document.expect.route_reason_counts.is_empty() {
+    if !expect.route_reason_counts.is_empty() {
         insert_check(
             &mut checks,
             "route_reason_counts",
-            document.expect.route_reason_counts.clone(),
+            expect.route_reason_counts.clone(),
             route_reason_counts_from_artifact(artifact),
         );
     }
-    if !document.expect.required_text.is_empty() {
-        insert_required_text_check(&mut checks, &document.expect.required_text, artifact);
+    if !expect.required_text.is_empty() {
+        insert_required_text_check(&mut checks, &expect.required_text, artifact);
     }
-    if !document.expect.required_warnings.is_empty() {
-        insert_required_warnings_check(&mut checks, &document.expect.required_warnings, artifact);
+    if !expect.required_warnings.is_empty() {
+        insert_required_warnings_check(&mut checks, &expect.required_warnings, artifact);
     }
-    if let Some(expectation) = &document.expect.text_recall {
+    if let Some(expectation) = &expect.text_recall {
         insert_text_recall_check(&mut checks, expectation, artifact);
     }
-    if let Some(expectation) = &document.expect.reading_order {
+    if let Some(expectation) = &expect.reading_order {
         insert_reading_order_check(&mut checks, expectation, artifact);
     }
-    if let Some(expectation) = &document.expect.ocr_required_classification {
+    if let Some(expectation) = &expect.ocr_required_classification {
         insert_ocr_required_classification_check(&mut checks, expectation, artifact);
     }
-    if let Some(expectation) = &document.expect.silent_failures {
-        insert_silent_failures_check(&mut checks, expectation, &document.expect, artifact);
+    if let Some(expectation) = &expect.silent_failures {
+        insert_silent_failures_check(&mut checks, expectation, &expect, artifact);
     }
-    for expectation in &document.expect.quality_flag_classification {
+    for expectation in &expect.quality_flag_classification {
         insert_quality_flag_classification_check(&mut checks, expectation, artifact);
     }
-    for expectation in &document.expect.table_structure {
+    for expectation in &expect.table_structure {
         insert_table_structure_check(&mut checks, expectation, artifact);
     }
-    for (index, expectation) in document.expect.span_bbox.iter().enumerate() {
+    for (index, expectation) in expect.span_bbox.iter().enumerate() {
         insert_span_bbox_check(&mut checks, index, expectation, artifact);
     }
-    for page_expectation in &document.expect.pages {
+    for page_expectation in &expect.pages {
         insert_page_expectation_checks(&mut checks, page_expectation, artifact);
     }
 
     let passed = checks.values().all(|check| check.passed);
     let category = normalize_manifest_category(document.category.as_deref());
 
-    EvalDocumentOutput {
+    Ok(EvalDocumentOutput {
         path: document.path,
         category,
         document_fingerprint: artifact.document_fingerprint.clone(),
@@ -6049,7 +6107,7 @@ fn eval_document_from_artifact(
         warnings_count: artifact.global_diagnostics.warnings.len(),
         passed,
         checks,
-    }
+    })
 }
 
 fn eval_document_category(document: &EvalDocumentOutput) -> &str {

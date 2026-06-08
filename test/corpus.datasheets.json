@@ -64,6 +64,36 @@
         "silent_failures": {
           "max_count": 0
         }
+      },
+      "expect_by_backend": {
+        "pdfium": {
+          "quality_flag_counts": {
+            "requires_ocr": 0,
+            "low_confidence_text": 0,
+            "broken_encoding": 0,
+            "layout_uncertain": 0,
+            "table_uncertain": 9,
+            "unsupported_feature": 18
+          },
+          "route_reason_counts": {
+            "annotation_or_form": 18,
+            "table_line_density": 9
+          },
+          "quality_flag_classification": [
+            {
+              "flag": "table_uncertain",
+              "expected_pages": [0, 1, 10, 11, 12, 13, 14, 15, 16],
+              "min_precision": 1.0,
+              "min_recall": 1.0
+            },
+            {
+              "flag": "unsupported_feature",
+              "expected_pages": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+              "min_precision": 1.0,
+              "min_recall": 1.0
+            }
+          ]
+        }
       }
     },
     {
@@ -144,6 +174,60 @@
         ],
         "silent_failures": {
           "max_count": 0
+        }
+      },
+      "expect_by_backend": {
+        "pdfium": {
+          "fallback_pages": 13,
+          "ocr_required_pages": 0,
+          "warnings_count": 2,
+          "route_counts": {
+            "native_fast_path": 4,
+            "needs_fallback": 11,
+            "ocr_fallback": 0,
+            "unsupported": 2
+          },
+          "quality_flag_counts": {
+            "requires_ocr": 0,
+            "low_confidence_text": 0,
+            "broken_encoding": 0,
+            "layout_uncertain": 0,
+            "table_uncertain": 13,
+            "unsupported_feature": 2
+          },
+          "route_reason_counts": {
+            "annotation_or_form": 2,
+            "table_line_density": 13
+          },
+          "required_warnings": [
+            "p000000: unsupported_feature: annotation_or_form",
+            "p000011: unsupported_feature: annotation_or_form"
+          ],
+          "ocr_required_classification": {
+            "expected_pages": [],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          "quality_flag_classification": [
+            {
+              "flag": "low_confidence_text",
+              "expected_pages": [],
+              "min_precision": 1.0,
+              "min_recall": 1.0
+            },
+            {
+              "flag": "table_uncertain",
+              "expected_pages": [0, 1, 2, 3, 4, 6, 7, 9, 10, 11, 12, 13, 14],
+              "min_precision": 1.0,
+              "min_recall": 1.0
+            },
+            {
+              "flag": "unsupported_feature",
+              "expected_pages": [0, 11],
+              "min_precision": 1.0,
+              "min_recall": 1.0
+            }
+          ]
         }
       }
     },
@@ -263,6 +347,44 @@
         "silent_failures": {
           "max_count": 0
         }
+      },
+      "expect_by_backend": {
+        "pdfium": {
+          "fallback_pages": 9,
+          "image_artifact_count": 40,
+          "route_counts": {
+            "native_fast_path": 8,
+            "needs_fallback": 5,
+            "ocr_fallback": 0,
+            "unsupported": 4
+          },
+          "quality_flag_counts": {
+            "requires_ocr": 0,
+            "low_confidence_text": 0,
+            "broken_encoding": 0,
+            "layout_uncertain": 0,
+            "table_uncertain": 8,
+            "unsupported_feature": 4
+          },
+          "route_reason_counts": {
+            "annotation_or_form": 4,
+            "table_line_density": 8
+          },
+          "quality_flag_classification": [
+            {
+              "flag": "table_uncertain",
+              "expected_pages": [0, 1, 2, 6, 7, 12, 13, 14],
+              "min_precision": 1.0,
+              "min_recall": 1.0
+            },
+            {
+              "flag": "unsupported_feature",
+              "expected_pages": [0, 1, 3, 13],
+              "min_precision": 1.0,
+              "min_recall": 1.0
+            }
+          ]
+        }
       }
     },
     {
@@ -330,6 +452,44 @@
         ],
         "silent_failures": {
           "max_count": 0
+        }
+      },
+      "expect_by_backend": {
+        "pdfium": {
+          "fallback_pages": 7,
+          "route_counts": {
+            "native_fast_path": 3,
+            "needs_fallback": 4,
+            "ocr_fallback": 0,
+            "unsupported": 3
+          },
+          "quality_flag_counts": {
+            "requires_ocr": 0,
+            "low_confidence_text": 0,
+            "broken_encoding": 0,
+            "layout_uncertain": 1,
+            "table_uncertain": 5,
+            "unsupported_feature": 3
+          },
+          "route_reason_counts": {
+            "annotation_or_form": 3,
+            "duplicate_char_ratio": 1,
+            "table_line_density": 5
+          },
+          "quality_flag_classification": [
+            {
+              "flag": "table_uncertain",
+              "expected_pages": [1, 2, 3, 6, 7],
+              "min_precision": 1.0,
+              "min_recall": 1.0
+            },
+            {
+              "flag": "unsupported_feature",
+              "expected_pages": [0, 1, 9],
+              "min_precision": 1.0,
+              "min_recall": 1.0
+            }
+          ]
         }
       }
     }
