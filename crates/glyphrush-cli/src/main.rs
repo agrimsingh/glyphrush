@@ -593,6 +593,8 @@ struct FeatureParityBenchmarkEvidence {
     report_version: Option<String>,
     backend: Option<String>,
     quality_status: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    quality_categories: Vec<FeatureParityBenchmarkCategoryEvidence>,
     required_claim_count: usize,
     claim_count: usize,
     quality_backed_claim_count: usize,
@@ -601,6 +603,19 @@ struct FeatureParityBenchmarkEvidence {
     missing_required_claims: Vec<String>,
     failed_required_claims: Vec<FeatureParityBenchmarkClaimEvidence>,
     claims: Vec<FeatureParityBenchmarkClaimEvidence>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct FeatureParityBenchmarkCategoryEvidence {
+    category: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    document_count: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    page_count: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    failed_checks: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    quality_passed: Option<bool>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -2288,6 +2303,7 @@ fn feature_parity_benchmark_evidence(path: &Path) -> Result<FeatureParityBenchma
             .get("quality_status")
             .and_then(Value::as_str)
             .map(str::to_string),
+        quality_categories: feature_parity_benchmark_quality_categories(&report),
         required_claim_count: FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len(),
         claim_count: claims.len(),
         quality_backed_claim_count,
@@ -2297,6 +2313,34 @@ fn feature_parity_benchmark_evidence(path: &Path) -> Result<FeatureParityBenchma
         failed_required_claims,
         claims,
     })
+}
+
+fn feature_parity_benchmark_quality_categories(
+    report: &Value,
+) -> Vec<FeatureParityBenchmarkCategoryEvidence> {
+    let summaries = report
+        .get("quality")
+        .and_then(|quality| quality.get("category_summaries"))
+        .or_else(|| report.get("category_summaries"))
+        .and_then(Value::as_object);
+    let Some(summaries) = summaries else {
+        return Vec::new();
+    };
+
+    let mut categories = summaries
+        .iter()
+        .map(
+            |(category, summary)| FeatureParityBenchmarkCategoryEvidence {
+                category: category.clone(),
+                document_count: summary.get("document_count").and_then(Value::as_u64),
+                page_count: summary.get("page_count").and_then(Value::as_u64),
+                failed_checks: summary.get("failed_checks").and_then(Value::as_u64),
+                quality_passed: summary.get("quality_passed").and_then(Value::as_bool),
+            },
+        )
+        .collect::<Vec<_>>();
+    categories.sort_by(|left, right| left.category.cmp(&right.category));
+    categories
 }
 
 fn feature_parity_benchmark_claim_evidence(value: &Value) -> FeatureParityBenchmarkClaimEvidence {

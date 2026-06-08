@@ -361,6 +361,22 @@ fn feature_parity_can_require_quality_backed_liteparse_benchmark_evidence() {
           "report_version": "glyphrush-bench-report-v1",
           "backend": "pdfium",
           "quality_status": "checked",
+          "quality": {
+            "category_summaries": {
+              "scanned": {
+                "document_count": 1,
+                "page_count": 3,
+                "failed_checks": 0,
+                "quality_passed": true
+              },
+              "clean_digital": {
+                "document_count": 2,
+                "page_count": 12,
+                "failed_checks": 0,
+                "quality_passed": true
+              }
+            }
+          },
           "speedup_claims": [
             {
               "baseline": "liteparse",
@@ -430,6 +446,25 @@ fn feature_parity_can_require_quality_backed_liteparse_benchmark_evidence() {
     assert_eq!(json["benchmark_evidence"]["quality_backed_claim_count"], 2);
     assert_eq!(json["benchmark_evidence"]["claim_passed_count"], 2);
     assert_eq!(json["benchmark_evidence"]["evidence_passed"], true);
+    assert_eq!(
+        json["benchmark_evidence"]["quality_categories"],
+        serde_json::json!([
+            {
+                "category": "clean_digital",
+                "document_count": 2,
+                "page_count": 12,
+                "failed_checks": 0,
+                "quality_passed": true
+            },
+            {
+                "category": "scanned",
+                "document_count": 1,
+                "page_count": 3,
+                "failed_checks": 0,
+                "quality_passed": true
+            }
+        ])
+    );
     assert_eq!(
         json["benchmark_evidence"]["missing_required_claims"],
         serde_json::json!([])
