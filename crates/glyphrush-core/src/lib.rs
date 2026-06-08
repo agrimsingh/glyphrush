@@ -1657,11 +1657,25 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return None;
     }
 
-    let rows = text
-        .lines()
+    let lines = text.lines().collect::<Vec<_>>();
+    if let Some(rows) = aligned_whitespace_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
+    let rows = lines
+        .iter()
+        .map(|line| table_cells_from_text_line(line))
+        .collect::<Vec<_>>();
+
+    layout_table_from_text_rows(rows)
+}
+
+fn layout_table_from_text_rows(rows: Vec<Vec<String>>) -> Option<LayoutTable> {
+    let rows = rows
+        .into_iter()
         .enumerate()
-        .filter_map(|(row_index, line)| {
-            let cells = table_cells_from_text_line(line)
+        .filter_map(|(row_index, row)| {
+            let cells = row
                 .into_iter()
                 .enumerate()
                 .map(|(column_index, text)| LayoutTableCell {
@@ -1721,6 +1735,10 @@ fn is_whitespace_table_lines(lines: &[String]) -> bool {
 }
 
 fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
+    if aligned_whitespace_table_rows(lines).is_some() {
+        return true;
+    }
+
     let rows = lines
         .iter()
         .map(|line| line.split_whitespace().collect::<Vec<_>>())
@@ -1739,6 +1757,139 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
                     .iter()
                     .all(|cell| !cell.is_empty() && cell.chars().count() <= 40)
         })
+}
+
+#[derive(Debug)]
+struct AlignedTableSegment {
+    start: usize,
+    text: String,
+}
+
+fn aligned_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    if lines.len() < 2
+        || lines
+            .iter()
+            .any(|line| line.contains('|') || line.contains('\t'))
+        || !lines.iter().any(|line| has_wide_space_gap(line))
+    {
+        return None;
+    }
+
+    let header_segments = wide_space_segments(lines.first()?);
+    let column_count = header_segments.len();
+    if !(2..=8).contains(&column_count) {
+        return None;
+    }
+
+    let column_starts = header_segments
+        .iter()
+        .map(|segment| segment.start)
+        .collect::<Vec<_>>();
+    if !column_starts.windows(2).all(|window| window[0] < window[1]) {
+        return None;
+    }
+
+    let mut rows = Vec::with_capacity(lines.len());
+    for line in lines {
+        let segments = wide_space_segments(line);
+        if segments.is_empty() {
+            return None;
+        }
+
+        let mut cells = vec![String::new(); column_count];
+        for segment in segments {
+            let column_index = nearest_column_index(segment.start, &column_starts);
+            if !cells[column_index].is_empty() {
+                cells[column_index].push(' ');
+            }
+            cells[column_index].push_str(&segment.text);
+        }
+
+        if cells.iter().filter(|cell| !cell.is_empty()).count() < 2 {
+            return None;
+        }
+        rows.push(cells);
+    }
+
+    if rows
+        .first()
+        .is_some_and(|header| header.iter().all(|cell| !cell.is_empty()))
+    {
+        Some(rows)
+    } else {
+        None
+    }
+}
+
+fn wide_space_segments(line: &str) -> Vec<AlignedTableSegment> {
+    let chars = line.chars().collect::<Vec<_>>();
+    let mut segments = Vec::new();
+    let mut start = None;
+    let mut index = 0;
+
+    while index < chars.len() {
+        if chars[index] == ' ' {
+            let gap_start = index;
+            while index < chars.len() && chars[index] == ' ' {
+                index += 1;
+            }
+            if index - gap_start >= 2 {
+                push_aligned_table_segment(&chars, start.take(), gap_start, &mut segments);
+            }
+            continue;
+        }
+
+        if start.is_none() {
+            start = Some(index);
+        }
+        index += 1;
+    }
+
+    push_aligned_table_segment(&chars, start, chars.len(), &mut segments);
+    segments
+}
+
+fn push_aligned_table_segment(
+    chars: &[char],
+    start: Option<usize>,
+    end: usize,
+    segments: &mut Vec<AlignedTableSegment>,
+) {
+    let Some(start) = start else {
+        return;
+    };
+    let text = chars[start..end]
+        .iter()
+        .collect::<String>()
+        .trim()
+        .to_string();
+    if !text.is_empty() {
+        segments.push(AlignedTableSegment { start, text });
+    }
+}
+
+fn has_wide_space_gap(line: &str) -> bool {
+    let mut run = 0;
+    for ch in line.chars() {
+        if ch == ' ' {
+            run += 1;
+            if run >= 2 {
+                return true;
+            }
+        } else {
+            run = 0;
+        }
+    }
+    false
+}
+
+fn nearest_column_index(start: usize, column_starts: &[usize]) -> usize {
+    column_starts
+        .iter()
+        .enumerate()
+        .min_by_key(|(index, column_start)| (start.abs_diff(**column_start), *index))
+        .map(|(index, _)| index)
+        .unwrap_or(0)
 }
 
 fn is_list_lines(lines: &[String]) -> bool {

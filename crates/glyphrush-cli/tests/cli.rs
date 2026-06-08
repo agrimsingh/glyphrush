@@ -3229,6 +3229,33 @@ fn parse_markdown_renders_whitespace_table_blocks_as_markdown_tables() {
 }
 
 #[test]
+fn parse_json_preserves_empty_cells_for_aligned_whitespace_table_blocks() {
+    let dir = temp_dir("parse-json-aligned-whitespace-table");
+    let pdf_path = dir.join("aligned-table.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_aligned_whitespace_ruled_table()).unwrap();
+
+    let json = run_json(["parse", pdf_path.to_str().unwrap(), "--format", "json"]);
+    let blocks = json["pages"][0]["layout_blocks"].as_array().unwrap();
+    let table_block = blocks
+        .iter()
+        .find(|block| block["kind"] == "table")
+        .expect("aligned whitespace table block");
+
+    assert_eq!(table_block["table"]["rows"][0]["cells"][0]["text"], "Part");
+    assert_eq!(table_block["table"]["rows"][0]["cells"][1]["text"], "Value");
+    assert_eq!(table_block["table"]["rows"][0]["cells"][2]["text"], "Note");
+    assert_eq!(table_block["table"]["rows"][1]["cells"][0]["text"], "A");
+    assert_eq!(table_block["table"]["rows"][1]["cells"][1]["text"], "");
+    assert_eq!(
+        table_block["table"]["rows"][1]["cells"][2]["text"],
+        "missing value"
+    );
+    assert_eq!(table_block["table"]["rows"][2]["cells"][0]["text"], "B");
+    assert_eq!(table_block["table"]["rows"][2]["cells"][1]["text"], "2");
+    assert_eq!(table_block["table"]["rows"][2]["cells"][2]["text"], "");
+}
+
+#[test]
 fn parse_json_emits_structured_cells_for_positioned_table_blocks() {
     let dir = temp_dir("parse-json-positioned-table-cells");
     let pdf_path = dir.join("positioned-table.pdf");
@@ -13394,6 +13421,22 @@ fn minimal_pdf_with_ruled_table() -> Vec<u8> {
         "BT /F1 12 Tf 84 574 Td (Part Value) Tj ET",
         "BT /F1 12 Tf 84 534 Td (A 1) Tj ET",
         "BT /F1 12 Tf 84 494 Td (B 2) Tj ET",
+    ]
+    .join("\n");
+    minimal_pdf_with_stream(&stream)
+}
+
+fn minimal_pdf_with_aligned_whitespace_ruled_table() -> Vec<u8> {
+    let stream = [
+        "72 600 m 504 600 l S",
+        "72 560 m 504 560 l S",
+        "72 520 m 504 520 l S",
+        "72 480 m 504 480 l S",
+        "72 480 m 72 600 l S",
+        "216 480 m 216 600 l S",
+        "360 480 m 360 600 l S",
+        "504 480 m 504 600 l S",
+        "BT /F1 12 Tf 18 TL 84 574 Td (Part          Value        Note) Tj T* (A                          missing value) Tj T* (B             2) Tj ET",
     ]
     .join("\n");
     minimal_pdf_with_stream(&stream)

@@ -2220,11 +2220,11 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             id: "table_recovery",
             area: "tables",
             liteparse: "layout_projection_tables",
-            glyphrush: "table_likelihood_and_basic_structure_recovery",
+            glyphrush: "table_likelihood_and_basic_structure_recovery_with_empty_cell_preservation",
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "table_uncertain_flag_and_table_structure_eval",
-            notes: "Current table support is conservative and tied to explicit uncertainty flags.",
+            notes: "Current table support is conservative, tied to explicit uncertainty flags, and preserves blank cells for delimited or fixed-width whitespace rows when table recovery is routed.",
         },
         FeatureParityCapability {
             id: "artifact_cache_snapshots",
