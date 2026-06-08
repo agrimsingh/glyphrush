@@ -2420,7 +2420,7 @@ fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "table_uncertain_flag_and_table_structure_eval",
-            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, header-guided whitespace rows with same-line or wrapped multi-word descriptor cells and header-guided section rows, aligned whitespace and positioned section rows, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, and multi-cell wrapped continuations when table recovery is routed, and exposes structured grids to eval text anchors.",
+            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, header-guided whitespace rows with same-line or wrapped multi-word descriptor cells and header-guided section rows, aligned whitespace and positioned section rows, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, fragmented first-column positioned section rows, and multi-cell wrapped continuations when table recovery is routed, and exposes structured grids to eval text anchors.",
         },
         FeatureParityCapability {
             id: "artifact_cache_snapshots",

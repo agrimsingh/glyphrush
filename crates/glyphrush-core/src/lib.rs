@@ -1463,12 +1463,25 @@ fn positioned_row_is_first_column_table_section(
     row_index: usize,
     row_count: usize,
 ) -> bool {
-    if row.len() != 1 || columns.len() < 2 || row_index == 0 || row_index + 1 >= row_count {
+    if row.is_empty() || columns.len() < 2 || row_index == 0 || row_index + 1 >= row_count {
         return false;
     }
 
-    let span = row[0];
-    let text = span.text.trim();
+    let cells = positioned_table_cells_from_row(row, columns, tolerance);
+    let Some(first_cell) = cells.first() else {
+        return false;
+    };
+    if cells[1..].iter().any(|cell| !cell.text.is_empty()) {
+        return false;
+    }
+
+    let mut row_text = String::new();
+    append_positioned_row_text(&mut row_text, row);
+    let text = first_cell.text.trim();
+    if text != row_text.trim() {
+        return false;
+    }
+
     if !looks_like_positioned_table_section_label(text) || is_standalone_list_marker(text) {
         return false;
     }
@@ -1479,8 +1492,11 @@ fn positioned_row_is_first_column_table_section(
     let Some((_, second_x1)) = columns.get(1) else {
         return false;
     };
+    let Some(row_bbox) = union_span_refs_bbox(row) else {
+        return false;
+    };
 
-    (span.bbox.x0 - *first_x0).abs() <= tolerance && span.bbox.x1 < *second_x1 - tolerance
+    (row_bbox.x0 - *first_x0).abs() <= tolerance && row_bbox.x1 < *second_x1 - tolerance
 }
 
 fn looks_like_positioned_table_section_label(text: &str) -> bool {
