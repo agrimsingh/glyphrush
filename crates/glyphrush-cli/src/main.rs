@@ -553,6 +553,8 @@ struct FeatureParitySummary {
 #[derive(Debug, Serialize)]
 struct FeatureParityReadiness {
     native_text_speed_race_ready: bool,
+    native_text_speed_claim_ready: bool,
+    native_text_speed_claim_blockers: Vec<String>,
     full_liteparse_drop_in_ready: bool,
     glyphrush_product_parity_ready: bool,
     native_text_speed_race_gate: &'static str,
@@ -2244,10 +2246,15 @@ fn feature_parity_output<B: PdfBackend>(
     let capabilities =
         liteparse_feature_parity_capabilities(backend.supports_page_render_for_ocr());
     let summary = feature_parity_summary(&capabilities);
-    let readiness = feature_parity_readiness(&capabilities, &summary);
     let benchmark_evidence = bench_report
         .map(|path| feature_parity_benchmark_evidence(path, coverage_preset))
         .transpose()?;
+    let readiness = feature_parity_readiness(
+        &capabilities,
+        &summary,
+        benchmark_evidence.as_ref(),
+        coverage_preset,
+    );
 
     Ok(FeatureParityOutput {
         report_version: FEATURE_PARITY_REPORT_VERSION,
@@ -2593,6 +2600,8 @@ fn feature_parity_summary(capabilities: &[FeatureParityCapability]) -> FeaturePa
 fn feature_parity_readiness(
     capabilities: &[FeatureParityCapability],
     summary: &FeatureParitySummary,
+    benchmark_evidence: Option<&FeatureParityBenchmarkEvidence>,
+    coverage_preset: Option<CoveragePreset>,
 ) -> FeatureParityReadiness {
     let hot_path_capability_count = capabilities
         .iter()
@@ -2610,9 +2619,18 @@ fn feature_parity_readiness(
         capability.id == "quality_backed_benchmarking"
             && capability.glyphrush_status == FeatureParityStatus::Implemented
     });
+    let native_text_speed_race_ready = hot_path_ready && quality_gate_ready;
+    let (native_text_speed_claim_ready, native_text_speed_claim_blockers) =
+        feature_parity_speed_claim_readiness(
+            native_text_speed_race_ready,
+            benchmark_evidence,
+            coverage_preset,
+        );
 
     FeatureParityReadiness {
-        native_text_speed_race_ready: hot_path_ready && quality_gate_ready,
+        native_text_speed_race_ready,
+        native_text_speed_claim_ready,
+        native_text_speed_claim_blockers,
         full_liteparse_drop_in_ready: summary.partial == 0
             && summary.planned == 0
             && summary.not_planned == 0,
@@ -2643,6 +2661,42 @@ fn feature_parity_readiness(
             .map(|capability| capability.id)
             .collect(),
     }
+}
+
+fn feature_parity_speed_claim_readiness(
+    capability_ready: bool,
+    benchmark_evidence: Option<&FeatureParityBenchmarkEvidence>,
+    coverage_preset: Option<CoveragePreset>,
+) -> (bool, Vec<String>) {
+    let mut blockers = Vec::new();
+
+    if !capability_ready {
+        blockers.push("native_text_speed_race_capabilities_not_ready".to_string());
+    }
+
+    let Some(benchmark_evidence) = benchmark_evidence else {
+        blockers.push("missing_benchmark_evidence".to_string());
+        return (false, blockers);
+    };
+
+    if !benchmark_evidence.evidence_passed {
+        blockers.push("missing_quality_backed_liteparse_claims".to_string());
+    }
+
+    match benchmark_evidence.coverage_requirement.as_ref() {
+        Some(requirement) if !requirement.passed => {
+            blockers.push("coverage_preset_missing_categories".to_string());
+        }
+        Some(_) => {}
+        None if coverage_preset.is_none() => {
+            blockers.push("missing_coverage_preset".to_string());
+        }
+        None => {
+            blockers.push("coverage_preset_missing_categories".to_string());
+        }
+    }
+
+    (blockers.is_empty(), blockers)
 }
 
 fn backend_check_output<B: PdfBackend + Sync>(
