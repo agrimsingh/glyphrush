@@ -1471,6 +1471,8 @@ struct GeneratedManifestExpectations {
     quality_flag_counts: QualityFlagCounts,
     ocr_required_classification: OcrRequiredClassificationExpectation,
     quality_flag_classification: Vec<QualityFlagClassificationExpectation>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    table_structure: Vec<TableStructureExpectation>,
     silent_failures: GeneratedSilentFailuresExpectation,
     pages: Vec<GeneratedPageExpectation>,
 }
@@ -1603,16 +1605,22 @@ struct QualityFlagClassificationExpectation {
     min_recall: Option<f64>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct TableStructureExpectation {
     page: u32,
     #[serde(default)]
     expected_rows: Vec<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     min_row_precision: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     min_row_recall: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     min_row_f1: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     min_cell_precision: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     min_cell_recall: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     min_cell_f1: Option<f64>,
 }
 
@@ -5795,6 +5803,7 @@ fn generated_manifest_expectations(artifact: &DocumentArtifact) -> GeneratedMani
             min_recall: Some(1.0),
         },
         quality_flag_classification: generated_quality_flag_classification(artifact),
+        table_structure: generated_table_structure_expectations(artifact),
         silent_failures: GeneratedSilentFailuresExpectation { max_count: 0 },
         pages: artifact
             .pages
@@ -5825,6 +5834,28 @@ fn generated_quality_flag_classification(
         })
     })
     .collect()
+}
+
+fn generated_table_structure_expectations(
+    artifact: &DocumentArtifact,
+) -> Vec<TableStructureExpectation> {
+    artifact
+        .pages
+        .iter()
+        .filter_map(|page| {
+            let expected_rows = table_rows_for_page(artifact, page.page_index);
+            (expected_rows.len() >= 2).then_some(TableStructureExpectation {
+                page: page.page_index,
+                expected_rows,
+                min_row_precision: None,
+                min_row_recall: Some(1.0),
+                min_row_f1: None,
+                min_cell_precision: None,
+                min_cell_recall: Some(1.0),
+                min_cell_f1: Some(1.0),
+            })
+        })
+        .collect()
 }
 
 fn expected_pages_for_quality(artifact: &DocumentArtifact, flag: PageQuality) -> Vec<u32> {
