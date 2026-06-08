@@ -945,9 +945,10 @@ fn layout_blocks_from_native_spans(
     }
 
     if run_table_recovery
-        && let Some(table_block) = table_block_from_positioned_spans(page_index, spans)
+        && let Some(blocks) =
+            layout_blocks_from_positioned_table_runs(page_index, dimensions.clone(), spans)
     {
-        return vec![table_block];
+        return blocks;
     }
 
     let grouped_spans = group_spans_for_reading_order(spans, &dimensions);
@@ -964,25 +965,16 @@ fn layout_blocks_from_native_spans(
         .into_iter()
         .enumerate()
         .filter_map(|(block_index, group)| {
-            let bbox = union_span_refs_bbox(&group)?;
-            let lines = group
-                .iter()
-                .map(|span| span.text.trim().to_string())
-                .filter(|text| !text.is_empty())
-                .collect::<Vec<_>>();
-            let text = reflow_text_block(&lines, run_table_recovery);
-
-            Some(LayoutBlock {
-                block_id: format!("p{page_index:06}:b{block_index:06}"),
-                bbox,
-                kind: classify_layout_block(&text, run_table_recovery),
-                text,
-            })
+            layout_block_from_span_group(page_index, block_index, group, run_table_recovery)
         })
         .collect()
 }
 
-fn table_block_from_positioned_spans(page_index: u32, spans: &[TextSpan]) -> Option<LayoutBlock> {
+fn layout_blocks_from_positioned_table_runs(
+    page_index: u32,
+    dimensions: PageDimensions,
+    spans: &[TextSpan],
+) -> Option<Vec<LayoutBlock>> {
     let span_refs = spans
         .iter()
         .filter(|span| !span.text.trim().is_empty())
@@ -992,15 +984,100 @@ fn table_block_from_positioned_spans(page_index: u32, spans: &[TextSpan]) -> Opt
     }
 
     let rows = group_positioned_table_rows(span_refs);
-    if rows.len() < 2 {
+    let ranges = positioned_table_row_ranges(&rows);
+    if ranges.is_empty() {
         return None;
     }
 
-    let column_count = rows.first()?.len();
-    if !(2..=8).contains(&column_count) || !rows.iter().all(|row| row.len() == column_count) {
-        return None;
+    let mut blocks = Vec::new();
+    let mut next_block_index = 0;
+    let mut row_cursor = 0;
+
+    for (start, end) in ranges {
+        append_positioned_text_blocks_from_rows(
+            page_index,
+            &dimensions,
+            &rows[row_cursor..start],
+            &mut next_block_index,
+            &mut blocks,
+        );
+        if let Some(table_block) =
+            table_block_from_positioned_rows(page_index, next_block_index, &rows[start..end])
+        {
+            blocks.push(table_block);
+            next_block_index += 1;
+        }
+        row_cursor = end;
     }
-    if !table_rows_have_aligned_columns(&rows) {
+
+    append_positioned_text_blocks_from_rows(
+        page_index,
+        &dimensions,
+        &rows[row_cursor..],
+        &mut next_block_index,
+        &mut blocks,
+    );
+
+    (!blocks.is_empty()).then_some(blocks)
+}
+
+fn append_positioned_text_blocks_from_rows(
+    page_index: u32,
+    dimensions: &PageDimensions,
+    rows: &[Vec<&TextSpan>],
+    next_block_index: &mut usize,
+    blocks: &mut Vec<LayoutBlock>,
+) {
+    let spans = rows.iter().flatten().copied().collect::<Vec<&TextSpan>>();
+    for group in group_spans_for_reading_order_from_refs(spans, dimensions) {
+        if let Some(block) =
+            layout_block_from_span_group(page_index, *next_block_index, group, true)
+        {
+            blocks.push(block);
+            *next_block_index += 1;
+        }
+    }
+}
+
+fn positioned_table_row_ranges(rows: &[Vec<&TextSpan>]) -> Vec<(usize, usize)> {
+    let mut ranges = Vec::new();
+    let mut start = 0;
+
+    while start < rows.len() {
+        let mut best_end = None;
+        for end in (start + 2)..=rows.len() {
+            if positioned_rows_form_table(&rows[start..end]) {
+                best_end = Some(end);
+            }
+        }
+
+        if let Some(end) = best_end {
+            ranges.push((start, end));
+            start = end;
+        } else {
+            start += 1;
+        }
+    }
+
+    ranges
+}
+
+fn positioned_rows_form_table(rows: &[Vec<&TextSpan>]) -> bool {
+    let Some(column_count) = rows.first().map(Vec::len) else {
+        return false;
+    };
+    if !(2..=8).contains(&column_count) || !rows.iter().all(|row| row.len() == column_count) {
+        return false;
+    }
+    table_rows_have_aligned_columns(rows)
+}
+
+fn table_block_from_positioned_rows(
+    page_index: u32,
+    block_index: usize,
+    rows: &[Vec<&TextSpan>],
+) -> Option<LayoutBlock> {
+    if !positioned_rows_form_table(rows) {
         return None;
     }
 
@@ -1018,10 +1095,32 @@ fn table_block_from_positioned_spans(page_index: u32, spans: &[TextSpan]) -> Opt
         .join("\n");
 
     Some(LayoutBlock {
-        block_id: format!("p{page_index:06}:b000000"),
+        block_id: format!("p{page_index:06}:b{block_index:06}"),
         bbox,
         text,
         kind: LayoutBlockKind::Table,
+    })
+}
+
+fn layout_block_from_span_group(
+    page_index: u32,
+    block_index: usize,
+    group: Vec<&TextSpan>,
+    run_table_recovery: bool,
+) -> Option<LayoutBlock> {
+    let bbox = union_span_refs_bbox(&group)?;
+    let lines = group
+        .iter()
+        .map(|span| span.text.trim().to_string())
+        .filter(|text| !text.is_empty())
+        .collect::<Vec<_>>();
+    let text = reflow_text_block(&lines, run_table_recovery);
+
+    Some(LayoutBlock {
+        block_id: format!("p{page_index:06}:b{block_index:06}"),
+        bbox,
+        kind: classify_layout_block(&text, run_table_recovery),
+        text,
     })
 }
 
@@ -1154,6 +1253,13 @@ fn group_spans_for_reading_order<'a>(
         .filter(|span| !span.text.trim().is_empty())
         .collect::<Vec<_>>();
 
+    group_spans_for_reading_order_from_refs(span_refs, dimensions)
+}
+
+fn group_spans_for_reading_order_from_refs<'a>(
+    span_refs: Vec<&'a TextSpan>,
+    dimensions: &PageDimensions,
+) -> Vec<Vec<&'a TextSpan>> {
     if let Some((left_column, right_column)) = split_two_columns(&span_refs, dimensions) {
         let mut groups = group_span_refs_by_vertical_gaps(left_column);
         groups.extend(group_span_refs_by_vertical_gaps(right_column));

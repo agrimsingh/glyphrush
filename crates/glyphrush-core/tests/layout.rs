@@ -272,6 +272,51 @@ fn positioned_table_spans_preserve_rows_when_table_recovery_runs() {
 }
 
 #[test]
+fn positioned_table_recovery_preserves_surrounding_text_blocks() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-table-with-context".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: "SUMMARY TABLE\nItem\nTotal\nAlpha\n10\nBeta\n20\nSource note".to_string(),
+            native_spans: vec![
+                span("SUMMARY TABLE", 72.0, 72.0, 210.0, 86.0),
+                span("Item", 72.0, 120.0, 130.0, 134.0),
+                span("Total", 220.0, 120.0, 280.0, 134.0),
+                span("Alpha", 72.0, 146.0, 140.0, 160.0),
+                span("10", 220.0, 146.0, 246.0, 160.0),
+                span("Beta", 72.0, 172.0, 132.0, 186.0),
+                span("20", 220.0, 172.0, 246.0, 186.0),
+                span("Source note", 72.0, 230.0, 190.0, 244.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 8,
+                native_text_bytes: 61,
+                glyph_count: 47,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 3);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Heading);
+    assert_eq!(page.layout_blocks[0].text, "SUMMARY TABLE");
+    assert_eq!(page.layout_blocks[1].kind, LayoutBlockKind::Table);
+    assert_eq!(page.layout_blocks[1].text, "Item Total\nAlpha 10\nBeta 20");
+    assert_eq!(page.layout_blocks[1].bbox.x0, 72.0);
+    assert_eq!(page.layout_blocks[1].bbox.y0, 120.0);
+    assert_eq!(page.layout_blocks[1].bbox.x1, 280.0);
+    assert_eq!(page.layout_blocks[1].bbox.y1, 186.0);
+    assert_eq!(page.layout_blocks[2].kind, LayoutBlockKind::Paragraph);
+    assert_eq!(page.layout_blocks[2].text, "Source note");
+}
+
+#[test]
 fn repeated_margin_blocks_are_classified_as_headers_and_footers() {
     let artifact = parse_extracted_pages(
         "doc-repeated-margins".to_string(),
