@@ -1401,6 +1401,82 @@ fn manifest_includes_recovered_table_structure_for_eval_bootstrap() {
 }
 
 #[test]
+fn manifest_with_span_geometry_includes_bbox_samples_for_eval_bootstrap() {
+    let dir = temp_dir("manifest-span-bbox");
+    let pdf_path = dir.join("positioned.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream("BT /F1 12 Tf 72 720 Td (Positioned sample text) Tj ET"),
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "manifest",
+            pdf_path.to_str().unwrap(),
+            "--span-geometry",
+        ])
+        .output()
+        .expect("run glyphrush manifest with span bbox samples");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("manifest output is json");
+    let manifest_path = dir.join("corpus.generated.json");
+    fs::write(&manifest_path, &output.stdout).unwrap();
+
+    assert_eq!(json["generator"]["span_geometry"], true);
+    assert_eq!(
+        json["documents"][0]["expect"]["span_bbox"],
+        serde_json::json!([
+          {
+            "page": 0,
+            "text": "Positioned sample text",
+            "provenance": "native",
+            "min_x0": 71.5,
+            "max_x0": 72.5,
+            "min_y0": 71.5,
+            "max_y0": 72.5,
+            "min_x1": 216.7,
+            "max_x1": 217.7,
+            "min_y1": 83.5,
+            "max_y1": 84.5
+          }
+        ])
+    );
+
+    let eval_output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+            "--span-geometry",
+        ])
+        .output()
+        .expect("run glyphrush eval on generated manifest with span bbox samples");
+    assert!(
+        eval_output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&eval_output.stdout),
+        String::from_utf8_lossy(&eval_output.stderr)
+    );
+    let eval_json: Value =
+        serde_json::from_slice(&eval_output.stdout).expect("eval output is json");
+    assert_eq!(eval_json["quality_passed"], true);
+    assert_eq!(eval_json["failed_checks"], 0);
+    assert_eq!(
+        eval_json["documents"][0]["checks"]["span_bbox.000000"]["actual"]["matched"],
+        true
+    );
+}
+
+#[test]
 fn manifest_includes_page_identity_for_eval_bootstrap() {
     let dir = temp_dir("manifest-page-identity");
     let pdf_path = dir.join("identity.pdf");

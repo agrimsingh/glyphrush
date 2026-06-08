@@ -1676,6 +1676,8 @@ struct GeneratedManifestExpectations {
     quality_flag_classification: Vec<QualityFlagClassificationExpectation>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     table_structure: Vec<TableStructureExpectation>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    span_bbox: Vec<SpanBBoxExpectation>,
     silent_failures: GeneratedSilentFailuresExpectation,
     pages: Vec<GeneratedPageExpectation>,
 }
@@ -1827,7 +1829,7 @@ struct TableStructureExpectation {
     min_cell_f1: Option<f64>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct SpanBBoxExpectation {
     page: u32,
     text: String,
@@ -2193,8 +2195,8 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             glyphrush: "bounded_span_geometry_and_full_width_aware_layout_blocks",
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
-            quality_guard: "layout_uncertain_flag_and_reading_order_eval",
-            notes: "Glyphrush avoids always-on per-character metadata, preserves full-width bands before clearly separated two-column sections when span geometry is available, and escalates layout work when signals require it.",
+            quality_guard: "layout_uncertain_flag_reading_order_and_span_bbox_eval",
+            notes: "Glyphrush avoids always-on per-character metadata, preserves full-width bands before clearly separated two-column sections when span geometry is available, seeds bounded span-bbox manifest samples, and escalates layout work when signals require it.",
         },
         FeatureParityCapability {
             id: "ocr",
@@ -6556,6 +6558,7 @@ fn generated_manifest_expectations(artifact: &DocumentArtifact) -> GeneratedMani
         },
         quality_flag_classification: generated_quality_flag_classification(artifact),
         table_structure: generated_table_structure_expectations(artifact),
+        span_bbox: generated_span_bbox_expectations(artifact),
         silent_failures: GeneratedSilentFailuresExpectation { max_count: 0 },
         pages: artifact
             .pages
@@ -6608,6 +6611,60 @@ fn generated_table_structure_expectations(
             })
         })
         .collect()
+}
+
+fn generated_span_bbox_expectations(artifact: &DocumentArtifact) -> Vec<SpanBBoxExpectation> {
+    const MAX_SPAN_BBOX_EXPECTATIONS: usize = 10;
+
+    artifact
+        .pages
+        .iter()
+        .filter_map(generated_span_bbox_expectation_for_page)
+        .take(MAX_SPAN_BBOX_EXPECTATIONS)
+        .collect()
+}
+
+fn generated_span_bbox_expectation_for_page(page: &PageArtifact) -> Option<SpanBBoxExpectation> {
+    const BBOX_TOLERANCE: f32 = 0.5;
+    const MAX_SAMPLE_TEXT_CHARS: usize = 80;
+
+    page.native_spans
+        .iter()
+        .chain(page.ocr_spans.iter())
+        .filter(|span| !is_page_wide_bbox(&span.bbox, page))
+        .find(|span| is_substantive_required_text_anchor(span.text.trim()))
+        .map(|span| {
+            let text = span
+                .text
+                .trim()
+                .chars()
+                .take(MAX_SAMPLE_TEXT_CHARS)
+                .collect::<String>();
+            SpanBBoxExpectation {
+                page: page.page_index,
+                text,
+                provenance: Some(span.provenance.clone()),
+                min_x0: Some(span.bbox.x0 - BBOX_TOLERANCE),
+                max_x0: Some(span.bbox.x0 + BBOX_TOLERANCE),
+                min_y0: Some(span.bbox.y0 - BBOX_TOLERANCE),
+                max_y0: Some(span.bbox.y0 + BBOX_TOLERANCE),
+                min_x1: Some(span.bbox.x1 - BBOX_TOLERANCE),
+                max_x1: Some(span.bbox.x1 + BBOX_TOLERANCE),
+                min_y1: Some(span.bbox.y1 - BBOX_TOLERANCE),
+                max_y1: Some(span.bbox.y1 + BBOX_TOLERANCE),
+            }
+        })
+}
+
+fn is_page_wide_bbox(bbox: &BBox, page: &PageArtifact) -> bool {
+    nearly_equal_f32(bbox.x0, 0.0)
+        && nearly_equal_f32(bbox.y0, 0.0)
+        && nearly_equal_f32(bbox.x1, page.dimensions.width)
+        && nearly_equal_f32(bbox.y1, page.dimensions.height)
+}
+
+fn nearly_equal_f32(left: f32, right: f32) -> bool {
+    (left - right).abs() <= 0.001
 }
 
 fn expected_pages_for_quality(artifact: &DocumentArtifact, flag: PageQuality) -> Vec<u32> {
