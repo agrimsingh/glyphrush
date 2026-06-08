@@ -284,6 +284,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
             .unwrap()
             .contains("fragmented full-width heading rows")
     );
+    assert!(
+        span_geometry["notes"]
+            .as_str()
+            .unwrap()
+            .contains("fragmented middle cross-column bands")
+    );
 
     let cache = capability(capabilities, "artifact_cache_snapshots");
     assert_eq!(cache["glyphrush_status"], "implemented");
