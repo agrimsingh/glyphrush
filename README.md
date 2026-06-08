@@ -22,7 +22,7 @@ scripts/bench-liteparse.sh --dry-run
 
 Use `scripts/verify.sh --dry-run` to print the exact gate commands without running them. Set `GLYPHRUSH_VERIFY_PDFIUM=1` to include the PDFium-feature checks that protect the recommended LiteParse speed-race path: selected-backend feature parity and rendered-image OCR handoff. GitHub CI sets this flag so the PDFium path does not drift while the default local gate remains dependency-light.
 
-Use `scripts/bench-liteparse.sh --dry-run` to inspect the repeatable LiteParse speed gate: it preflights the baseline wrappers against the target PDFs, runs the quality-backed PDFium benchmark, and, when saving a report, verifies speed evidence through `feature-parity`. Add `GLYPHRUSH_BENCH_COVERAGE_PRESET=glyphrush-v0` when that saved report must also prove full v0 corpus coverage.
+Use `scripts/bench-liteparse.sh --dry-run` to inspect the repeatable LiteParse speed gate: it preflights the baseline wrappers against the target PDFs, runs the quality-backed PDFium benchmark, and, when saving a report, verifies speed evidence through `feature-parity`. The default script path filters the seed manifest to `datasheet`; set `GLYPHRUSH_BENCH_CATEGORY=all GLYPHRUSH_BENCH_MANIFEST=<full-manifest>` for a mixed-category corpus, and add `GLYPHRUSH_BENCH_COVERAGE_PRESET=glyphrush-v0` when that saved report must also prove full v0 corpus coverage.
 
 ```sh
 cargo run -p glyphrush-cli -- inspect test/example.pdf
@@ -39,6 +39,7 @@ cargo run -p glyphrush-cli -- --backend lopdf inspect test/example.pdf
 cargo run -p glyphrush-cli -- --backend lopdf backend-check
 cargo run -p glyphrush-cli --features pdfium -- --backend auto bench test/ --eval-manifest test/corpus.datasheets.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5
 GLYPHRUSH_BENCH_OUTPUT=.glyphrush-baselines/reports/liteparse-speed-gate.json scripts/bench-liteparse.sh
+GLYPHRUSH_BENCH_CATEGORY=all GLYPHRUSH_BENCH_MANIFEST=test/corpus.full.json GLYPHRUSH_BENCH_COVERAGE_PRESET=glyphrush-v0 GLYPHRUSH_BENCH_OUTPUT=.glyphrush-baselines/reports/liteparse-full-gate.json scripts/bench-liteparse.sh
 cargo run -p glyphrush-cli --features pdfium -- --backend pdfium backend-check
 cargo run -p glyphrush-cli --features pdfium -- --backend pdfium backend-check --pdf test/
 cargo run -p glyphrush-cli --features pdfium -- --backend pdfium bench test/ --baseline-preset glyphrush-v0

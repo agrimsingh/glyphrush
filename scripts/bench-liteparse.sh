@@ -48,7 +48,6 @@ cmd=(
   --backend "$backend"
   bench "$pdf_dir"
   --eval-manifest "$manifest"
-  --eval-category "$category"
   --baseline-preset glyphrush-v0
   --require-baselines
   --require-baseline-quality
@@ -57,6 +56,10 @@ cmd=(
   --baseline-timeout-ms "$baseline_timeout_ms"
   --jobs "$jobs"
 )
+
+if [[ "$category" != "all" ]]; then
+  cmd+=(--eval-category "$category")
+fi
 
 if [[ -n "$coverage_preset" ]]; then
   cmd+=(--require-coverage-preset "$coverage_preset")

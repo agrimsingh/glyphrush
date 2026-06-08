@@ -58,9 +58,12 @@ Use `manifest` to bootstrap a passing structural manifest after adding PDFs. The
 cargo run -p glyphrush-cli -- manifest test/ > test/corpus.generated.json
 cargo run -p glyphrush-cli -- manifest test/ --category clean_digital --coverage-preset glyphrush-v0 > test/corpus.generated.json
 cargo run -p glyphrush-cli -- eval test/corpus.generated.json
+GLYPHRUSH_BENCH_CATEGORY=all GLYPHRUSH_BENCH_MANIFEST=test/corpus.generated.json GLYPHRUSH_BENCH_COVERAGE_PRESET=glyphrush-v0 GLYPHRUSH_BENCH_OUTPUT=.glyphrush-baselines/reports/liteparse-full-gate.json scripts/bench-liteparse.sh
 ```
 
 Use `--coverage-preset glyphrush-v0` when building the broader benchmark corpus rather than a single-category manifest. It requires at least one PDF in each core v0 class: `clean_digital`, `scanned`, `hybrid`, `academic_columns`, `tables`, `forms`, `rotated`, `weird_encoding`, and `large`. If only one category has been labeled so far, `eval` should fail coverage until the missing classes are added.
+
+The LiteParse speed gate defaults to the datasheet seed category. Set `GLYPHRUSH_BENCH_CATEGORY=all` when the manifest contains multiple benchmark classes so the script does not pass `--eval-category datasheet` and accidentally filter the full coverage corpus back down to one class.
 
 `test/corpus.datasheets.json` is a local seed manifest for the datasheet PDFs currently used in this workspace. It requires the `datasheet` category with five documents, pins each PDF's SHA-256 fingerprint and byte size to catch source drift, then gates page counts, image artifact counts, OCR-required pages, selected text recall anchors, known fallback pages, and `silent_failures: 0`.
 
