@@ -694,6 +694,12 @@ pub fn parse_extracted_pages(
                     run_table_recovery,
                 )
             };
+            if artifact.layout_blocks.is_empty()
+                && let Some(figure_block) =
+                    figure_block_from_image_artifacts(page.page_index, &artifact.image_artifacts)
+            {
+                artifact.layout_blocks.push(figure_block);
+            }
             if !artifact.layout_blocks.is_empty() {
                 artifact.timings.layout_us = layout_start
                     .elapsed()
@@ -958,6 +964,25 @@ fn layout_blocks_from_text(
             }
         })
         .collect()
+}
+
+fn figure_block_from_image_artifacts(
+    page_index: u32,
+    images: &[ImageArtifact],
+) -> Option<LayoutBlock> {
+    let mut images = images.iter();
+    let first = images.next()?;
+    let bbox = images.fold(first.bbox.clone(), |bbox, image| {
+        union_bboxes(&bbox, &image.bbox)
+    });
+
+    Some(LayoutBlock {
+        block_id: format!("p{page_index:06}:b000000"),
+        bbox,
+        text: String::new(),
+        kind: LayoutBlockKind::Figure,
+        table: None,
+    })
 }
 
 fn layout_blocks_from_native_spans(

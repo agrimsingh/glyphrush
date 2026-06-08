@@ -1,6 +1,6 @@
 use glyphrush_core::{
-    BBox, ExtractedImage, ExtractedPage, ExtractedTextSpan, PageDimensions, PageQuality, PageRoute,
-    PageSignals, PageTimings, SpanProvenance, parse_extracted_pages,
+    BBox, ExtractedImage, ExtractedPage, ExtractedTextSpan, LayoutBlockKind, PageDimensions,
+    PageQuality, PageRoute, PageSignals, PageTimings, SpanProvenance, parse_extracted_pages,
 };
 
 #[test]
@@ -211,6 +211,62 @@ fn extracted_image_artifacts_are_preserved_without_pixel_payloads() {
     assert_eq!(image.bbox.x1, 612.0);
     assert_eq!(image.bbox.y1, 792.0);
     assert_eq!(image.area_ratio, 1.0);
+}
+
+#[test]
+fn image_only_pages_expose_figure_layout_without_faking_text() {
+    let artifact = parse_extracted_pages(
+        "doc-image-only".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: String::new(),
+            native_spans: Vec::new(),
+            image_artifacts: vec![ExtractedImage {
+                bbox: BBox {
+                    x0: 12.0,
+                    y0: 24.0,
+                    x1: 580.0,
+                    y1: 760.0,
+                },
+                area_ratio: 0.86,
+                source_name: Some("ScanImage".to_string()),
+            }],
+            signals: PageSignals {
+                page_index: 0,
+                dimensions: PageDimensions::new(612.0, 792.0),
+                native_span_count: 0,
+                native_text_bytes: 0,
+                glyph_count: 0,
+                image_area_ratio: 0.86,
+                duplicate_char_ratio: 0.0,
+                bbox_overlap_ratio: 0.0,
+                broken_encoding_ratio: 0.0,
+                rotation_degrees: 0,
+                table_line_density: 0.0,
+                annotation_count: 0,
+                form_field_count: 0,
+                huge_object_count: 0,
+                span_geometry_capped: false,
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.route.route, PageRoute::OcrFallback);
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Figure);
+    assert_eq!(page.layout_blocks[0].text, "");
+    assert_eq!(page.layout_blocks[0].bbox.x0, 12.0);
+    assert_eq!(page.layout_blocks[0].bbox.y0, 24.0);
+    assert_eq!(page.layout_blocks[0].bbox.x1, 580.0);
+    assert_eq!(page.layout_blocks[0].bbox.y1, 760.0);
+    assert_eq!(
+        artifact.global_diagnostics.warnings,
+        vec!["p000000: requires_ocr_without_ocr_output"]
+    );
 }
 
 #[test]
