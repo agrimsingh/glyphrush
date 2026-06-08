@@ -1447,8 +1447,10 @@ fn positioned_row_is_spanning_table_section(
     row: &[&TextSpan],
     columns: &[(f32, f32)],
     tolerance: f32,
+    row_index: usize,
+    row_count: usize,
 ) -> bool {
-    if row.len() != 1 || columns.len() < 2 {
+    if row.len() != 1 || columns.len() < 2 || row_index == 0 || row_index + 1 >= row_count {
         return false;
     }
 
@@ -1475,7 +1477,7 @@ fn positioned_row_is_table_section(
     row_index: usize,
     row_count: usize,
 ) -> bool {
-    positioned_row_is_spanning_table_section(row, columns, tolerance)
+    positioned_row_is_spanning_table_section(row, columns, tolerance, row_index, row_count)
         || positioned_row_is_first_column_table_section(
             row, columns, tolerance, row_index, row_count,
         )

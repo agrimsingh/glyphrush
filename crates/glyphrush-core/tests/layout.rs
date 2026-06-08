@@ -1569,6 +1569,99 @@ fn positioned_table_recovery_preserves_surrounding_text_blocks() {
 }
 
 #[test]
+fn positioned_table_recovery_keeps_top_caption_outside_table_grid() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-table-top-caption".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "ELECTRICAL CHARACTERISTICS\n",
+                "Parameter\n",
+                "Symbol\n",
+                "Typ\n",
+                "Max\n",
+                "Unit\n",
+                "Input voltage\n",
+                "VIN\n",
+                "3.3\n",
+                "5.5\n",
+                "V\n",
+                "Current limit\n",
+                "ILIM\n",
+                "650\n",
+                "900\n",
+                "mA"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("ELECTRICAL CHARACTERISTICS", 72.0, 72.0, 450.0, 86.0),
+                span("Parameter", 72.0, 120.0, 140.0, 134.0),
+                span("Symbol", 220.0, 120.0, 270.0, 134.0),
+                span("Typ", 300.0, 120.0, 330.0, 134.0),
+                span("Max", 360.0, 120.0, 390.0, 134.0),
+                span("Unit", 420.0, 120.0, 450.0, 134.0),
+                span("Input voltage", 72.0, 152.0, 160.0, 166.0),
+                span("VIN", 220.0, 152.0, 248.0, 166.0),
+                span("3.3", 300.0, 152.0, 326.0, 166.0),
+                span("5.5", 360.0, 152.0, 386.0, 166.0),
+                span("V", 420.0, 152.0, 430.0, 166.0),
+                span("Current limit", 72.0, 184.0, 160.0, 198.0),
+                span("ILIM", 220.0, 184.0, 252.0, 198.0),
+                span("650", 300.0, 184.0, 326.0, 198.0),
+                span("900", 360.0, 184.0, 386.0, 198.0),
+                span("mA", 420.0, 184.0, 440.0, 198.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 16,
+                native_text_bytes: 138,
+                glyph_count: 108,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 2);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Heading);
+    assert_eq!(page.layout_blocks[0].text, "ELECTRICAL CHARACTERISTICS");
+    assert_eq!(page.layout_blocks[1].kind, LayoutBlockKind::Table);
+    assert_eq!(
+        page.layout_blocks[1].text,
+        concat!(
+            "Parameter Symbol Typ Max Unit\n",
+            "Input voltage VIN 3.3 5.5 V\n",
+            "Current limit ILIM 650 900 mA"
+        )
+    );
+
+    let table = page.layout_blocks[1].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Parameter", "Symbol", "Typ", "Max", "Unit"],
+            vec!["Input voltage", "VIN", "3.3", "5.5", "V"],
+            vec!["Current limit", "ILIM", "650", "900", "mA"],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_merges_leading_descriptor_cells_from_header_columns() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-text-table".to_string(),

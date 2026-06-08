@@ -288,7 +288,13 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         table_recovery["notes"]
             .as_str()
             .unwrap()
-            .contains("aligned whitespace and positioned section rows")
+            .contains("aligned whitespace and positioned interior section rows")
+    );
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
+            .contains("keeps positioned captions outside table grids")
     );
     assert!(
         table_recovery["notes"]
