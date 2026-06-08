@@ -1604,7 +1604,7 @@ fn merge_wrapped_positioned_table_rows<'a>(rows: Vec<Vec<&'a TextSpan>>) -> Vec<
 }
 
 fn looks_like_positioned_table_continuation_row(previous: &[&TextSpan], row: &[&TextSpan]) -> bool {
-    if row.is_empty() || previous.len() < 2 || row.len() != 1 {
+    if row.is_empty() || previous.len() < 2 || row.len() >= previous.len() {
         return false;
     }
 
@@ -1625,8 +1625,19 @@ fn looks_like_positioned_table_continuation_row(previous: &[&TextSpan], row: &[&
 
     let columns = columns_from_row(previous);
     let tolerance = table_column_x_tolerance(&[previous.to_vec(), row.to_vec()]);
-    row.iter()
-        .all(|span| nearest_positioned_column_index(span, &columns, tolerance).is_some())
+    let mut previous_column_index = None;
+
+    for span in row {
+        let Some(column_index) = nearest_positioned_column_index(span, &columns, tolerance) else {
+            return false;
+        };
+        if previous_column_index.is_some_and(|previous| column_index <= previous) {
+            return false;
+        }
+        previous_column_index = Some(column_index);
+    }
+
+    true
 }
 
 fn sort_positioned_table_row(row: &mut [&TextSpan]) {

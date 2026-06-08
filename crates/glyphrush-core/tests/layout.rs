@@ -729,6 +729,85 @@ fn positioned_table_recovery_merges_wrapped_descriptor_cells() {
 }
 
 #[test]
+fn positioned_table_recovery_merges_multi_cell_wrapped_continuations() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-table-multi-cell-continuation".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Parameter\n",
+                "Symbol\n",
+                "Condition\n",
+                "Typ\n",
+                "Max\n",
+                "Input\n",
+                "VIN\n",
+                "No\n",
+                "3.3\n",
+                "5.5\n",
+                "voltage\n",
+                "load"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                span("Symbol", 180.0, 100.0, 230.0, 114.0),
+                span("Condition", 260.0, 100.0, 330.0, 114.0),
+                span("Typ", 380.0, 100.0, 410.0, 114.0),
+                span("Max", 440.0, 100.0, 470.0, 114.0),
+                span("Input", 72.0, 132.0, 110.0, 146.0),
+                span("VIN", 180.0, 132.0, 208.0, 146.0),
+                span("No", 260.0, 132.0, 278.0, 146.0),
+                span("3.3", 380.0, 132.0, 406.0, 146.0),
+                span("5.5", 440.0, 132.0, 466.0, 146.0),
+                span("voltage", 72.0, 148.0, 126.0, 162.0),
+                span("load", 260.0, 148.0, 294.0, 162.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 12,
+                native_text_bytes: 72,
+                glyph_count: 58,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        "Parameter Symbol Condition Typ Max\nInput voltage VIN No load 3.3 5.5"
+    );
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Parameter", "Symbol", "Condition", "Typ", "Max"],
+            vec!["Input voltage", "VIN", "No load", "3.3", "5.5"],
+        ]
+    );
+    assert_eq!(table.rows[1].cells[0].bbox.as_ref().unwrap().y1, 162.0);
+    assert_eq!(table.rows[1].cells[2].bbox.as_ref().unwrap().y1, 162.0);
+}
+
+#[test]
 fn positioned_table_recovery_preserves_surrounding_text_blocks() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-with-context".to_string(),
