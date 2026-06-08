@@ -214,6 +214,8 @@ enum Commands {
         require_baselines: bool,
         #[arg(long)]
         require_baseline_quality: bool,
+        #[arg(long, value_name = "BASELINE=RATIO")]
+        require_speedup: Vec<BenchmarkSpeedupRequirement>,
         #[arg(long)]
         cache_probe: bool,
         #[arg(long)]
@@ -698,11 +700,12 @@ struct RunConfiguration {
     ocr_timeout_ms: u64,
 }
 
-#[derive(Clone, Copy, Debug, Default, Serialize)]
+#[derive(Clone, Debug, Default, Serialize)]
 struct BenchmarkRequirements {
     require_quality: bool,
     require_baselines: bool,
     require_baseline_quality: bool,
+    require_speedups: Vec<BenchmarkSpeedupRequirement>,
 }
 
 #[derive(Debug, Serialize)]
@@ -844,6 +847,12 @@ struct CategoryCountSpec {
     count: usize,
 }
 
+#[derive(Clone, Debug, Serialize)]
+struct BenchmarkSpeedupRequirement {
+    baseline: String,
+    min_glyphrush_speedup: f64,
+}
+
 impl FromStr for BaselineSpec {
     type Err = String;
 
@@ -864,6 +873,36 @@ impl FromStr for BaselineSpec {
         Ok(Self {
             name: name.to_string(),
             command: PathBuf::from(command),
+        })
+    }
+}
+
+impl FromStr for BenchmarkSpeedupRequirement {
+    type Err = String;
+
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
+        let (baseline, speedup) = value
+            .split_once('=')
+            .ok_or_else(|| "speedup requirement must use BASELINE=RATIO".to_string())?;
+        let baseline = baseline.trim();
+        let speedup = speedup.trim();
+
+        if baseline.is_empty() {
+            return Err("speedup baseline name cannot be empty".to_string());
+        }
+        if speedup.is_empty() {
+            return Err("speedup ratio cannot be empty".to_string());
+        }
+        let min_glyphrush_speedup = speedup
+            .parse::<f64>()
+            .map_err(|_| "speedup ratio must be a number".to_string())?;
+        if !min_glyphrush_speedup.is_finite() || min_glyphrush_speedup <= 0.0 {
+            return Err("speedup ratio must be a positive finite number".to_string());
+        }
+
+        Ok(Self {
+            baseline: baseline.to_string(),
+            min_glyphrush_speedup,
         })
     }
 }
@@ -1665,7 +1704,10 @@ struct BenchRunConfig<'a> {
     baselines: &'a [BaselineSpec],
     requested_baseline_presets: &'a [&'static str],
     baseline_timeout: Duration,
-    requirements: BenchmarkRequirements,
+    require_quality: bool,
+    require_baselines: bool,
+    require_baseline_quality: bool,
+    required_speedups: &'a [BenchmarkSpeedupRequirement],
 }
 
 #[derive(Clone, Copy)]
@@ -2216,6 +2258,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             require_quality,
             require_baselines,
             require_baseline_quality,
+            require_speedup,
             cache_probe,
             span_geometry,
             baseline,
@@ -2235,11 +2278,6 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             )?;
             let requested_baseline_presets = baseline_preset_names(baseline_preset);
             let baseline_specs = baseline_specs_with_preset(&baseline, baseline_preset);
-            let requirements = BenchmarkRequirements {
-                require_quality,
-                require_baselines,
-                require_baseline_quality,
-            };
             let bench_config = BenchRunConfig {
                 ocr,
                 cache_dir: cache_dir.as_deref(),
@@ -2249,7 +2287,10 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 baselines: &baseline_specs,
                 requested_baseline_presets: &requested_baseline_presets,
                 baseline_timeout: Duration::from_millis(baseline_timeout_ms),
-                requirements,
+                require_quality,
+                require_baselines,
+                require_baseline_quality,
+                required_speedups: &require_speedup,
             };
             let run_configuration = run_configuration(ocr, options);
             let baseline_quality = eval_manifest_path
@@ -2312,6 +2353,11 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 {
                     bail!("{error}");
                 }
+                if let Some(error) =
+                    corpus_baseline_speedup_requirement_error(&output.baselines, &require_speedup)
+                {
+                    bail!("{error}");
+                }
             } else {
                 let mut output = bench_pdf(
                     backend,
@@ -2361,6 +2407,11 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 }
                 if require_baseline_quality
                     && let Some(error) = baseline_quality_requirement_error(&output.baselines)
+                {
+                    bail!("{error}");
+                }
+                if let Some(error) =
+                    baseline_speedup_requirement_error(&output.baselines, &require_speedup)
                 {
                     bail!("{error}");
                 }
@@ -3065,7 +3116,7 @@ fn bench_corpus<B: PdfBackend + Sync>(
         backend: backend.name(),
         run_metadata: benchmark_run_metadata(backend),
         run_configuration: run_configuration(config.ocr, config.extraction),
-        requirements: config.requirements,
+        requirements: benchmark_requirements(config),
         requested_baseline_presets: config.requested_baseline_presets.to_vec(),
         document_count: documents.len(),
         page_count,
@@ -3281,7 +3332,7 @@ fn bench_pdf<B: PdfBackend>(
         backend: backend.name(),
         run_metadata: benchmark_run_metadata(backend),
         run_configuration: run_configuration(config.ocr, config.extraction),
-        requirements: config.requirements,
+        requirements: benchmark_requirements(config),
         requested_baseline_presets: config.requested_baseline_presets.to_vec(),
         metadata: artifact.metadata.clone(),
         document_fingerprint: artifact.document_fingerprint.clone(),
@@ -3343,6 +3394,15 @@ fn run_configuration(ocr: OcrOptions<'_>, options: ExtractionOptions) -> RunConf
     }
 }
 
+fn benchmark_requirements(config: BenchRunConfig<'_>) -> BenchmarkRequirements {
+    BenchmarkRequirements {
+        require_quality: config.require_quality,
+        require_baselines: config.require_baselines,
+        require_baseline_quality: config.require_baseline_quality,
+        require_speedups: config.required_speedups.to_vec(),
+    }
+}
+
 fn run_cache_probe<B: PdfBackend>(
     backend: &B,
     path: &Path,
@@ -3360,7 +3420,10 @@ fn run_cache_probe<B: PdfBackend>(
         baselines: &[],
         requested_baseline_presets: &[],
         baseline_timeout: Duration::from_millis(DEFAULT_BASELINE_TIMEOUT_MS),
-        requirements: BenchmarkRequirements::default(),
+        require_quality: false,
+        require_baselines: false,
+        require_baseline_quality: false,
+        required_speedups: &[],
     };
     let warm_bench = bench_pdf(backend, path, warm_config, None)?;
     let warm = cache_probe_run_from_bench(&warm_bench);
@@ -3946,6 +4009,72 @@ fn corpus_baseline_quality_requirement_error(
     (failed > 0).then(|| {
         format!("bench baseline quality required: {failed} baseline quality document run(s) failed")
     })
+}
+
+fn baseline_speedup_requirement_error(
+    baselines: &[BaselineBenchOutput],
+    requirements: &[BenchmarkSpeedupRequirement],
+) -> Option<String> {
+    for requirement in requirements {
+        let Some(baseline) = baselines
+            .iter()
+            .find(|baseline| baseline.name == requirement.baseline)
+        else {
+            return Some(format!(
+                "bench speedup required: baseline {} was not run",
+                requirement.baseline
+            ));
+        };
+        if !baseline.comparison.speed_comparable {
+            return Some(format!(
+                "bench speedup required: baseline {} is not speed-comparable",
+                requirement.baseline
+            ));
+        }
+        if baseline.comparison.glyphrush_speedup < requirement.min_glyphrush_speedup {
+            return Some(format!(
+                "bench speedup required: baseline {} glyphrush_speedup {:.3} below required {:.3}",
+                requirement.baseline,
+                baseline.comparison.glyphrush_speedup,
+                requirement.min_glyphrush_speedup
+            ));
+        }
+    }
+
+    None
+}
+
+fn corpus_baseline_speedup_requirement_error(
+    baselines: &[CorpusBaselineBenchOutput],
+    requirements: &[BenchmarkSpeedupRequirement],
+) -> Option<String> {
+    for requirement in requirements {
+        let Some(baseline) = baselines
+            .iter()
+            .find(|baseline| baseline.name == requirement.baseline)
+        else {
+            return Some(format!(
+                "bench speedup required: baseline {} was not run",
+                requirement.baseline
+            ));
+        };
+        if !baseline.comparison.speed_comparable {
+            return Some(format!(
+                "bench speedup required: baseline {} is not speed-comparable",
+                requirement.baseline
+            ));
+        }
+        if baseline.comparison.glyphrush_speedup < requirement.min_glyphrush_speedup {
+            return Some(format!(
+                "bench speedup required: baseline {} glyphrush_speedup {:.3} below required {:.3}",
+                requirement.baseline,
+                baseline.comparison.glyphrush_speedup,
+                requirement.min_glyphrush_speedup
+            ));
+        }
+    }
+
+    None
 }
 
 fn baseline_check<B: PdfBackend>(

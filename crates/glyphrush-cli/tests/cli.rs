@@ -3514,6 +3514,56 @@ fn bench_runs_named_external_baseline_and_reports_metrics() {
 }
 
 #[test]
+fn bench_require_speedup_rejects_slow_glyphrush_after_writing_json() {
+    let pdf_path = write_test_pdf("bench-require-speedup", "Require speedup");
+    let baseline = write_baseline_script("baseline-fast", "printf 'fast baseline'");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--require-speedup",
+            "mock=1000000.0",
+        ])
+        .output()
+        .expect("run glyphrush bench requiring speedup");
+
+    assert!(!output.status.success());
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+    let baseline = &json["baselines"][0];
+
+    assert_eq!(
+        json["requirements"]["require_speedups"],
+        serde_json::json!([
+            {
+                "baseline": "mock",
+                "min_glyphrush_speedup": 1000000.0
+            }
+        ])
+    );
+    assert_eq!(baseline["name"], "mock");
+    assert_eq!(baseline["success"], true);
+    assert!(
+        baseline["comparison"]["speed_comparable"]
+            .as_bool()
+            .unwrap()
+    );
+    assert!(
+        baseline["comparison"]["glyphrush_speedup"]
+            .as_f64()
+            .unwrap()
+            < 1000000.0
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("bench speedup required"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn bench_includes_external_baseline_description_when_available() {
     let pdf_path = write_test_pdf("bench-baseline-describe", "Hello Baseline Describe");
     let baseline = write_baseline_script(
@@ -6163,6 +6213,60 @@ fn bench_directory_require_baselines_rejects_partial_failures_after_writing_json
     assert_eq!(baseline_summary["failure_samples"][0]["path"], "b.pdf");
     assert!(
         String::from_utf8_lossy(&output.stderr).contains("bench baselines required"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn bench_directory_require_speedup_rejects_slow_glyphrush_after_writing_json() {
+    let dir = temp_dir("bench-dir-require-speedup");
+    fs::write(dir.join("b.pdf"), minimal_pdf("Second speedup baseline")).unwrap();
+    fs::write(dir.join("a.pdf"), minimal_pdf("First speedup baseline")).unwrap();
+    let baseline = write_baseline_script("baseline-dir-fast", "printf 'fast baseline'");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "bench",
+            dir.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--require-speedup",
+            "mock=1000000.0",
+        ])
+        .output()
+        .expect("run glyphrush directory bench requiring speedup");
+
+    assert!(!output.status.success());
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+    let baseline_summary = &json["baselines"][0];
+
+    assert_eq!(
+        json["requirements"]["require_speedups"],
+        serde_json::json!([
+            {
+                "baseline": "mock",
+                "min_glyphrush_speedup": 1000000.0
+            }
+        ])
+    );
+    assert_eq!(baseline_summary["name"], "mock");
+    assert_eq!(baseline_summary["successful_documents"], 2);
+    assert_eq!(baseline_summary["failed_documents"], 0);
+    assert!(
+        baseline_summary["comparison"]["speed_comparable"]
+            .as_bool()
+            .unwrap()
+    );
+    assert!(
+        baseline_summary["comparison"]["glyphrush_speedup"]
+            .as_f64()
+            .unwrap()
+            < 1000000.0
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("bench speedup required"),
         "stderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );
