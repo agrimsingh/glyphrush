@@ -562,6 +562,7 @@ struct BenchOutput {
     run_metadata: BenchmarkRunMetadata,
     run_configuration: RunConfiguration,
     requirements: BenchmarkRequirements,
+    speedup_claims: Vec<BenchmarkSpeedupClaim>,
     requested_baseline_presets: Vec<&'static str>,
     metadata: DocumentMetadata,
     document_fingerprint: String,
@@ -617,6 +618,7 @@ struct CorpusBenchOutput {
     run_metadata: BenchmarkRunMetadata,
     run_configuration: RunConfiguration,
     requirements: BenchmarkRequirements,
+    speedup_claims: Vec<BenchmarkSpeedupClaim>,
     requested_baseline_presets: Vec<&'static str>,
     document_count: usize,
     page_count: usize,
@@ -781,6 +783,45 @@ struct BenchmarkRequirements {
     require_baselines: bool,
     require_baseline_quality: bool,
     require_speedups: Vec<BenchmarkSpeedupRequirement>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct BenchmarkSpeedupClaim {
+    baseline: String,
+    required_glyphrush_speedup: f64,
+    actual_glyphrush_speedup: f64,
+    speed_comparable: bool,
+    speed_passed: bool,
+    glyphrush_quality_checked: bool,
+    glyphrush_quality_passed: bool,
+    baseline_quality_checked: bool,
+    baseline_quality_passed: bool,
+    quality_backed: bool,
+    claim_passed: bool,
+    status: BenchmarkSpeedupClaimStatus,
+}
+
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum BenchmarkSpeedupClaimStatus {
+    Passed,
+    BaselineNotRun,
+    NotSpeedComparable,
+    SpeedupFailed,
+    QualityNotChecked,
+    QualityFailed,
+}
+
+struct BenchmarkSpeedupClaimInput<'a> {
+    requirement: &'a BenchmarkSpeedupRequirement,
+    baseline_was_run: bool,
+    actual_glyphrush_speedup: f64,
+    speed_comparable: bool,
+    speed_passed: bool,
+    glyphrush_quality_checked: bool,
+    glyphrush_quality_passed: bool,
+    baseline_quality_checked: bool,
+    baseline_quality_passed: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -2869,6 +2910,12 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                     .as_ref()
                     .map(|quality| quality.failed_checks)
                     .unwrap_or_default();
+                output.speedup_claims = corpus_speedup_claims(
+                    &output.baselines,
+                    &require_speedup,
+                    &output.quality_status,
+                    output.quality.as_ref(),
+                );
                 write_json(&output)?;
                 if failed_checks > 0 {
                     bail!("bench quality failed: {failed_checks} check(s) failed");
@@ -2927,6 +2974,12 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                     .as_ref()
                     .map(|quality| quality.failed_checks)
                     .unwrap_or_default();
+                output.speedup_claims = speedup_claims(
+                    &output.baselines,
+                    &require_speedup,
+                    &output.quality_status,
+                    output.quality.as_ref(),
+                );
                 write_json(&output)?;
                 if failed_checks > 0 {
                     bail!("bench quality failed: {failed_checks} check(s) failed");
@@ -3699,6 +3752,7 @@ fn bench_corpus<B: PdfBackend + Sync>(
         run_metadata: benchmark_run_metadata(backend),
         run_configuration: run_configuration(config.ocr, config.extraction),
         requirements: benchmark_requirements(config),
+        speedup_claims: Vec::new(),
         requested_baseline_presets: config.requested_baseline_presets.to_vec(),
         document_count: documents.len(),
         page_count,
@@ -3915,6 +3969,7 @@ fn bench_pdf<B: PdfBackend>(
         run_metadata: benchmark_run_metadata(backend),
         run_configuration: run_configuration(config.ocr, config.extraction),
         requirements: benchmark_requirements(config),
+        speedup_claims: Vec::new(),
         requested_baseline_presets: config.requested_baseline_presets.to_vec(),
         metadata: artifact.metadata.clone(),
         document_fingerprint: artifact.document_fingerprint.clone(),
@@ -4592,6 +4647,130 @@ fn corpus_baseline_quality_requirement_error(
     (failed > 0).then(|| {
         format!("bench baseline quality required: {failed} baseline quality document run(s) failed")
     })
+}
+
+fn speedup_claims(
+    baselines: &[BaselineBenchOutput],
+    requirements: &[BenchmarkSpeedupRequirement],
+    glyphrush_quality_status: &BenchQualityStatus,
+    glyphrush_quality: Option<&EvalOutput>,
+) -> Vec<BenchmarkSpeedupClaim> {
+    let glyphrush_quality_checked = matches!(glyphrush_quality_status, BenchQualityStatus::Checked);
+    let glyphrush_quality_passed = glyphrush_quality
+        .is_some_and(|quality| quality.quality_passed && quality.failed_checks == 0);
+
+    requirements
+        .iter()
+        .map(|requirement| {
+            let baseline = baselines
+                .iter()
+                .find(|baseline| baseline.name == requirement.baseline);
+            let comparison = baseline.map(|baseline| baseline.comparison);
+            let actual_glyphrush_speedup =
+                comparison.map_or(0.0, |comparison| comparison.glyphrush_speedup);
+            let speed_comparable = comparison.is_some_and(|comparison| comparison.speed_comparable);
+            let speed_passed =
+                speed_comparable && actual_glyphrush_speedup >= requirement.min_glyphrush_speedup;
+            let baseline_quality_checked = baseline.is_some_and(|baseline| {
+                matches!(baseline.quality_status, BaselineQualityStatus::Checked)
+            });
+            let baseline_quality_passed = baseline
+                .and_then(|baseline| baseline.quality.as_ref())
+                .is_some_and(|quality| quality.passed);
+            speedup_claim(BenchmarkSpeedupClaimInput {
+                requirement,
+                baseline_was_run: baseline.is_some(),
+                actual_glyphrush_speedup,
+                speed_comparable,
+                speed_passed,
+                glyphrush_quality_checked,
+                glyphrush_quality_passed,
+                baseline_quality_checked,
+                baseline_quality_passed,
+            })
+        })
+        .collect()
+}
+
+fn corpus_speedup_claims(
+    baselines: &[CorpusBaselineBenchOutput],
+    requirements: &[BenchmarkSpeedupRequirement],
+    glyphrush_quality_status: &BenchQualityStatus,
+    glyphrush_quality: Option<&EvalOutput>,
+) -> Vec<BenchmarkSpeedupClaim> {
+    let glyphrush_quality_checked = matches!(glyphrush_quality_status, BenchQualityStatus::Checked);
+    let glyphrush_quality_passed = glyphrush_quality
+        .is_some_and(|quality| quality.quality_passed && quality.failed_checks == 0);
+
+    requirements
+        .iter()
+        .map(|requirement| {
+            let baseline = baselines
+                .iter()
+                .find(|baseline| baseline.name == requirement.baseline);
+            let comparison = baseline.map(|baseline| baseline.comparison);
+            let actual_glyphrush_speedup =
+                comparison.map_or(0.0, |comparison| comparison.glyphrush_speedup);
+            let speed_comparable = comparison.is_some_and(|comparison| comparison.speed_comparable);
+            let speed_passed =
+                speed_comparable && actual_glyphrush_speedup >= requirement.min_glyphrush_speedup;
+            let baseline_quality_checked = baseline.is_some_and(|baseline| {
+                matches!(
+                    baseline.quality_status,
+                    CorpusBaselineQualityStatus::Checked
+                )
+            });
+            let baseline_quality_passed = baseline_quality_checked
+                && baseline.is_some_and(|baseline| {
+                    baseline.quality_documents > 0 && baseline.quality_failed_documents == 0
+                });
+            speedup_claim(BenchmarkSpeedupClaimInput {
+                requirement,
+                baseline_was_run: baseline.is_some(),
+                actual_glyphrush_speedup,
+                speed_comparable,
+                speed_passed,
+                glyphrush_quality_checked,
+                glyphrush_quality_passed,
+                baseline_quality_checked,
+                baseline_quality_passed,
+            })
+        })
+        .collect()
+}
+
+fn speedup_claim(input: BenchmarkSpeedupClaimInput<'_>) -> BenchmarkSpeedupClaim {
+    let quality_checked = input.glyphrush_quality_checked && input.baseline_quality_checked;
+    let quality_backed =
+        quality_checked && input.glyphrush_quality_passed && input.baseline_quality_passed;
+    let status = if !input.baseline_was_run {
+        BenchmarkSpeedupClaimStatus::BaselineNotRun
+    } else if !input.speed_comparable {
+        BenchmarkSpeedupClaimStatus::NotSpeedComparable
+    } else if !input.speed_passed {
+        BenchmarkSpeedupClaimStatus::SpeedupFailed
+    } else if !quality_checked {
+        BenchmarkSpeedupClaimStatus::QualityNotChecked
+    } else if !quality_backed {
+        BenchmarkSpeedupClaimStatus::QualityFailed
+    } else {
+        BenchmarkSpeedupClaimStatus::Passed
+    };
+
+    BenchmarkSpeedupClaim {
+        baseline: input.requirement.baseline.clone(),
+        required_glyphrush_speedup: input.requirement.min_glyphrush_speedup,
+        actual_glyphrush_speedup: input.actual_glyphrush_speedup,
+        speed_comparable: input.speed_comparable,
+        speed_passed: input.speed_passed,
+        glyphrush_quality_checked: input.glyphrush_quality_checked,
+        glyphrush_quality_passed: input.glyphrush_quality_passed,
+        baseline_quality_checked: input.baseline_quality_checked,
+        baseline_quality_passed: input.baseline_quality_passed,
+        quality_backed,
+        claim_passed: matches!(status, BenchmarkSpeedupClaimStatus::Passed),
+        status,
+    }
 }
 
 fn baseline_speedup_requirement_error(

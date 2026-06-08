@@ -3968,6 +3968,18 @@ fn bench_require_speedup_rejects_slow_glyphrush_after_writing_json() {
             .unwrap()
             < 1000000.0
     );
+    let claim = &json["speedup_claims"][0];
+    assert_eq!(claim["baseline"], "mock");
+    assert_eq!(claim["required_glyphrush_speedup"], 1000000.0);
+    assert!(
+        claim["actual_glyphrush_speedup"].as_f64().unwrap() < 1000000.0,
+        "claim should preserve measured speedup: {claim:?}"
+    );
+    assert_eq!(claim["speed_comparable"], true);
+    assert_eq!(claim["speed_passed"], false);
+    assert_eq!(claim["quality_backed"], false);
+    assert_eq!(claim["claim_passed"], false);
+    assert_eq!(claim["status"], "speedup_failed");
     assert!(
         String::from_utf8_lossy(&output.stderr).contains("bench speedup required"),
         "stderr: {}",
@@ -6683,6 +6695,18 @@ fn bench_directory_require_speedup_rejects_slow_glyphrush_after_writing_json() {
             .unwrap()
             < 1000000.0
     );
+    let claim = &json["speedup_claims"][0];
+    assert_eq!(claim["baseline"], "mock");
+    assert_eq!(claim["required_glyphrush_speedup"], 1000000.0);
+    assert!(
+        claim["actual_glyphrush_speedup"].as_f64().unwrap() < 1000000.0,
+        "claim should preserve measured speedup: {claim:?}"
+    );
+    assert_eq!(claim["speed_comparable"], true);
+    assert_eq!(claim["speed_passed"], false);
+    assert_eq!(claim["quality_backed"], false);
+    assert_eq!(claim["claim_passed"], false);
+    assert_eq!(claim["status"], "speedup_failed");
     assert!(
         String::from_utf8_lossy(&output.stderr).contains("bench speedup required"),
         "stderr: {}",
