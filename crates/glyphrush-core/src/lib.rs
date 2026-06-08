@@ -2792,6 +2792,13 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
         return;
     }
 
+    if let Some(split_blocks) =
+        split_package_pin_description_table_blocks(lines, run_table_recovery)
+    {
+        blocks.extend(split_blocks);
+        return;
+    }
+
     if let Some((caption, table_lines)) =
         split_leading_text_table_caption(lines, run_table_recovery)
     {
@@ -2816,6 +2823,43 @@ fn split_embedded_pin_function_table_blocks(
         .iter()
         .position(|line| is_pin_function_table_header(line))?;
     let (_, consumed_table_lines) = pin_function_table_rows_prefix(&refs[header_index..])?;
+
+    let caption_index = header_index
+        .checked_sub(1)
+        .filter(|index| looks_like_pin_function_table_caption(refs[*index]));
+    let prefix_end = caption_index.unwrap_or(header_index);
+
+    let mut blocks = Vec::new();
+    if prefix_end > 0 {
+        blocks.push(reflow_text_block(&lines[..prefix_end], run_table_recovery));
+    }
+    if let Some(caption_index) = caption_index {
+        blocks.push(lines[caption_index].trim().to_string());
+    }
+
+    let table_end = header_index + consumed_table_lines;
+    blocks.push(lines[header_index..table_end].join("\n"));
+    if table_end < lines.len() {
+        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
+    }
+
+    Some(blocks)
+}
+
+fn split_package_pin_description_table_blocks(
+    lines: &[String],
+    run_table_recovery: bool,
+) -> Option<Vec<String>> {
+    if !run_table_recovery || lines.len() < 6 {
+        return None;
+    }
+
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let header_index = refs
+        .iter()
+        .position(|line| is_package_pin_description_table_start(line))?;
+    let (_, consumed_table_lines) =
+        package_pin_description_table_rows_prefix(&refs[header_index..])?;
 
     let caption_index = header_index
         .checked_sub(1)
@@ -3068,6 +3112,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = package_pin_description_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     if let Some(rows) = aligned_whitespace_table_rows(&lines) {
         return layout_table_from_text_rows(rows);
     }
@@ -3166,6 +3214,10 @@ fn is_whitespace_table_lines(lines: &[String]) -> bool {
 
 fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
     if pin_function_table_rows(lines).is_some() {
+        return true;
+    }
+
+    if package_pin_description_table_rows(lines).is_some() {
         return true;
     }
 
@@ -3420,6 +3472,187 @@ fn pin_function_continuation_line(tokens: &[&str], required_for_empty_function: 
 
     let line = tokens.join(" ");
     required_for_empty_function || (tokens.len() >= 4 && !is_title_case_heading_line(&line))
+}
+
+fn package_pin_description_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    let (rows, consumed) = package_pin_description_table_rows_prefix(lines)?;
+    (consumed == lines.len()).then_some(rows)
+}
+
+fn package_pin_description_table_rows_prefix(lines: &[&str]) -> Option<(Vec<Vec<String>>, usize)> {
+    if lines.len() < 6 || !is_package_pin_description_table_start(lines[0]) {
+        return None;
+    }
+    if normalize_pin_table_header(lines[1]) != "pin name function" {
+        return None;
+    }
+
+    let (package_headers, data_start) = package_pin_description_headers(lines)?;
+    let mut rows = vec![
+        package_headers
+            .into_iter()
+            .chain(["Pin Name".to_string(), "Function".to_string()])
+            .collect::<Vec<_>>(),
+    ];
+    let mut consumed = data_start;
+    let mut data_row_count = 0;
+
+    for (offset, line) in lines.iter().enumerate().skip(data_start) {
+        let tokens = line.split_whitespace().collect::<Vec<_>>();
+        if tokens.is_empty() {
+            break;
+        }
+
+        if let Some(row) = package_pin_description_data_row(&tokens, rows[0].len() - 2) {
+            rows.push(row);
+            data_row_count += 1;
+            consumed = offset + 1;
+            continue;
+        }
+
+        if data_row_count > 0
+            && pin_function_continuation_line(
+                &tokens,
+                rows.last().is_some_and(|row| {
+                    row.last()
+                        .is_some_and(|function| function.trim().is_empty())
+                }),
+            )
+            && let Some(function_cell) = rows.last_mut().and_then(|row| row.last_mut())
+        {
+            if !function_cell.is_empty() {
+                function_cell.push(' ');
+            }
+            function_cell.push_str(&tokens.join(" "));
+            consumed = offset + 1;
+            continue;
+        }
+
+        break;
+    }
+
+    let all_functions_populated = rows
+        .iter()
+        .skip(1)
+        .all(|row| row.last().is_some_and(|cell| !cell.trim().is_empty()));
+
+    (data_row_count >= 2 && all_functions_populated).then_some((rows, consumed))
+}
+
+fn is_package_pin_description_table_start(line: &str) -> bool {
+    normalize_pin_table_header(line) == "pin number"
+}
+
+fn package_pin_description_headers(lines: &[&str]) -> Option<(Vec<String>, usize)> {
+    let mut headers = lines
+        .get(2)?
+        .split_whitespace()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>();
+    if headers.len() < 2 {
+        return None;
+    }
+
+    let third_header = lines.get(3)?.trim();
+    if third_header.is_empty() || !third_header.chars().any(char::is_alphabetic) {
+        return None;
+    }
+    headers.push(third_header.to_string());
+    let mut consumed = 4;
+
+    if let Some(parenthetical) = lines.get(consumed).map(|line| line.trim())
+        && parenthetical.starts_with('(')
+        && parenthetical.ends_with(')')
+    {
+        if let Some(last) = headers.last_mut() {
+            last.push(' ');
+            last.push_str(parenthetical);
+        }
+        consumed += 1;
+    }
+
+    (headers.len() >= 3).then_some((headers, consumed))
+}
+
+fn package_pin_description_data_row(
+    tokens: &[&str],
+    package_column_count: usize,
+) -> Option<Vec<String>> {
+    if tokens.len() < package_column_count + 1 || !(2..=4).contains(&package_column_count) {
+        return None;
+    }
+
+    let mut row = Vec::with_capacity(package_column_count + 2);
+    let mut cursor = 0;
+    for _ in 0..package_column_count.saturating_sub(1) {
+        let token = tokens.get(cursor)?;
+        if !looks_like_package_pin_cell(token) {
+            return None;
+        }
+        row.push(normalize_package_pin_cell(token));
+        cursor += 1;
+    }
+
+    let final_package_cell =
+        if tokens
+            .get(cursor)
+            .zip(tokens.get(cursor + 1))
+            .is_some_and(|(first, second)| {
+                first.eq_ignore_ascii_case("center") && second.eq_ignore_ascii_case("pad")
+            })
+        {
+            cursor += 2;
+            "Center Pad".to_string()
+        } else {
+            let token = tokens.get(cursor)?;
+            if !looks_like_package_pin_cell(token) {
+                return None;
+            }
+            cursor += 1;
+            normalize_package_pin_cell(token)
+        };
+    row.push(final_package_cell);
+
+    let pin_name = tokens.get(cursor)?;
+    if !looks_like_pin_name_or_placeholder(pin_name) {
+        return None;
+    }
+    row.push(normalize_package_pin_cell(pin_name));
+    cursor += 1;
+
+    row.push(
+        tokens
+            .get(cursor..)
+            .map(|tokens| tokens.join(" "))
+            .unwrap_or_default(),
+    );
+    Some(row)
+}
+
+fn looks_like_package_pin_cell(token: &str) -> bool {
+    let token = token.trim_matches(|ch: char| matches!(ch, ',' | ';'));
+    is_dash_placeholder(token) || token.chars().all(|ch| ch.is_ascii_digit())
+}
+
+fn looks_like_pin_name_or_placeholder(token: &str) -> bool {
+    let token = token.trim_matches(|ch: char| matches!(ch, ',' | ';'));
+    is_dash_placeholder(token)
+        || (!token.is_empty()
+            && token.chars().count() <= 24
+            && token
+                .chars()
+                .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '/' | '+'))
+            && token.chars().any(char::is_alphabetic))
+}
+
+fn normalize_package_pin_cell(token: &str) -> String {
+    token
+        .trim_matches(|ch: char| matches!(ch, ',' | ';'))
+        .to_string()
+}
+
+fn is_dash_placeholder(token: &str) -> bool {
+    matches!(token, "-" | "–" | "—")
 }
 
 fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {

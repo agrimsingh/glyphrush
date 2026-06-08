@@ -390,6 +390,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
             .unwrap()
             .contains("embedded pin/function tables")
     );
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
+            .contains("package pin-description tables")
+    );
 
     let ocr = capability(capabilities, "ocr");
     assert_eq!(ocr["liteparse"], "tesseract_or_http_ocr");
@@ -2874,6 +2880,40 @@ fn seed_datasheet_manifest_tracks_pdfium_pin_function_table() {
               ["EN", "3", "Pull this pin high to enable IC, pull this pin low to shutdown IC. Floating this pin will be shutdown due to the built-in pull-low resistor."],
               ["VIN", "4", "Power is supplied to this device from this pin which is required an input filter capacitor. In general, the input capacitor in the range of 1µF to 10µF is sufficient."],
               ["Exposed pad", "EP", "The exposed pad must be soldered to a large PCB area and connected to GND for maximum power dissipation."]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          }
+        ])
+    );
+}
+
+#[test]
+fn seed_datasheet_manifest_tracks_pdfium_package_pin_table() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_AP7354D-15W5-7.pdf")
+        .expect("AP7354 datasheet expectation exists");
+
+    assert_eq!(
+        document["expect_by_backend"]["pdfium"]["table_structure"],
+        serde_json::json!([
+          {
+            "page": 1,
+            "expected_rows": [
+              ["SOT25", "SOT23", "X2-DFN1010-4 (Type B)", "Pin Name", "Function"],
+              ["3", "—", "3", "EN", "Chip Enable — This should be driven either high or low and must not be floating. Driving EN high enables regulator output, while pulling it low places regulator into shutdown mode."],
+              ["2", "3", "2", "GND", "Ground"],
+              ["5", "2", "1", "VOUT", "Output Voltage"],
+              ["1", "1", "4", "VIN", "Power Input"],
+              ["—", "—", "Center Pad", "—", "No connection or ground. Note: Chip Ground must be through GND pin."]
             ],
             "min_row_recall": 1.0,
             "min_cell_recall": 1.0,

@@ -2353,6 +2353,99 @@ fn text_table_recovery_merges_split_pin_function_rows_from_pdfium_text() {
 }
 
 #[test]
+fn text_table_recovery_extracts_package_pin_description_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-package-pin-description-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "AP7354\n",
+                "Pin Description\n",
+                "Pin Number\n",
+                "Pin Name Function\n",
+                "SOT25 SOT23\n",
+                "X2-DFN1010-4\n",
+                "(Type B)\n",
+                "3 — 3 EN\n",
+                "Chip Enable — This should be driven either high or low and must not be floating.\n",
+                "Driving EN high enables regulator output, while pulling it low places regulator into\n",
+                "shutdown mode.\n",
+                "2 3 2 GND Ground\n",
+                "5 2 1 VOUT Output Voltage\n",
+                "1 1 4 VIN Power Input\n",
+                "— — Center Pad — No connection or ground. Note: Chip Ground must be through GND pin.\n",
+                "Functional Block Diagram\n",
+                "VIN\n",
+                "EN GND"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 16,
+                native_text_bytes: 720,
+                glyph_count: 560,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_block = page
+        .layout_blocks
+        .iter()
+        .find(|block| block.kind == LayoutBlockKind::Table)
+        .expect("package pin description table block");
+    assert!(!table_block.text.contains("Functional Block Diagram"));
+
+    let table = table_block.table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec![
+                "SOT25",
+                "SOT23",
+                "X2-DFN1010-4 (Type B)",
+                "Pin Name",
+                "Function"
+            ],
+            vec![
+                "3",
+                "—",
+                "3",
+                "EN",
+                "Chip Enable — This should be driven either high or low and must not be floating. Driving EN high enables regulator output, while pulling it low places regulator into shutdown mode."
+            ],
+            vec!["2", "3", "2", "GND", "Ground"],
+            vec!["5", "2", "1", "VOUT", "Output Voltage"],
+            vec!["1", "1", "4", "VIN", "Power Input"],
+            vec![
+                "—",
+                "—",
+                "Center Pad",
+                "—",
+                "No connection or ground. Note: Chip Ground must be through GND pin."
+            ],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_merges_two_column_descriptor_value_rows() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-two-column-table".to_string(),

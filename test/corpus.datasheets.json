@@ -92,6 +92,22 @@
               "min_precision": 1.0,
               "min_recall": 1.0
             }
+          ],
+          "table_structure": [
+            {
+              "page": 1,
+              "expected_rows": [
+                ["SOT25", "SOT23", "X2-DFN1010-4 (Type B)", "Pin Name", "Function"],
+                ["3", "—", "3", "EN", "Chip Enable — This should be driven either high or low and must not be floating. Driving EN high enables regulator output, while pulling it low places regulator into shutdown mode."],
+                ["2", "3", "2", "GND", "Ground"],
+                ["5", "2", "1", "VOUT", "Output Voltage"],
+                ["1", "1", "4", "VIN", "Power Input"],
+                ["—", "—", "Center Pad", "—", "No connection or ground. Note: Chip Ground must be through GND pin."]
+              ],
+              "min_row_recall": 1.0,
+              "min_cell_recall": 1.0,
+              "min_cell_f1": 1.0
+            }
           ]
         }
       }
