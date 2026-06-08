@@ -10,12 +10,18 @@ cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --span-geom
 cargo run -p glyphrush-cli -- parse test/your-file.pdf --format markdown
 cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --ocr-sidecar test/ocr
 cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --ocr-command test/ocr-command.sh
+cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --ocr-http-url http://127.0.0.1:8080/ocr
 cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --cache-dir .glyphrush-cache
 cargo run -p glyphrush-cli -- bench test/your-file.pdf
 cargo run -p glyphrush-cli -- bench test/your-file.pdf --baseline-preset glyphrush-v0
+cargo run -p glyphrush-cli -- bench test/your-file.pdf --eval-manifest test/corpus.generated.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0
 cargo run -p glyphrush-cli -- bench test/your-file.pdf --ocr-sidecar test/ocr
 cargo run -p glyphrush-cli -- bench test/your-file.pdf --ocr-command test/ocr-command.sh
+cargo run -p glyphrush-cli -- bench test/your-file.pdf --ocr-http-url http://127.0.0.1:8080/ocr
 cargo run -p glyphrush-cli -- bench test/your-file.pdf --cache-dir .glyphrush-cache
+cargo run -p glyphrush-cli -- ocr-check test/your-file.pdf --page-index 0 --ocr-sidecar test/ocr --strict
+cargo run -p glyphrush-cli -- ocr-check test/your-file.pdf --page-index 0 --ocr-command test/ocr-command.sh --strict
+cargo run -p glyphrush-cli -- ocr-check test/your-file.pdf --page-index 0 --ocr-http-url http://127.0.0.1:8080/ocr --strict
 cargo run -p glyphrush-cli -- manifest test/your-file.pdf > test/corpus.generated.json
 cargo run -p glyphrush-cli -- debug-page test/your-file.pdf 0
 cargo run -p glyphrush-cli -- eval test/corpus.datasheets.json
@@ -24,8 +30,10 @@ cargo run -p glyphrush-cli -- backend-check --pdf test/
 cargo run -p glyphrush-cli -- backend-check --pdf test/ --jobs 4
 cargo run -p glyphrush-cli -- bench test/
 cargo run -p glyphrush-cli -- bench test/ --baseline-preset glyphrush-v0
+cargo run -p glyphrush-cli --features pdfium -- --backend auto bench test/ --eval-manifest test/corpus.datasheets.json --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0
 cargo run -p glyphrush-cli -- bench test/ --ocr-sidecar test/ocr
 cargo run -p glyphrush-cli -- bench test/ --ocr-command test/ocr-command.sh
+cargo run -p glyphrush-cli -- bench test/ --ocr-http-url http://127.0.0.1:8080/ocr
 cargo run -p glyphrush-cli -- bench test/ --eval-manifest test/corpus.datasheets.json
 cargo run -p glyphrush-cli -- bench test/ --cache-dir .glyphrush-cache
 cargo run -p glyphrush-cli -- manifest test/ > test/corpus.generated.json
@@ -37,6 +45,8 @@ cargo run -p glyphrush-cli -- manifest test/ --category clean_digital --coverage
 Sidecar OCR files use zero-based page indexes. For `your-file.pdf`, OCR text for page `0` should be written to `test/ocr/your-file.p000000.txt`.
 
 OCR command adapters are invoked only for pages routed to OCR fallback. The command receives the PDF path as `$1` and the zero-based page index as `$2`, and stdout becomes that page's OCR text. Use `--ocr-timeout-ms <ms>` to bound slow adapters; the default is `120000`.
+
+HTTP OCR adapters are also page-selective. Glyphrush POSTs JSON containing `pdf_path` and `page_index`, accepts plain response bodies as OCR text, and accepts `application/json` responses with a string `text` field. It does not make hidden network calls unless `--ocr-http-url` is explicitly set.
 
 Eval manifests are JSON files. Paths are relative to the manifest file, so `test/corpus.json` can refer to `"your-file.pdf"` directly:
 

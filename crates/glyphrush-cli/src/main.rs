@@ -1230,6 +1230,8 @@ struct BaselineBenchOutput {
     name: String,
     command: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    target: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     description: Option<Value>,
     description_status: BaselineDescribeCheck,
     comparison: BaselineComparisonOutput,
@@ -1354,6 +1356,8 @@ struct BaselineTableStructureOutput {
 struct CorpusBaselineBenchOutput {
     name: String,
     command: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    target: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     description: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -5728,6 +5732,7 @@ fn run_external_baseline(
     timeout: Duration,
 ) -> BaselineBenchOutput {
     let (description, description_status) = describe_external_baseline_probe(baseline, timeout);
+    let target = baseline_description_target(description.as_ref());
     let mut command_process = ProcessCommand::new(&baseline.command);
     command_process.arg(path);
     let result = command_output_with_timeout(command_process, timeout);
@@ -5747,6 +5752,7 @@ fn run_external_baseline(
             BaselineBenchOutput {
                 name: baseline.name.clone(),
                 command,
+                target,
                 description,
                 description_status,
                 comparison: baseline_comparison(
@@ -5779,6 +5785,7 @@ fn run_external_baseline(
         Err(error) => BaselineBenchOutput {
             name: baseline.name.clone(),
             command,
+            target,
             description,
             description_status,
             comparison: baseline_comparison(
@@ -5808,6 +5815,13 @@ fn run_external_baseline(
             quality: None,
         },
     }
+}
+
+fn baseline_description_target(description: Option<&Value>) -> Option<String> {
+    description?
+        .get("target")
+        .and_then(Value::as_str)
+        .map(str::to_string)
 }
 
 fn baseline_quality_status(
@@ -6746,11 +6760,13 @@ fn aggregate_corpus_baselines(
                 .take(3)
                 .collect();
             let description = runs.iter().find_map(|(_, run)| run.description.clone());
+            let target = baseline_description_target(description.as_ref());
             let description_status = runs.first().map(|(_, run)| run.description_status.clone());
 
             CorpusBaselineBenchOutput {
                 name: baseline.name.clone(),
                 command: baseline_command,
+                target,
                 description,
                 description_status,
                 comparison: baseline_comparison(

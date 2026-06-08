@@ -4792,6 +4792,42 @@ fn bench_directory_summary_reports_external_baseline_description_probe_status() 
 }
 
 #[test]
+fn bench_directory_baseline_summary_exposes_comparison_target() {
+    let dir = temp_dir("bench-dir-baseline-target");
+    fs::write(dir.join("b.pdf"), minimal_pdf("Second target")).unwrap();
+    fs::write(dir.join("a.pdf"), minimal_pdf("First target")).unwrap();
+    let baseline = write_baseline_script(
+        "baseline-dir-target",
+        "if [ \"${1:-}\" = \"--describe\" ]; then printf '{\"target\":\"MockParse\",\"kind\":\"text-baseline-wrapper\"}'; exit 0; fi\nprintf 'baseline target output'",
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            dir.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+        ])
+        .output()
+        .expect("run glyphrush bench directory with describing baseline");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+    let baseline_summary = &json["baselines"][0];
+
+    assert_eq!(baseline_summary["target"], "MockParse");
+    assert_eq!(json["documents"][0]["baselines"][0]["target"], "MockParse");
+    assert_eq!(json["documents"][1]["baselines"][0]["target"], "MockParse");
+}
+
+#[test]
 fn bench_reports_external_baseline_output_digest_and_text_stats() {
     let pdf_path = write_test_pdf("bench-baseline-stats", "Hello Baseline Stats");
     let baseline = write_baseline_script("baseline-stats", "printf 'alpha beta\\ncharlie'");
