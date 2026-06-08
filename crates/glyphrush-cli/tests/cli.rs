@@ -2850,6 +2850,40 @@ fn seed_datasheet_manifest_pins_source_provenance() {
 }
 
 #[test]
+fn seed_datasheet_manifest_tracks_pdfium_pin_function_table() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_FP6183-33X7.pdf")
+        .expect("FP6183 datasheet expectation exists");
+
+    assert_eq!(
+        document["expect_by_backend"]["pdfium"]["table_structure"],
+        serde_json::json!([
+          {
+            "page": 2,
+            "expected_rows": [
+              ["Pin Name", "Pin No.", "Pin Function"],
+              ["VOUT", "1", "The FP6183 is stable with an output capacitor 1µF or greater. The larger output capacitor will be required for application with larger load transients. The large output capacitor could reduce output noise, improve stability and PSRR."],
+              ["GND", "2", "Common ground pin."],
+              ["EN", "3", "Pull this pin high to enable IC, pull this pin low to shutdown IC. Floating this pin will be shutdown due to the built-in pull-low resistor."],
+              ["VIN", "4", "Power is supplied to this device from this pin which is required an input filter capacitor. In general, the input capacitor in the range of 1µF to 10µF is sufficient."],
+              ["Exposed pad", "EP", "The exposed pad must be soldered to a large PCB area and connected to GND for maximum power dissipation."]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          }
+        ])
+    );
+}
+
+#[test]
 fn manifest_directory_jobs_preserve_stable_output() {
     let dir = temp_dir("manifest-directory-jobs");
     fs::write(dir.join("c.pdf"), minimal_pdf("Third manifest jobs")).unwrap();
