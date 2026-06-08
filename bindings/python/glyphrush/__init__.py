@@ -247,6 +247,122 @@ def bench(
     return json.loads(_run(command, env=env))
 
 
+def backend_check(
+    *,
+    pdf: str | os.PathLike[str] | None = None,
+    binary: str | os.PathLike[str] | None = None,
+    backend: str | None = None,
+    jobs: int | None = None,
+    env: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    command = _base_command(binary, backend)
+    command.append("backend-check")
+    if pdf is not None:
+        command.extend(["--pdf", _path(pdf)])
+    if jobs is not None:
+        command.extend(["--jobs", str(jobs)])
+    return json.loads(_run(command, env=env))
+
+
+def debug_page(
+    pdf: str | os.PathLike[str],
+    page_index: int,
+    *,
+    binary: str | os.PathLike[str] | None = None,
+    backend: str | None = None,
+    span_geometry: bool = False,
+    ocr_sidecar: str | os.PathLike[str] | None = None,
+    ocr_command: str | os.PathLike[str] | None = None,
+    ocr_http_url: str | None = None,
+    ocr_command_input: str | None = None,
+    ocr_timeout_ms: int | None = None,
+    env: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    command = _base_command(binary, backend)
+    command.extend(["debug-page", _path(pdf), str(page_index)])
+    _append_common_options(
+        command,
+        span_geometry=span_geometry,
+        ocr_sidecar=ocr_sidecar,
+        ocr_command=ocr_command,
+        ocr_http_url=ocr_http_url,
+        ocr_command_input=ocr_command_input,
+        ocr_timeout_ms=ocr_timeout_ms,
+        cache_dir=None,
+        jobs=None,
+    )
+    return json.loads(_run(command, env=env))
+
+
+def ocr_check(
+    pdf: str | os.PathLike[str],
+    *,
+    page_index: int,
+    binary: str | os.PathLike[str] | None = None,
+    backend: str | None = None,
+    ocr_sidecar: str | os.PathLike[str] | None = None,
+    ocr_command: str | os.PathLike[str] | None = None,
+    ocr_http_url: str | None = None,
+    ocr_command_input: str | None = None,
+    ocr_timeout_ms: int | None = None,
+    strict: bool = False,
+    env: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    command = _base_command(binary, backend)
+    command.extend(["ocr-check", _path(pdf), "--page-index", str(page_index)])
+    _append_common_options(
+        command,
+        span_geometry=False,
+        ocr_sidecar=ocr_sidecar,
+        ocr_command=ocr_command,
+        ocr_http_url=ocr_http_url,
+        ocr_command_input=ocr_command_input,
+        ocr_timeout_ms=ocr_timeout_ms,
+        cache_dir=None,
+        jobs=None,
+    )
+    if strict:
+        command.append("--strict")
+    return json.loads(_run(command, env=env))
+
+
+def feature_parity(
+    *,
+    binary: str | os.PathLike[str] | None = None,
+    backend: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    command = _base_command(binary, backend)
+    command.append("feature-parity")
+    return json.loads(_run(command, env=env))
+
+
+def baseline_check(
+    *,
+    binary: str | os.PathLike[str] | None = None,
+    backend: str | None = None,
+    baseline: Sequence[str] = (),
+    baseline_preset: str | None = None,
+    pdf: str | os.PathLike[str] | None = None,
+    baseline_timeout_ms: int | None = None,
+    strict: bool = False,
+    env: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    command = _base_command(binary, backend)
+    command.append("baseline-check")
+    if baseline_preset is not None:
+        command.extend(["--baseline-preset", baseline_preset])
+    for spec in baseline:
+        command.extend(["--baseline", spec])
+    if pdf is not None:
+        command.extend(["--pdf", _path(pdf)])
+    if baseline_timeout_ms is not None:
+        command.extend(["--baseline-timeout-ms", str(baseline_timeout_ms)])
+    if strict:
+        command.append("--strict")
+    return json.loads(_run(command, env=env))
+
+
 def _base_command(
     binary: str | os.PathLike[str] | None,
     backend: str | None,
@@ -314,10 +430,15 @@ def _path(path: str | os.PathLike[str]) -> str:
 
 __all__ = [
     "GlyphrushError",
+    "backend_check",
+    "baseline_check",
     "bench",
+    "debug_page",
     "eval_manifest",
+    "feature_parity",
     "inspect_pages",
     "manifest",
+    "ocr_check",
     "parse",
     "parse_text",
 ]

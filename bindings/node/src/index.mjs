@@ -94,6 +94,69 @@ export function bench(pdf, options = {}) {
   return JSON.parse(run(command, options.env));
 }
 
+export function backendCheck(options = {}) {
+  const command = baseCommand(options);
+  command.push("backend-check");
+  if (options.pdf !== undefined) {
+    command.push("--pdf", pathString(options.pdf));
+  }
+  if (options.jobs !== undefined) {
+    command.push("--jobs", String(options.jobs));
+  }
+  return JSON.parse(run(command, options.env));
+}
+
+export function debugPage(pdf, pageIndex, options = {}) {
+  const command = baseCommand(options);
+  command.push("debug-page", pathString(pdf), String(pageIndex));
+  appendCommonOptions(command, {
+    ...options,
+    cacheDir: undefined,
+    jobs: undefined,
+  });
+  return JSON.parse(run(command, options.env));
+}
+
+export function ocrCheck(pdf, options = {}) {
+  const command = baseCommand(options);
+  command.push("ocr-check", pathString(pdf), "--page-index", String(options.pageIndex));
+  appendCommonOptions(command, {
+    ...options,
+    spanGeometry: false,
+    cacheDir: undefined,
+    jobs: undefined,
+  });
+  if (options.strict) {
+    command.push("--strict");
+  }
+  return JSON.parse(run(command, options.env));
+}
+
+export function featureParity(options = {}) {
+  const command = baseCommand(options);
+  command.push("feature-parity");
+  return JSON.parse(run(command, options.env));
+}
+
+export function baselineCheck(options = {}) {
+  const command = baseCommand(options);
+  command.push("baseline-check");
+  if (options.baselinePreset !== undefined) {
+    command.push("--baseline-preset", options.baselinePreset);
+  }
+  appendRepeated(command, "--baseline", options.baseline);
+  if (options.pdf !== undefined) {
+    command.push("--pdf", pathString(options.pdf));
+  }
+  if (options.baselineTimeoutMs !== undefined) {
+    command.push("--baseline-timeout-ms", String(options.baselineTimeoutMs));
+  }
+  if (options.strict) {
+    command.push("--strict");
+  }
+  return JSON.parse(run(command, options.env));
+}
+
 function baseCommand(options) {
   const command = [pathString(options.binary ?? process.env.GLYPHRUSH_BIN ?? "glyphrush")];
   if (options.backend !== undefined) {

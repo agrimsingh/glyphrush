@@ -242,6 +242,149 @@ test("bench delegates to native quality-backed speed gate and decodes JSON", asy
   });
 });
 
+test("backendCheck delegates to native preflight and decodes JSON", async () => {
+  await withTempDir(async (root) => {
+    const { mkdir } = await import("node:fs/promises");
+    const { backendCheck } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+    const pdfDir = path.join(root, "pdfs");
+    await mkdir(pdfDir);
+
+    const report = backendCheck({
+      pdf: pdfDir,
+      binary: fake,
+      backend: "lopdf",
+      jobs: 4,
+    });
+
+    assert.deepEqual(report.argv, [
+      "--backend",
+      "lopdf",
+      "backend-check",
+      "--pdf",
+      pdfDir,
+      "--jobs",
+      "4",
+    ]);
+  });
+});
+
+test("debugPage delegates to native page debugger and decodes JSON", async () => {
+  await withTempDir(async (root) => {
+    const { mkdir } = await import("node:fs/promises");
+    const { debugPage } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+    const pdf = path.join(root, "sample.pdf");
+    const ocr = path.join(root, "ocr");
+    await writeFile(pdf, "%PDF-1.4 fake");
+    await mkdir(ocr);
+
+    const report = debugPage(pdf, 3, {
+      binary: fake,
+      backend: "lopdf",
+      spanGeometry: true,
+      ocrSidecar: ocr,
+      ocrTimeoutMs: 2500,
+    });
+
+    assert.deepEqual(report.argv, [
+      "--backend",
+      "lopdf",
+      "debug-page",
+      pdf,
+      "3",
+      "--span-geometry",
+      "--ocr-sidecar",
+      ocr,
+      "--ocr-timeout-ms",
+      "2500",
+    ]);
+  });
+});
+
+test("ocrCheck delegates to native adapter preflight and decodes JSON", async () => {
+  await withTempDir(async (root) => {
+    const { ocrCheck } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+    const pdf = path.join(root, "sample.pdf");
+    const command = path.join(root, "ocr.sh");
+    await writeFile(pdf, "%PDF-1.4 fake");
+    await writeFile(command, "#!/bin/sh\nprintf OCR\n");
+
+    const report = ocrCheck(pdf, {
+      pageIndex: 2,
+      binary: fake,
+      backend: "pdfium",
+      ocrCommand: command,
+      ocrCommandInput: "rendered-image",
+      ocrTimeoutMs: 1500,
+      strict: true,
+    });
+
+    assert.deepEqual(report.argv, [
+      "--backend",
+      "pdfium",
+      "ocr-check",
+      pdf,
+      "--page-index",
+      "2",
+      "--ocr-command",
+      command,
+      "--ocr-command-input",
+      "rendered-image",
+      "--ocr-timeout-ms",
+      "1500",
+      "--strict",
+    ]);
+  });
+});
+
+test("featureParity delegates to native report and decodes JSON", async () => {
+  await withTempDir(async (root) => {
+    const { featureParity } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+
+    const report = featureParity({ binary: fake, backend: "lopdf" });
+
+    assert.deepEqual(report.argv, ["--backend", "lopdf", "feature-parity"]);
+  });
+});
+
+test("baselineCheck delegates to native baseline preflight and decodes JSON", async () => {
+  await withTempDir(async (root) => {
+    const { mkdir } = await import("node:fs/promises");
+    const { baselineCheck } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+    const pdfDir = path.join(root, "pdfs");
+    await mkdir(pdfDir);
+
+    const report = baselineCheck({
+      binary: fake,
+      backend: "lopdf",
+      pdf: pdfDir,
+      baselinePreset: "glyphrush-v0",
+      baseline: ["custom=/bin/echo"],
+      baselineTimeoutMs: 4321,
+      strict: true,
+    });
+
+    assert.deepEqual(report.argv, [
+      "--backend",
+      "lopdf",
+      "baseline-check",
+      "--baseline-preset",
+      "glyphrush-v0",
+      "--baseline",
+      "custom=/bin/echo",
+      "--pdf",
+      pdfDir,
+      "--baseline-timeout-ms",
+      "4321",
+      "--strict",
+    ]);
+  });
+});
+
 test("CLI failures raise GlyphrushError with exit status and stderr", async () => {
   await withTempDir(async (root) => {
     const fake = await writeFakeGlyphrush(root);

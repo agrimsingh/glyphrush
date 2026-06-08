@@ -248,6 +248,158 @@ class GlyphrushClientTests(unittest.TestCase):
             ],
         )
 
+    def test_backend_check_delegates_to_native_preflight_and_decodes_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            pdf_dir = root / "pdfs"
+            pdf_dir.mkdir()
+
+            report = glyphrush.backend_check(
+                pdf=pdf_dir,
+                binary=fake,
+                backend="lopdf",
+                jobs=4,
+            )
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "--backend",
+                "lopdf",
+                "backend-check",
+                "--pdf",
+                str(pdf_dir),
+                "--jobs",
+                "4",
+            ],
+        )
+
+    def test_debug_page_delegates_to_native_page_debugger_and_decodes_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            pdf = root / "sample.pdf"
+            pdf.write_bytes(b"%PDF-1.4 fake")
+            ocr = root / "ocr"
+            ocr.mkdir()
+
+            report = glyphrush.debug_page(
+                pdf,
+                3,
+                binary=fake,
+                backend="lopdf",
+                span_geometry=True,
+                ocr_sidecar=ocr,
+                ocr_timeout_ms=2500,
+            )
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "--backend",
+                "lopdf",
+                "debug-page",
+                str(pdf),
+                "3",
+                "--span-geometry",
+                "--ocr-sidecar",
+                str(ocr),
+                "--ocr-timeout-ms",
+                "2500",
+            ],
+        )
+
+    def test_ocr_check_delegates_to_native_adapter_preflight_and_decodes_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            pdf = root / "sample.pdf"
+            pdf.write_bytes(b"%PDF-1.4 fake")
+            command = root / "ocr.sh"
+            command.write_text("#!/bin/sh\nprintf OCR\n")
+
+            report = glyphrush.ocr_check(
+                pdf,
+                page_index=2,
+                binary=fake,
+                backend="pdfium",
+                ocr_command=command,
+                ocr_command_input="rendered-image",
+                ocr_timeout_ms=1500,
+                strict=True,
+            )
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "--backend",
+                "pdfium",
+                "ocr-check",
+                str(pdf),
+                "--page-index",
+                "2",
+                "--ocr-command",
+                str(command),
+                "--ocr-command-input",
+                "rendered-image",
+                "--ocr-timeout-ms",
+                "1500",
+                "--strict",
+            ],
+        )
+
+    def test_feature_parity_delegates_to_native_report_and_decodes_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+
+            report = glyphrush.feature_parity(binary=fake, backend="lopdf")
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "--backend",
+                "lopdf",
+                "feature-parity",
+            ],
+        )
+
+    def test_baseline_check_delegates_to_native_baseline_preflight_and_decodes_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            pdf_dir = root / "pdfs"
+            pdf_dir.mkdir()
+
+            report = glyphrush.baseline_check(
+                binary=fake,
+                backend="lopdf",
+                pdf=pdf_dir,
+                baseline_preset="glyphrush-v0",
+                baseline=["custom=/bin/echo"],
+                baseline_timeout_ms=4321,
+                strict=True,
+            )
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "--backend",
+                "lopdf",
+                "baseline-check",
+                "--baseline-preset",
+                "glyphrush-v0",
+                "--baseline",
+                "custom=/bin/echo",
+                "--pdf",
+                str(pdf_dir),
+                "--baseline-timeout-ms",
+                "4321",
+                "--strict",
+            ],
+        )
+
     def test_cli_failure_raises_with_exit_status_and_stderr(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

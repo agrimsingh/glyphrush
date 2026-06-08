@@ -8,6 +8,11 @@ import glyphrush
 artifact = glyphrush.parse("test/example.pdf", binary="target/debug/glyphrush")
 text = glyphrush.parse_text("test/example.pdf", binary="target/debug/glyphrush")
 triage = glyphrush.inspect_pages("test/example.pdf", binary="target/debug/glyphrush")
+page = glyphrush.debug_page("test/example.pdf", 0, binary="target/debug/glyphrush")
+ocr = glyphrush.ocr_check("test/example.pdf", page_index=0, binary="target/debug/glyphrush")
+backend = glyphrush.backend_check(pdf="test/", binary="target/debug/glyphrush")
+baselines = glyphrush.baseline_check(binary="target/debug/glyphrush", baseline_preset="glyphrush-v0")
+parity = glyphrush.feature_parity(binary="target/debug/glyphrush")
 quality = glyphrush.eval_manifest("test/corpus.json", binary="target/debug/glyphrush")
 speed = glyphrush.bench("test/example.pdf", binary="target/debug/glyphrush")
 generated = glyphrush.manifest("test/", binary="target/debug/glyphrush", category="datasheet")
@@ -16,6 +21,12 @@ generated = glyphrush.manifest("test/", binary="target/debug/glyphrush", categor
 If `binary` is omitted, the wrapper uses `GLYPHRUSH_BIN` and then falls back to `glyphrush` on `PATH`.
 
 `inspect_pages()` delegates to `glyphrush inspect <pdf> --pages` and returns the native page-triage JSON, including routes, quality flags, OCR/layout/table diagnostics, cache status, and timing counters.
+
+`debug_page()` delegates to `glyphrush debug-page <pdf> <page-index>` and returns the native single-page diagnostic JSON.
+
+`ocr_check()`, `backend_check()`, and `baseline_check()` delegate to the native preflight surfaces for OCR adapters, parser backends, and external comparison wrappers.
+
+`feature_parity()` delegates to `glyphrush feature-parity` and returns the conservative LiteParse capability matrix.
 
 `eval_manifest()` delegates to `glyphrush eval <manifest>` and returns the native quality report, including silent-failure, text-recall, reading-order, table, category, and cache diagnostics when the manifest asks for them.
 
