@@ -2630,6 +2630,220 @@ fn text_table_recovery_extracts_bullet_leader_spec_tables() {
 }
 
 #[test]
+fn text_table_recovery_extracts_electrical_characteristics_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-electrical-characteristics-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "APL5324\n",
+                "Electrical Characteristics\n",
+                "Unless otherwise specified, these specifications apply over VIN = VOUT+1V.\n",
+                "APL5324\n",
+                "Symbol Parameter Test Conditions\n",
+                "Min. Typ. Max.\n",
+                "Unit\n",
+                "VIN Input Voltage 2.7 - 6 V\n",
+                "VOUT Output Voltage Range 0.8 - 5.5 V\n",
+                "IQ Quiescent Current IOUT =10mA ~300mA - 135 160 mA\n",
+                "VREF Reference Voltage Measured on SET, VIN=3V, IOUT=10mA - 0.8 - V\n",
+                " Output Voltage Accuracy IOUT=10mA -2 - +2 %\n",
+                "REGLINE Line Regulation DVOUT%/DVIN, IOUT=10mA -0.06 - +0.06 %/V\n",
+                "REGLOAD Load Regulation DVOUT%/DIOUT -0.2 - +0.2 %/A\n",
+                "VOUT = 2.5V, IOUT = 300mA - 500 650\n",
+                "VDROP Dropout Voltage\n",
+                "VOUT = 3.3V, IOUT = 300mA - 300 400\n",
+                "mV\n",
+                "PSRR Power Supply Ripple Rejection Ratio f = 10kHz, IOUT = 300mA - 45 - dB\n",
+                " Noise f = 80Hz to 100kHz, IOUT = 300mA - 160 - mVRMS\n",
+                "ILIMIT Current Limit 450 550 - mA\n",
+                "ISHORT Foldback Current VOUT = 0V - 80 - mA\n",
+                "SHDN Input Voltage High 1.6 - -\n",
+                " \n",
+                "SHDN Input Voltage Low\n",
+                " \n",
+                "- - 0.4\n",
+                "V\n",
+                " VOUT Discharge MOSFET RDS(ON) SHDN = Low - 60 - W\n",
+                " Shutdown VIN Supply Current SHDN = Low, VIN = 6V - 0.1 1 mA\n",
+                " \n",
+                "SHDN Pull Low Resistance - 3 - MW\n",
+                " Over Temperature Threshold - 160 -\n",
+                "oC\n",
+                " Over Temperature Hysteresis - 40 -\n",
+                "oC\n",
+                " SET Input Bias Current VSET=0.8V -100 - 100 nA\n"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.52,
+                native_span_count: 40,
+                native_text_bytes: 1800,
+                glyph_count: 1400,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_block = page
+        .layout_blocks
+        .iter()
+        .find(|block| block.kind == LayoutBlockKind::Table)
+        .expect("electrical characteristics table block");
+    assert!(!table_block.text.contains("Unless otherwise specified"));
+
+    let table = table_block.table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec![
+                "Symbol",
+                "Parameter",
+                "Test Conditions",
+                "Min.",
+                "Typ.",
+                "Max.",
+                "Unit"
+            ],
+            vec!["VIN", "Input Voltage", "", "2.7", "-", "6", "V"],
+            vec!["VOUT", "Output Voltage Range", "", "0.8", "-", "5.5", "V"],
+            vec![
+                "IQ",
+                "Quiescent Current",
+                "IOUT =10mA ~300mA",
+                "-",
+                "135",
+                "160",
+                "mA"
+            ],
+            vec![
+                "VREF",
+                "Reference Voltage",
+                "Measured on SET, VIN=3V, IOUT=10mA",
+                "-",
+                "0.8",
+                "-",
+                "V"
+            ],
+            vec![
+                "",
+                "Output Voltage Accuracy",
+                "IOUT=10mA",
+                "-2",
+                "-",
+                "+2",
+                "%"
+            ],
+            vec![
+                "REGLINE",
+                "Line Regulation",
+                "DVOUT%/DVIN, IOUT=10mA",
+                "-0.06",
+                "-",
+                "+0.06",
+                "%/V"
+            ],
+            vec![
+                "REGLOAD",
+                "Load Regulation",
+                "DVOUT%/DIOUT",
+                "-0.2",
+                "-",
+                "+0.2",
+                "%/A"
+            ],
+            vec![
+                "VDROP",
+                "Dropout Voltage",
+                "VOUT = 2.5V, IOUT = 300mA",
+                "-",
+                "500",
+                "650",
+                "mV"
+            ],
+            vec!["", "", "VOUT = 3.3V, IOUT = 300mA", "-", "300", "400", "mV"],
+            vec![
+                "PSRR",
+                "Power Supply Ripple Rejection Ratio",
+                "f = 10kHz, IOUT = 300mA",
+                "-",
+                "45",
+                "-",
+                "dB"
+            ],
+            vec![
+                "",
+                "Noise",
+                "f = 80Hz to 100kHz, IOUT = 300mA",
+                "-",
+                "160",
+                "-",
+                "mVRMS"
+            ],
+            vec!["ILIMIT", "Current Limit", "", "450", "550", "-", "mA"],
+            vec![
+                "ISHORT",
+                "Foldback Current",
+                "VOUT = 0V",
+                "-",
+                "80",
+                "-",
+                "mA"
+            ],
+            vec!["", "SHDN Input Voltage High", "", "1.6", "-", "-", "V"],
+            vec!["", "SHDN Input Voltage Low", "", "-", "-", "0.4", "V"],
+            vec![
+                "",
+                "VOUT Discharge MOSFET RDS(ON)",
+                "SHDN = Low",
+                "-",
+                "60",
+                "-",
+                "W"
+            ],
+            vec![
+                "",
+                "Shutdown VIN Supply Current",
+                "SHDN = Low, VIN = 6V",
+                "-",
+                "0.1",
+                "1",
+                "mA"
+            ],
+            vec!["", "SHDN Pull Low Resistance", "", "-", "3", "-", "MW"],
+            vec!["", "Over Temperature Threshold", "", "-", "160", "-", "oC"],
+            vec!["", "Over Temperature Hysteresis", "", "-", "40", "-", "oC"],
+            vec![
+                "",
+                "SET Input Bias Current",
+                "VSET=0.8V",
+                "-100",
+                "-",
+                "100",
+                "nA"
+            ],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_extracts_package_pin_description_tables() {
     let artifact = parse_extracted_pages(
         "doc-package-pin-description-table".to_string(),

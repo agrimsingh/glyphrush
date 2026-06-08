@@ -199,6 +199,8 @@ Fragmented `Symbol Parameter Rating Unit` or `Symbol Parameter Range Unit` datas
 
 Bullet/leader spec rows are scored the same way after normalization into `Parameter` / `Limit` rows, including wrapped continuation rows for package-specific ratings.
 
+Electrical-characteristics rows are scored through `table_structure` after normalization into `Symbol`, `Parameter`, `Test Conditions`, `Min.`, `Typ.`, `Max.`, and `Unit` cells, including empty cells and unit-only continuation lines.
+
 Example:
 
 ```json

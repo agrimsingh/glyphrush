@@ -3005,6 +3005,57 @@ fn seed_datasheet_manifest_tracks_pdfium_fragmented_symbol_rating_table() {
 }
 
 #[test]
+fn seed_datasheet_manifest_tracks_pdfium_electrical_characteristics_table() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_APL5324BI-TRG.pdf")
+        .expect("APL5324 datasheet expectation exists");
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
+
+    assert!(table_structure.iter().any(|expectation| expectation
+        == &serde_json::json!(
+        {
+          "page": 2,
+          "expected_rows": [
+            ["Symbol", "Parameter", "Test Conditions", "Min.", "Typ.", "Max.", "Unit"],
+            ["VIN", "Input Voltage", "", "2.7", "-", "6", "V"],
+            ["VOUT", "Output Voltage Range", "", "0.8", "-", "5.5", "V"],
+            ["IQ", "Quiescent Current", "IOUT =10mA ~300mA", "-", "135", "160", "mA"],
+            ["VREF", "Reference Voltage", "Measured on SET, VIN=3V, IOUT=10mA", "-", "0.8", "-", "V"],
+            ["", "Output Voltage Accuracy", "IOUT=10mA", "-2", "-", "+2", "%"],
+            ["REGLINE", "Line Regulation", "DVOUT%/DVIN, IOUT=10mA", "-0.06", "-", "+0.06", "%/V"],
+            ["REGLOAD", "Load Regulation", "DVOUT%/DIOUT", "-0.2", "-", "+0.2", "%/A"],
+            ["VDROP", "Dropout Voltage", "VOUT = 2.5V, IOUT = 300mA", "-", "500", "650", "mV"],
+            ["", "", "VOUT = 3.3V, IOUT = 300mA", "-", "300", "400", "mV"],
+            ["PSRR", "Power Supply Ripple Rejection Ratio", "f = 10kHz, IOUT = 300mA", "-", "45", "-", "dB"],
+            ["", "Noise", "f = 80Hz to 100kHz, IOUT = 300mA", "-", "160", "-", "mVRMS"],
+            ["ILIMIT", "Current Limit", "", "450", "550", "-", "mA"],
+            ["ISHORT", "Foldback Current", "VOUT = 0V", "-", "80", "-", "mA"],
+            ["", "SHDN Input Voltage High", "", "1.6", "-", "-", "V"],
+            ["", "SHDN Input Voltage Low", "", "-", "-", "0.4", "V"],
+            ["", "VOUT Discharge MOSFET RDS(ON)", "SHDN = Low", "-", "60", "-", "W"],
+            ["", "Shutdown VIN Supply Current", "SHDN = Low, VIN = 6V", "-", "0.1", "1", "mA"],
+            ["", "SHDN Pull Low Resistance", "", "-", "3", "-", "MW"],
+            ["", "Over Temperature Threshold", "", "-", "160", "-", "oC"],
+            ["", "Over Temperature Hysteresis", "", "-", "40", "-", "oC"],
+            ["", "SET Input Bias Current", "VSET=0.8V", "-100", "-", "100", "nA"]
+          ],
+          "min_row_recall": 1.0,
+          "min_cell_recall": 1.0,
+          "min_cell_f1": 1.0
+        }
+              )));
+}
+
+#[test]
 fn seed_datasheet_manifest_tracks_pdfium_package_pin_table() {
     let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let manifest_path = workspace_root.join("test/corpus.datasheets.json");

@@ -2772,6 +2772,9 @@ fn split_text_blocks(text: &str, run_table_recovery: bool) -> Vec<String> {
             if run_table_recovery && should_keep_fragmented_symbol_table_open(&current) {
                 continue;
             }
+            if run_table_recovery && should_keep_electrical_characteristics_table_open(&current) {
+                continue;
+            }
             if run_table_recovery && should_keep_bullet_leader_table_open(&current) {
                 continue;
             }
@@ -2804,6 +2807,12 @@ fn should_keep_fragmented_symbol_table_open(current: &[String]) -> bool {
         Some((rows, consumed)) => header_index + consumed != refs.len() || rows.len() < 3,
         None => true,
     }
+}
+
+fn should_keep_electrical_characteristics_table_open(current: &[String]) -> bool {
+    let refs = current.iter().map(String::as_str).collect::<Vec<_>>();
+    (0..refs.len())
+        .any(|index| electrical_characteristics_table_header_len(&refs[index..]).is_some())
 }
 
 fn should_keep_bullet_leader_table_open(current: &[String]) -> bool {
@@ -2868,6 +2877,13 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
 
     if let Some(split_blocks) =
         split_fragmented_symbol_parameter_table_blocks(lines, run_table_recovery)
+    {
+        blocks.extend(split_blocks);
+        return;
+    }
+
+    if let Some(split_blocks) =
+        split_electrical_characteristics_table_blocks(lines, run_table_recovery)
     {
         blocks.extend(split_blocks);
         return;
@@ -2982,6 +2998,37 @@ fn split_fragmented_symbol_parameter_table_blocks(
         .position(|line| symbol_parameter_table_header_cells(line).is_some())?;
     let (_, consumed_table_lines) =
         fragmented_symbol_parameter_table_rows_prefix(&refs[header_index..])?;
+
+    let mut blocks = Vec::new();
+    if header_index > 0 {
+        blocks.push(reflow_text_block(
+            &lines[..header_index],
+            run_table_recovery,
+        ));
+    }
+
+    let table_end = header_index + consumed_table_lines;
+    blocks.push(lines[header_index..table_end].join("\n"));
+    if table_end < lines.len() {
+        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
+    }
+
+    Some(blocks)
+}
+
+fn split_electrical_characteristics_table_blocks(
+    lines: &[String],
+    run_table_recovery: bool,
+) -> Option<Vec<String>> {
+    if !run_table_recovery || lines.len() < 6 {
+        return None;
+    }
+
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let header_index = (0..refs.len())
+        .find(|index| electrical_characteristics_table_header_len(&refs[*index..]).is_some())?;
+    let (_, consumed_table_lines) =
+        electrical_characteristics_table_rows_prefix(&refs[header_index..])?;
 
     let mut blocks = Vec::new();
     if header_index > 0 {
@@ -3301,6 +3348,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = electrical_characteristics_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     if let Some(rows) = bullet_leader_table_rows(&lines) {
         return layout_table_from_text_rows(rows);
     }
@@ -3419,6 +3470,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
     }
 
     if fragmented_symbol_parameter_table_rows(lines).is_some() {
+        return true;
+    }
+
+    if electrical_characteristics_table_rows(lines).is_some() {
         return true;
     }
 
@@ -3767,6 +3822,423 @@ fn looks_like_symbol_parameter_table_caption(line: &str) -> bool {
     normalized.contains("ratings")
         || normalized.contains("characteristics")
         || normalized.contains("operating conditions")
+}
+
+#[derive(Clone, Debug)]
+struct ElectricalValues {
+    condition: String,
+    min: String,
+    typ: String,
+    max: String,
+    unit: String,
+}
+
+#[derive(Clone, Debug)]
+struct ElectricalLabel {
+    symbol: String,
+    parameter: String,
+    condition: String,
+}
+
+fn electrical_characteristics_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    let (rows, consumed) = electrical_characteristics_table_rows_prefix(lines)?;
+    (consumed == lines.len()).then_some(rows)
+}
+
+fn electrical_characteristics_table_rows_prefix(
+    lines: &[&str],
+) -> Option<(Vec<Vec<String>>, usize)> {
+    let header_len = electrical_characteristics_table_header_len(lines)?;
+    let mut rows = vec![vec![
+        "Symbol".to_string(),
+        "Parameter".to_string(),
+        "Test Conditions".to_string(),
+        "Min.".to_string(),
+        "Typ.".to_string(),
+        "Max.".to_string(),
+        "Unit".to_string(),
+    ]];
+    let mut consumed = header_len;
+    let mut pending_label: Option<ElectricalLabel> = None;
+    let mut pending_values_before_label: Option<ElectricalValues> = None;
+    let mut pending_unit_rows: Vec<usize> = Vec::new();
+
+    for (offset, line) in lines.iter().enumerate().skip(header_len) {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if looks_like_electrical_characteristics_table_terminator(trimmed) {
+            break;
+        }
+
+        if let Some(unit) = electrical_unit_only_line(trimmed) {
+            if pending_unit_rows.is_empty() {
+                break;
+            }
+            for row_index in pending_unit_rows.drain(..) {
+                if let Some(unit_cell) = rows.get_mut(row_index).and_then(|row| row.get_mut(6)) {
+                    *unit_cell = unit.clone();
+                }
+            }
+            consumed = offset + 1;
+            continue;
+        }
+
+        if let Some(values) = electrical_values_only_line(trimmed) {
+            let Some(label) = pending_label.take() else {
+                break;
+            };
+            push_electrical_row(
+                &mut rows,
+                label.symbol,
+                label.parameter,
+                label.condition,
+                values,
+                &mut pending_unit_rows,
+            );
+            consumed = offset + 1;
+            continue;
+        }
+
+        if let Some((label, values)) = electrical_data_line(trimmed) {
+            if label.parameter.is_empty() {
+                if pending_label.is_some() {
+                    let label = pending_label.take().expect("pending label exists");
+                    push_electrical_row(
+                        &mut rows,
+                        label.symbol,
+                        label.parameter,
+                        combine_electrical_conditions(&label.condition, &values.condition),
+                        values,
+                        &mut pending_unit_rows,
+                    );
+                } else if electrical_label_only_line(lines.get(offset + 1).copied().unwrap_or(""))
+                    .is_some_and(|next_label| !next_label.symbol.is_empty())
+                {
+                    pending_values_before_label = Some(values);
+                } else {
+                    push_electrical_row(
+                        &mut rows,
+                        String::new(),
+                        String::new(),
+                        values.condition.clone(),
+                        values,
+                        &mut pending_unit_rows,
+                    );
+                }
+            } else {
+                pending_label = None;
+                push_electrical_row(
+                    &mut rows,
+                    label.symbol,
+                    label.parameter,
+                    combine_electrical_conditions(&label.condition, &values.condition),
+                    values,
+                    &mut pending_unit_rows,
+                );
+            }
+            consumed = offset + 1;
+            continue;
+        }
+
+        if let Some(label) = electrical_label_only_line(trimmed) {
+            if let Some(values) = pending_values_before_label.take() {
+                push_electrical_row(
+                    &mut rows,
+                    label.symbol,
+                    label.parameter,
+                    combine_electrical_conditions(&label.condition, &values.condition),
+                    values,
+                    &mut pending_unit_rows,
+                );
+            } else {
+                pending_label = Some(label);
+            }
+            consumed = offset + 1;
+            continue;
+        }
+
+        break;
+    }
+
+    if pending_label.is_some()
+        || pending_values_before_label.is_some()
+        || !pending_unit_rows.is_empty()
+    {
+        return None;
+    }
+
+    (rows.len() >= 4).then_some((rows, consumed))
+}
+
+fn electrical_characteristics_table_header_len(lines: &[&str]) -> Option<usize> {
+    if lines.len() < 3 {
+        return None;
+    }
+
+    if normalize_electrical_header_line(lines[0]) == "symbol parameter test conditions"
+        && normalize_electrical_header_line(lines[1]) == "min typ max"
+        && normalize_electrical_header_line(lines[2]) == "unit"
+    {
+        return Some(3);
+    }
+
+    None
+}
+
+fn normalize_electrical_header_line(line: &str) -> String {
+    line.split_whitespace()
+        .map(|token| token.trim_matches(|ch: char| !ch.is_alphanumeric()))
+        .filter(|token| !token.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn electrical_data_line(line: &str) -> Option<(ElectricalLabel, ElectricalValues)> {
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    let (prefix, mut values) = electrical_values_from_tokens(&tokens)?;
+    if prefix.is_empty() {
+        return Some((
+            ElectricalLabel {
+                symbol: String::new(),
+                parameter: String::new(),
+                condition: String::new(),
+            },
+            values,
+        ));
+    }
+
+    let label = electrical_label_from_tokens(prefix)?;
+    if !label.parameter.is_empty() {
+        values.condition.clear();
+    }
+    Some((label, values))
+}
+
+fn electrical_values_only_line(line: &str) -> Option<ElectricalValues> {
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    if tokens.len() != 3
+        || !tokens
+            .iter()
+            .all(|token| looks_like_electrical_value_token(token))
+    {
+        return None;
+    }
+
+    Some(ElectricalValues {
+        condition: String::new(),
+        min: tokens[0].to_string(),
+        typ: tokens[1].to_string(),
+        max: tokens[2].to_string(),
+        unit: String::new(),
+    })
+}
+
+fn electrical_values_from_tokens<'a>(
+    tokens: &'a [&'a str],
+) -> Option<(&'a [&'a str], ElectricalValues)> {
+    if tokens.len() < 3 {
+        return None;
+    }
+
+    let mut value_end = tokens.len();
+    let unit = tokens
+        .last()
+        .filter(|token| looks_like_electrical_unit_token(token))
+        .copied()
+        .unwrap_or_default();
+    if !unit.is_empty() {
+        value_end -= 1;
+    }
+    if value_end < 3 {
+        return None;
+    }
+
+    let value_start = value_end - 3;
+    let values = &tokens[value_start..value_end];
+    if !values
+        .iter()
+        .all(|token| looks_like_electrical_value_token(token))
+    {
+        return None;
+    }
+
+    let prefix = &tokens[..value_start];
+    let (_, condition_tokens) = split_electrical_descriptor_condition(prefix);
+    Some((
+        prefix,
+        ElectricalValues {
+            condition: condition_tokens.join(" "),
+            min: values[0].to_string(),
+            typ: values[1].to_string(),
+            max: values[2].to_string(),
+            unit: unit.to_string(),
+        },
+    ))
+}
+
+fn electrical_label_only_line(line: &str) -> Option<ElectricalLabel> {
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    if tokens.is_empty()
+        || tokens
+            .iter()
+            .any(|token| looks_like_electrical_value_token(token))
+    {
+        return None;
+    }
+
+    electrical_label_from_tokens(&tokens)
+}
+
+fn electrical_label_from_tokens(tokens: &[&str]) -> Option<ElectricalLabel> {
+    let (symbol, descriptor_tokens) = split_electrical_symbol(tokens);
+    let (parameter_tokens, condition_tokens) =
+        split_electrical_descriptor_condition(descriptor_tokens);
+    if parameter_tokens.is_empty() && condition_tokens.is_empty() {
+        return None;
+    }
+
+    Some(ElectricalLabel {
+        symbol,
+        parameter: parameter_tokens.join(" "),
+        condition: condition_tokens.join(" "),
+    })
+}
+
+fn split_electrical_symbol<'a>(tokens: &'a [&'a str]) -> (String, &'a [&'a str]) {
+    let Some(first) = tokens.first() else {
+        return (String::new(), tokens);
+    };
+    let token = first.trim_matches(|ch: char| matches!(ch, ',' | ';'));
+    let next = tokens.get(1).copied().unwrap_or_default();
+
+    let is_symbol = matches!(
+        token,
+        "VIN"
+            | "VOUT"
+            | "IQ"
+            | "VREF"
+            | "REGLINE"
+            | "REGLOAD"
+            | "VDROP"
+            | "PSRR"
+            | "ILIMIT"
+            | "ISHORT"
+    ) && !(token == "VOUT" && next != "Output");
+
+    if is_symbol {
+        (token.to_string(), &tokens[1..])
+    } else {
+        (String::new(), tokens)
+    }
+}
+
+fn split_electrical_descriptor_condition<'a>(
+    tokens: &'a [&'a str],
+) -> (&'a [&'a str], &'a [&'a str]) {
+    let condition_start = tokens
+        .iter()
+        .enumerate()
+        .find_map(|(index, token)| {
+            electrical_condition_starts_at(tokens, index, token).then_some(index)
+        })
+        .unwrap_or(tokens.len());
+
+    (&tokens[..condition_start], &tokens[condition_start..])
+}
+
+fn electrical_condition_starts_at(tokens: &[&str], index: usize, token: &str) -> bool {
+    let normalized = token.trim_matches(|ch: char| matches!(ch, ',' | ';'));
+    let next = tokens.get(index + 1).copied().unwrap_or_default();
+
+    normalized.contains('=')
+        || matches!(normalized, "Measured")
+        || normalized.starts_with("DVOUT")
+        || normalized.starts_with("IOUT")
+        || normalized.starts_with("VSET")
+        || (matches!(normalized, "VOUT" | "VIN" | "SHDN" | "f") && next == "=")
+}
+
+fn push_electrical_row(
+    rows: &mut Vec<Vec<String>>,
+    symbol: String,
+    parameter: String,
+    condition: String,
+    values: ElectricalValues,
+    pending_unit_rows: &mut Vec<usize>,
+) {
+    let row_index = rows.len();
+    let unit_is_pending = values.unit.is_empty();
+    rows.push(vec![
+        symbol,
+        parameter,
+        condition,
+        values.min,
+        values.typ,
+        values.max,
+        values.unit,
+    ]);
+    if unit_is_pending {
+        pending_unit_rows.push(row_index);
+    }
+}
+
+fn combine_electrical_conditions(prefix: &str, suffix: &str) -> String {
+    match (prefix.trim().is_empty(), suffix.trim().is_empty()) {
+        (true, true) => String::new(),
+        (true, false) => suffix.trim().to_string(),
+        (false, true) => prefix.trim().to_string(),
+        (false, false) => format!("{} {}", prefix.trim(), suffix.trim()),
+    }
+}
+
+fn electrical_unit_only_line(line: &str) -> Option<String> {
+    let token = line.trim();
+    (token.split_whitespace().count() == 1 && looks_like_electrical_unit_token(token))
+        .then_some(token.to_string())
+}
+
+fn looks_like_electrical_unit_token(token: &str) -> bool {
+    let normalized = token
+        .trim_matches(|ch: char| matches!(ch, ',' | ';'))
+        .replace('µ', "u")
+        .to_ascii_lowercase();
+    matches!(
+        normalized.as_str(),
+        "v" | "mv"
+            | "ma"
+            | "ua"
+            | "a"
+            | "w"
+            | "mw"
+            | "mvrms"
+            | "uvrms"
+            | "db"
+            | "na"
+            | "%"
+            | "%/v"
+            | "%/a"
+            | "oc"
+            | "c"
+            | "ohm"
+            | "kohm"
+            | "mohm"
+    )
+}
+
+fn looks_like_electrical_value_token(token: &str) -> bool {
+    looks_like_symbol_parameter_rating_token(token)
+}
+
+fn looks_like_electrical_characteristics_table_terminator(line: &str) -> bool {
+    let normalized = line.trim().to_ascii_lowercase();
+    normalized.contains("typical operating characteristics")
+        || normalized.contains("application information")
+        || normalized.contains("package information")
+        || normalized.contains("recommended operating conditions")
+        || normalized.contains("thermal characteristics")
 }
 
 fn bullet_leader_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
