@@ -498,6 +498,7 @@ struct InspectPageSummary {
     ocr_span_count: usize,
     image_artifact_count: usize,
     layout_block_count: usize,
+    layout: DebugLayoutSummary,
     timings: PageTimings,
     warnings: Vec<String>,
 }
@@ -1410,6 +1411,12 @@ struct DebugLayoutSummary {
     heading_blocks: usize,
     list_blocks: usize,
     table_blocks: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    table_rows: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    table_cells: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    table_cells_with_bbox: Option<usize>,
     figure_blocks: usize,
     header_blocks: usize,
     footer_blocks: usize,
@@ -3605,6 +3612,7 @@ fn inspect_page_summaries(
             ocr_span_count: page.ocr_spans.len(),
             image_artifact_count: page.image_artifacts.len(),
             layout_block_count: page.layout_blocks.len(),
+            layout: layout_summary_from_page(page),
             timings: page.timings.clone(),
             warnings: warnings_for_page(warnings, page.page_index),
         })
@@ -6117,7 +6125,30 @@ fn layout_summary_from_page(page: &PageArtifact) -> DebugLayoutSummary {
             LayoutBlockKind::Paragraph => summary.paragraph_blocks += 1,
             LayoutBlockKind::Heading => summary.heading_blocks += 1,
             LayoutBlockKind::List => summary.list_blocks += 1,
-            LayoutBlockKind::Table => summary.table_blocks += 1,
+            LayoutBlockKind::Table => {
+                summary.table_blocks += 1;
+                if let Some(table) = &block.table {
+                    add_table_summary_counts(
+                        &mut summary,
+                        table_rows_from_grid(table).len(),
+                        table.rows.iter().map(|row| row.cells.len()).sum(),
+                        table
+                            .rows
+                            .iter()
+                            .flat_map(|row| &row.cells)
+                            .filter(|cell| cell.bbox.is_some())
+                            .count(),
+                    );
+                } else {
+                    let rows = parse_table_rows(&block.text);
+                    add_table_summary_counts(
+                        &mut summary,
+                        rows.len(),
+                        rows.iter().map(Vec::len).sum(),
+                        0,
+                    );
+                }
+            }
             LayoutBlockKind::Figure => summary.figure_blocks += 1,
             LayoutBlockKind::Header => summary.header_blocks += 1,
             LayoutBlockKind::Footer => summary.footer_blocks += 1,
@@ -6125,6 +6156,17 @@ fn layout_summary_from_page(page: &PageArtifact) -> DebugLayoutSummary {
     }
 
     summary
+}
+
+fn add_table_summary_counts(
+    summary: &mut DebugLayoutSummary,
+    rows: usize,
+    cells: usize,
+    cells_with_bbox: usize,
+) {
+    *summary.table_rows.get_or_insert(0) += rows;
+    *summary.table_cells.get_or_insert(0) += cells;
+    *summary.table_cells_with_bbox.get_or_insert(0) += cells_with_bbox;
 }
 
 fn empty_text_output_page_count_from_artifact(artifact: &DocumentArtifact) -> usize {

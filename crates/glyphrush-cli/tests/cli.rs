@@ -702,6 +702,35 @@ fn inspect_pages_reports_page_level_quality_triage() {
 }
 
 #[test]
+fn inspect_pages_reports_table_row_cell_triage() {
+    let dir = temp_dir("inspect-pages-table-summary");
+    let pdf_path = dir.join("ruled-table.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_ruled_table()).unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["inspect", pdf_path.to_str().unwrap(), "--pages"])
+        .output()
+        .expect("run glyphrush inspect --pages on ruled table");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("inspect output is json");
+
+    assert_eq!(json["pages"][0]["route"], "needs_fallback");
+    assert_eq!(
+        json["pages"][0]["reasons"],
+        serde_json::json!(["table_line_density"])
+    );
+    assert_eq!(json["pages"][0]["layout"]["table_blocks"], 1);
+    assert_eq!(json["pages"][0]["layout"]["table_rows"], 3);
+    assert_eq!(json["pages"][0]["layout"]["table_cells"], 6);
+    assert_eq!(json["pages"][0]["layout"]["table_cells_with_bbox"], 0);
+}
+
+#[test]
 fn inspect_pages_jobs_report_worker_count_and_preserve_page_order() {
     let dir = temp_dir("inspect-pages-jobs");
     let pdf_path = dir.join("multi.pdf");
@@ -8127,6 +8156,9 @@ fn debug_page_flags_ruled_table_geometry_without_ocr() {
     assert_eq!(json["decision"]["run_ocr"], false);
     assert_eq!(json["decision"]["run_table_recovery"], true);
     assert_eq!(json["layout"]["table_blocks"], 1);
+    assert_eq!(json["layout"]["table_rows"], 3);
+    assert_eq!(json["layout"]["table_cells"], 6);
+    assert_eq!(json["layout"]["table_cells_with_bbox"], 0);
     assert_eq!(
         json["decision"]["flags"],
         Value::Array(vec![Value::String("table_uncertain".to_string())])
