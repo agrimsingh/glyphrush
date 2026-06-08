@@ -2690,6 +2690,7 @@ fn aligned_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
 
     let mut rows = Vec::with_capacity(lines.len());
     let mut regular_row_count = 0;
+    let mut pending_section_row: Option<Vec<String>> = None;
     for line in lines {
         let segments = wide_space_segments(line);
         if segments.is_empty() {
@@ -2709,10 +2710,25 @@ fn aligned_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
             if !aligned_whitespace_row_is_section(&segments, &column_starts) {
                 return None;
             }
+            if let Some(section_row) = pending_section_row.replace(cells) {
+                rows.push(section_row);
+            }
+            continue;
         } else {
+            if let Some(section_row) = pending_section_row.take() {
+                if aligned_whitespace_should_merge_descriptor(&section_row[0], &cells[0]) {
+                    cells[0] = format!("{} {}", section_row[0], cells[0]);
+                } else {
+                    rows.push(section_row);
+                }
+            }
             regular_row_count += 1;
         }
         rows.push(cells);
+    }
+
+    if let Some(section_row) = pending_section_row {
+        rows.push(section_row);
     }
 
     if regular_row_count >= 2
@@ -2739,6 +2755,17 @@ fn aligned_whitespace_row_is_section(
             .is_some_and(|start| segment.start == *start)
         && segment.text.chars().count() <= 80
         && segment.text.chars().any(char::is_alphabetic)
+}
+
+fn aligned_whitespace_should_merge_descriptor(prefix: &str, first_cell: &str) -> bool {
+    let prefix = prefix.trim();
+    let first_cell = first_cell.trim();
+    !prefix.is_empty()
+        && !first_cell.is_empty()
+        && first_cell
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_lowercase())
 }
 
 fn wide_space_segments(line: &str) -> Vec<AlignedTableSegment> {

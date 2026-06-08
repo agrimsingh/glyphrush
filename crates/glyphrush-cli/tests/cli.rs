@@ -290,6 +290,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
             .unwrap()
             .contains("aligned whitespace and positioned section rows")
     );
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
+            .contains("fixed-width wrapped descriptor fragments")
+    );
 
     let ocr = capability(capabilities, "ocr");
     assert_eq!(ocr["liteparse"], "tesseract_or_http_ocr");
