@@ -38,6 +38,7 @@ The v0 pipeline is intentionally narrow:
     Fragmented datasheet `Symbol / Parameter / Rating / Unit` tables remain open across PDFium blank separator lines until enough row fragments are present, then emit structured symbol, parameter, value, and unit cells.
     Bullet/leader spec rows remain open across blank separators while a row is pending, then emit `Parameter` / `Limit` cells once the leader continuation arrives.
     Electrical-characteristics tables remain open across blank separators while unit or value continuations are pending, then emit seven-column `Symbol` / `Parameter` / `Test Conditions` / `Min.` / `Typ.` / `Max.` / `Unit` cells.
+    Reflow-profile tables keep `Profile Feature`, `Sn-Pb Eutectic Assembly`, and `Pb-Free Assembly` rows together even when PDFium emits value groups below the feature labels.
 14. Emit a deterministic document artifact with parser/backend/source metadata, page fingerprints over output-relevant text/signals/geometry, quality flags, and separate OCR-required/OCR-applied diagnostics.
 15. Store the artifact on cache miss when `--cache-dir` is enabled.
 

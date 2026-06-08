@@ -2889,6 +2889,11 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
         return;
     }
 
+    if let Some(split_blocks) = split_reflow_profile_table_blocks(lines, run_table_recovery) {
+        blocks.extend(split_blocks);
+        return;
+    }
+
     if let Some(split_blocks) = split_bullet_leader_table_blocks(lines, run_table_recovery) {
         blocks.extend(split_blocks);
         return;
@@ -3029,6 +3034,37 @@ fn split_electrical_characteristics_table_blocks(
         .find(|index| electrical_characteristics_table_header_len(&refs[*index..]).is_some())?;
     let (_, consumed_table_lines) =
         electrical_characteristics_table_rows_prefix(&refs[header_index..])?;
+
+    let mut blocks = Vec::new();
+    if header_index > 0 {
+        blocks.push(reflow_text_block(
+            &lines[..header_index],
+            run_table_recovery,
+        ));
+    }
+
+    let table_end = header_index + consumed_table_lines;
+    blocks.push(lines[header_index..table_end].join("\n"));
+    if table_end < lines.len() {
+        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
+    }
+
+    Some(blocks)
+}
+
+fn split_reflow_profile_table_blocks(
+    lines: &[String],
+    run_table_recovery: bool,
+) -> Option<Vec<String>> {
+    if !run_table_recovery || lines.len() < 6 {
+        return None;
+    }
+
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let header_index = refs
+        .iter()
+        .position(|line| reflow_profile_table_header_cells(line).is_some())?;
+    let (_, consumed_table_lines) = reflow_profile_table_rows_prefix(&refs[header_index..])?;
 
     let mut blocks = Vec::new();
     if header_index > 0 {
@@ -3352,6 +3388,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = reflow_profile_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     if let Some(rows) = bullet_leader_table_rows(&lines) {
         return layout_table_from_text_rows(rows);
     }
@@ -3474,6 +3514,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
     }
 
     if electrical_characteristics_table_rows(lines).is_some() {
+        return true;
+    }
+
+    if reflow_profile_table_rows(lines).is_some() {
         return true;
     }
 
@@ -4239,6 +4283,250 @@ fn looks_like_electrical_characteristics_table_terminator(line: &str) -> bool {
         || normalized.contains("package information")
         || normalized.contains("recommended operating conditions")
         || normalized.contains("thermal characteristics")
+}
+
+fn reflow_profile_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    let (rows, consumed) = reflow_profile_table_rows_prefix(lines)?;
+    (consumed == lines.len()).then_some(rows)
+}
+
+fn reflow_profile_table_rows_prefix(lines: &[&str]) -> Option<(Vec<Vec<String>>, usize)> {
+    let header = reflow_profile_table_header_cells(lines.first()?)?;
+    let mut rows = vec![header];
+    let mut consumed = 1;
+    let mut index = 1;
+
+    if lines
+        .get(index)
+        .is_some_and(|line| line.trim().eq_ignore_ascii_case("Preheat & Soak"))
+    {
+        rows.push(vec![
+            "Preheat & Soak".to_string(),
+            String::new(),
+            String::new(),
+        ]);
+        index += 1;
+
+        let labels = lines
+            .get(index..index + 3)?
+            .iter()
+            .map(|line| line.trim().to_string())
+            .collect::<Vec<_>>();
+        if !labels
+            .iter()
+            .all(|label| looks_like_reflow_profile_feature_label(label))
+        {
+            return None;
+        }
+        index += labels.len();
+
+        let values = lines
+            .get(index..index + labels.len() * 2)?
+            .iter()
+            .map(|line| reflow_profile_single_value_line(line.trim()))
+            .collect::<Option<Vec<_>>>()?;
+        index += values.len();
+
+        for (offset, label) in labels.into_iter().enumerate() {
+            rows.push(vec![
+                label,
+                values[offset].clone(),
+                values[offset + values.len() / 2].clone(),
+            ]);
+        }
+        consumed = index;
+    }
+
+    while index < lines.len() {
+        let trimmed = lines[index].trim();
+        if trimmed.is_empty() || looks_like_reflow_profile_table_terminator(trimmed) {
+            break;
+        }
+
+        if let Some(row) = reflow_profile_inline_row(trimmed) {
+            rows.push(row);
+            index += 1;
+            consumed = index;
+            continue;
+        }
+
+        let mut label_parts = Vec::new();
+        while index < lines.len() {
+            let current = lines[index].trim();
+            if current.is_empty()
+                || looks_like_reflow_profile_table_terminator(current)
+                || reflow_profile_single_value_line(current).is_some()
+                || reflow_profile_value_pair_from_text(current).is_some()
+            {
+                break;
+            }
+            if !looks_like_reflow_profile_feature_label(current) {
+                break;
+            }
+            label_parts.push(current.to_string());
+            index += 1;
+        }
+
+        if label_parts.is_empty() {
+            break;
+        }
+
+        if let Some((label_suffix, left, right)) = lines
+            .get(index)
+            .and_then(|line| reflow_profile_value_pair_from_text(line.trim()))
+        {
+            let label = join_reflow_profile_label_parts(&label_parts, &label_suffix);
+            rows.push(vec![label, left, right]);
+            index += 1;
+            consumed = index;
+            continue;
+        }
+
+        let mut values = Vec::new();
+        while index < lines.len() {
+            let current = lines[index].trim();
+            let Some(value) = reflow_profile_single_value_line(current) else {
+                break;
+            };
+            values.push(value);
+            index += 1;
+        }
+
+        if values.is_empty() || values.len() % 2 != 0 {
+            break;
+        }
+
+        if label_parts.len() > 1 && values.len() == label_parts.len() * 2 {
+            for (offset, label) in label_parts.into_iter().enumerate() {
+                rows.push(vec![
+                    label,
+                    values[offset].clone(),
+                    values[offset + values.len() / 2].clone(),
+                ]);
+            }
+        } else if label_parts.len() == 1 && values.len() == 2 {
+            rows.push(vec![
+                label_parts.remove(0),
+                values[0].clone(),
+                values[1].clone(),
+            ]);
+        } else {
+            break;
+        }
+
+        consumed = index;
+    }
+
+    (rows.len() >= 4).then_some((rows, consumed))
+}
+
+fn reflow_profile_table_header_cells(line: &str) -> Option<Vec<String>> {
+    let normalized = line.to_ascii_lowercase();
+    if normalized.contains("profile feature")
+        && normalized.contains("sn-pb eutectic assembly")
+        && normalized.contains("pb-free assembly")
+    {
+        return Some(vec![
+            "Profile Feature".to_string(),
+            "Sn-Pb Eutectic Assembly".to_string(),
+            "Pb-Free Assembly".to_string(),
+        ]);
+    }
+
+    None
+}
+
+fn reflow_profile_inline_row(line: &str) -> Option<Vec<String>> {
+    let (label, left, right) = reflow_profile_value_pair_from_text(line)?;
+    (!label.trim().is_empty()).then_some(vec![label, left, right])
+}
+
+fn reflow_profile_value_pair_from_text(line: &str) -> Option<(String, String, String)> {
+    let pairs = [
+        (
+            "See Classification Temp in table 1 See Classification Temp in table 2",
+            "See Classification Temp in table 1",
+            "See Classification Temp in table 2",
+        ),
+        (
+            "3 °C/second max. 3°C/second max.",
+            "3 °C/second max.",
+            "3°C/second max.",
+        ),
+        (
+            "6 °C/second max. 6 °C/second max.",
+            "6 °C/second max.",
+            "6 °C/second max.",
+        ),
+        ("20** seconds 30** seconds", "20** seconds", "30** seconds"),
+        (
+            "6 minutes max. 8 minutes max.",
+            "6 minutes max.",
+            "8 minutes max.",
+        ),
+    ];
+
+    for (suffix, left, right) in pairs {
+        if line == suffix {
+            return Some((String::new(), left.to_string(), right.to_string()));
+        }
+        if let Some(label) = line.strip_suffix(suffix) {
+            let label = label.trim();
+            if !label.is_empty() {
+                return Some((label.to_string(), left.to_string(), right.to_string()));
+            }
+        }
+    }
+
+    None
+}
+
+fn reflow_profile_single_value_line(line: &str) -> Option<String> {
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    if tokens.len() == 2 && tokens[1] == "°C" && tokens[0].chars().all(|ch| ch.is_ascii_digit()) {
+        return Some(line.to_string());
+    }
+
+    if tokens.len() == 2
+        && tokens[1].eq_ignore_ascii_case("seconds")
+        && tokens[0].chars().all(|ch| ch.is_ascii_digit() || ch == '-')
+    {
+        return Some(line.to_string());
+    }
+
+    None
+}
+
+fn looks_like_reflow_profile_feature_label(line: &str) -> bool {
+    let trimmed = line.trim();
+    !trimmed.is_empty()
+        && trimmed.chars().any(char::is_alphabetic)
+        && !trimmed.starts_with('*')
+        && !trimmed.to_ascii_lowercase().starts_with("table ")
+        && !trimmed
+            .split_whitespace()
+            .all(looks_like_electrical_value_token)
+}
+
+fn join_reflow_profile_label_parts(parts: &[String], suffix: &str) -> String {
+    let mut label_parts = parts
+        .iter()
+        .map(|part| part.trim())
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>();
+    if !suffix.trim().is_empty() {
+        label_parts.push(suffix.trim());
+    }
+    label_parts.join(" ")
+}
+
+fn looks_like_reflow_profile_table_terminator(line: &str) -> bool {
+    let normalized = line.trim().to_ascii_lowercase();
+    normalized.starts_with("* tolerance")
+        || normalized.starts_with("** tolerance")
+        || normalized.starts_with("table 1.")
+        || normalized.starts_with("table 2.")
+        || normalized.starts_with("reliability test program")
 }
 
 fn bullet_leader_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {

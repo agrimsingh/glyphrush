@@ -2844,6 +2844,131 @@ fn text_table_recovery_extracts_electrical_characteristics_tables() {
 }
 
 #[test]
+fn text_table_recovery_extracts_reflow_profile_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-reflow-profile-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "APL5324\n",
+                "Classification Reflow Profiles\n",
+                "Profile Feature Sn-Pb Eutectic Assembly Pb-Free Assembly\n",
+                "Preheat & Soak\n",
+                "Temperature min (Tsmin)\n",
+                "Temperature max (Tsmax)\n",
+                "Time (Tsmin to Tsmax) (ts)\n",
+                "100 °C\n",
+                "150 °C\n",
+                "60-120 seconds\n",
+                "150 °C\n",
+                "200 °C\n",
+                "60-120 seconds\n",
+                "Average ramp-up rate\n",
+                "(Tsmax to TP)\n",
+                "3 °C/second max. 3°C/second max.\n",
+                "Liquidous temperature (TL)\n",
+                "Time at liquidous (tL)\n",
+                "183 °C\n",
+                "60-150 seconds\n",
+                "217 °C\n",
+                "60-150 seconds\n",
+                "Peak package body Temperature\n",
+                "(Tp)*\n",
+                "See Classification Temp in table 1 See Classification Temp in table 2\n",
+                "Time (tP)** within 5°C of the specified\n",
+                "classification temperature (Tc)\n",
+                "20** seconds 30** seconds\n",
+                "Average ramp-down rate (Tp to Tsmax) 6 °C/second max. 6 °C/second max.\n",
+                "Time 25°C to peak temperature 6 minutes max. 8 minutes max.\n",
+                "* Tolerance for peak profile Temperature (Tp) is defined as a supplier minimum and a user maximum.\n",
+                "** Tolerance for time at peak profile temperature (tp) is defined as a supplier minimum and a user maximum.\n",
+                "Table 1. SnPb Eutectic Process – Classification Temperatures (Tc)"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.50,
+                native_span_count: 36,
+                native_text_bytes: 1350,
+                glyph_count: 1050,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_block = page
+        .layout_blocks
+        .iter()
+        .find(|block| block.kind == LayoutBlockKind::Table)
+        .expect("reflow profile table block");
+    assert!(!table_block.text.contains("* Tolerance"));
+    assert!(!table_block.text.contains("Table 1."));
+
+    let table = table_block.table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec![
+                "Profile Feature",
+                "Sn-Pb Eutectic Assembly",
+                "Pb-Free Assembly"
+            ],
+            vec!["Preheat & Soak", "", ""],
+            vec!["Temperature min (Tsmin)", "100 °C", "150 °C"],
+            vec!["Temperature max (Tsmax)", "150 °C", "200 °C"],
+            vec![
+                "Time (Tsmin to Tsmax) (ts)",
+                "60-120 seconds",
+                "60-120 seconds"
+            ],
+            vec![
+                "Average ramp-up rate (Tsmax to TP)",
+                "3 °C/second max.",
+                "3°C/second max."
+            ],
+            vec!["Liquidous temperature (TL)", "183 °C", "217 °C"],
+            vec!["Time at liquidous (tL)", "60-150 seconds", "60-150 seconds"],
+            vec![
+                "Peak package body Temperature (Tp)*",
+                "See Classification Temp in table 1",
+                "See Classification Temp in table 2"
+            ],
+            vec![
+                "Time (tP)** within 5°C of the specified classification temperature (Tc)",
+                "20** seconds",
+                "30** seconds"
+            ],
+            vec![
+                "Average ramp-down rate (Tp to Tsmax)",
+                "6 °C/second max.",
+                "6 °C/second max."
+            ],
+            vec![
+                "Time 25°C to peak temperature",
+                "6 minutes max.",
+                "8 minutes max."
+            ],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_extracts_package_pin_description_tables() {
     let artifact = parse_extracted_pages(
         "doc-package-pin-description-table".to_string(),

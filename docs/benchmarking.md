@@ -201,6 +201,8 @@ Bullet/leader spec rows are scored the same way after normalization into `Parame
 
 Electrical-characteristics rows are scored through `table_structure` after normalization into `Symbol`, `Parameter`, `Test Conditions`, `Min.`, `Typ.`, `Max.`, and `Unit` cells, including empty cells and unit-only continuation lines.
 
+Reflow-profile Sn-Pb/Pb-free assembly rows are scored through `table_structure` after normalization into `Profile Feature`, `Sn-Pb Eutectic Assembly`, and `Pb-Free Assembly` cells, including PDFium value groups that arrive below their feature labels.
+
 Example:
 
 ```json

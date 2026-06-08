@@ -3056,6 +3056,47 @@ fn seed_datasheet_manifest_tracks_pdfium_electrical_characteristics_table() {
 }
 
 #[test]
+fn seed_datasheet_manifest_tracks_pdfium_reflow_profile_table() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_APL5324BI-TRG.pdf")
+        .expect("APL5324 datasheet expectation exists");
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
+
+    assert!(table_structure.iter().any(|expectation| expectation
+        == &serde_json::json!(
+        {
+          "page": 14,
+          "expected_rows": [
+            ["Profile Feature", "Sn-Pb Eutectic Assembly", "Pb-Free Assembly"],
+            ["Preheat & Soak", "", ""],
+            ["Temperature min (Tsmin)", "100 °C", "150 °C"],
+            ["Temperature max (Tsmax)", "150 °C", "200 °C"],
+            ["Time (Tsmin to Tsmax) (ts)", "60-120 seconds", "60-120 seconds"],
+            ["Average ramp-up rate (Tsmax to TP)", "3 °C/second max.", "3°C/second max."],
+            ["Liquidous temperature (TL)", "183 °C", "217 °C"],
+            ["Time at liquidous (tL)", "60-150 seconds", "60-150 seconds"],
+            ["Peak package body Temperature (Tp)*", "See Classification Temp in table 1", "See Classification Temp in table 2"],
+            ["Time (tP)** within 5°C of the specified classification temperature (Tc)", "20** seconds", "30** seconds"],
+            ["Average ramp-down rate (Tp to Tsmax)", "6 °C/second max.", "6 °C/second max."],
+            ["Time 25°C to peak temperature", "6 minutes max.", "8 minutes max."]
+          ],
+          "min_row_recall": 1.0,
+          "min_cell_recall": 1.0,
+          "min_cell_f1": 1.0
+        }
+              )));
+}
+
+#[test]
 fn seed_datasheet_manifest_tracks_pdfium_package_pin_table() {
     let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let manifest_path = workspace_root.join("test/corpus.datasheets.json");
