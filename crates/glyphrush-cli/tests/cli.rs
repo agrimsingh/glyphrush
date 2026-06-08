@@ -121,6 +121,30 @@ fn backend_check_reports_lopdf_and_pending_pdfium_mupdf_candidates() {
     assert_eq!(backends[2]["selected"], false);
 }
 
+#[test]
+fn backend_auto_selects_fastest_enabled_backend() {
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["--backend", "auto", "backend-check"])
+        .output()
+        .expect("run glyphrush backend-check with auto backend");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("backend-check output is json");
+
+    assert_eq!(
+        json["selected_backend"],
+        if cfg!(feature = "pdfium") {
+            "pdfium"
+        } else {
+            "lopdf"
+        }
+    );
+}
+
 #[cfg(feature = "pdfium")]
 #[test]
 fn backend_check_reports_feature_gated_pdfium_backend() {
@@ -7096,6 +7120,79 @@ fn baseline_wrapper_describe_modes_identify_comparison_targets() {
 }
 
 #[test]
+fn liteparse_wrapper_uses_project_local_lit_install() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let root = temp_dir("baseline-local-lit");
+    let pdf_path = root.join("sample.pdf");
+    fs::write(&pdf_path, minimal_pdf("Local LiteParse")).unwrap();
+    let lit = root
+        .join(".glyphrush-baselines")
+        .join("node_modules")
+        .join(".bin")
+        .join("lit");
+    let tessdata = root.join(".glyphrush-baselines").join("tessdata");
+    fs::create_dir_all(&tessdata).unwrap();
+    fs::write(tessdata.join("eng.traineddata"), "fake tessdata").unwrap();
+    write_executable(
+        &lit,
+        "#!/bin/sh\nprintf 'local lit:'\nprintf ' %s' \"$@\"\nprintf ' tessdata=%s\\n' \"${TESSDATA_PREFIX:-unset}\"\n",
+    );
+
+    let output = Command::new(workspace_root.join("tools/baselines/liteparse-text.sh"))
+        .env("GLYPHRUSH_BASELINE_ROOT", &root)
+        .env_remove("LITEPARSE_BIN")
+        .arg(&pdf_path)
+        .output()
+        .expect("run liteparse wrapper with project-local lit");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("local lit: parse --format text --quiet"));
+    assert!(stdout.contains(pdf_path.to_str().unwrap()));
+    assert!(stdout.contains(&format!("tessdata={}", tessdata.display())));
+}
+
+#[test]
+fn python_baseline_wrappers_use_project_local_venv_python() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let root = temp_dir("baseline-local-python");
+    let pdf_path = root.join("sample.pdf");
+    fs::write(&pdf_path, minimal_pdf("Local Python baseline")).unwrap();
+    let python = root
+        .join(".glyphrush-baselines")
+        .join("venv")
+        .join("bin")
+        .join("python3");
+    write_executable(
+        &python,
+        "#!/bin/sh\nprintf 'local python %s\\n' \"${2:-missing-pdf}\"\n",
+    );
+
+    for script in ["pymupdf-text.sh", "pdfplumber-text.sh"] {
+        let output = Command::new(workspace_root.join("tools/baselines").join(script))
+            .env("GLYPHRUSH_BASELINE_ROOT", &root)
+            .env_remove("GLYPHRUSH_BASELINE_PYTHON")
+            .arg(&pdf_path)
+            .output()
+            .unwrap_or_else(|error| panic!("run {script} with project-local python: {error}"));
+
+        assert!(
+            output.status.success(),
+            "{script} stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(
+            String::from_utf8_lossy(&output.stdout),
+            format!("local python {}\n", pdf_path.display())
+        );
+    }
+}
+
+#[test]
 fn baseline_check_reports_wrapper_describe_health() {
     let healthy = write_baseline_script(
         "baseline-check-healthy",
@@ -10959,11 +11056,18 @@ fn write_test_pdf(label: &str, text: &str) -> PathBuf {
 fn write_baseline_script(label: &str, body: &str) -> PathBuf {
     let dir = temp_dir(label);
     let path = dir.join("baseline.sh");
-    fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
-    let mut permissions = fs::metadata(&path).unwrap().permissions();
-    permissions.set_mode(0o755);
-    fs::set_permissions(&path, permissions).unwrap();
+    write_executable(&path, &format!("#!/bin/sh\n{body}\n"));
     path
+}
+
+fn write_executable(path: &std::path::Path, contents: &str) {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).unwrap();
+    }
+    fs::write(path, contents).unwrap();
+    let mut permissions = fs::metadata(path).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(path, permissions).unwrap();
 }
 
 fn write_ocr_command_script(label: &str, log_path: &std::path::Path) -> PathBuf {

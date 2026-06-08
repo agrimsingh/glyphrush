@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$script_dir/common.sh"
+
 if [[ "${1:-}" == "--describe" ]]; then
   cat <<'JSON'
 {
@@ -26,9 +29,9 @@ if [[ ! -f "$pdf" ]]; then
   exit 66
 fi
 
-bin="${MARKER_BIN:-marker_single}"
+bin="$(baseline_resolve_tool "${MARKER_BIN:-}" marker_single)"
 if ! command -v "$bin" >/dev/null 2>&1; then
-  echo "marker baseline requires the 'marker_single' CLI. Install Marker, for example: python3 -m pip install marker-pdf" >&2
+  echo "marker baseline requires the 'marker_single' CLI. Install Marker globally, set MARKER_BIN, or run scripts/setup-baselines.sh for a project-local install." >&2
   exit 127
 fi
 

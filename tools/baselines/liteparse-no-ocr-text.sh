@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$script_dir/common.sh"
+
 if [[ "${1:-}" == "--describe" ]]; then
   cat <<'JSON'
 {
@@ -26,9 +29,9 @@ if [[ ! -f "$pdf" ]]; then
   exit 66
 fi
 
-bin="${LITEPARSE_BIN:-lit}"
+bin="$(baseline_resolve_tool "${LITEPARSE_BIN:-}" lit)"
 if ! command -v "$bin" >/dev/null 2>&1; then
-  echo "liteparse no-ocr baseline requires the 'lit' CLI. Install run-llama/liteparse, for example: npm install -g @llamaindex/liteparse" >&2
+  echo "liteparse no-ocr baseline requires the 'lit' CLI. Install run-llama/liteparse globally, set LITEPARSE_BIN, or run scripts/setup-baselines.sh for a project-local install." >&2
   exit 127
 fi
 

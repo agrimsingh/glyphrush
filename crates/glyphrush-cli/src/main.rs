@@ -112,6 +112,7 @@ struct Cli {
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum BackendChoice {
+    Auto,
     Lopdf,
     #[cfg(feature = "pdfium")]
     Pdfium,
@@ -2761,9 +2762,21 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.backend {
+        BackendChoice::Auto => run_auto_backend(cli.command),
         BackendChoice::Lopdf => run_command(&LopdfBackend, cli.command),
         #[cfg(feature = "pdfium")]
         BackendChoice::Pdfium => run_command(&PdfiumBackend, cli.command),
+    }
+}
+
+fn run_auto_backend(command: Commands) -> Result<()> {
+    #[cfg(feature = "pdfium")]
+    {
+        run_command(&PdfiumBackend, command)
+    }
+    #[cfg(not(feature = "pdfium"))]
+    {
+        run_command(&LopdfBackend, command)
     }
 }
 

@@ -1,3 +1,5 @@
 /target/
+/.glyphrush-baselines/
+/.venv/
 /test/*.pdf
 /test/*.PDF

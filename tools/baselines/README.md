@@ -30,6 +30,14 @@ glyphrush baseline-check --baseline-preset glyphrush-v0
 
 `glyphrush-v0` expands to LiteParse, LiteParse no-OCR, PyMuPDF, and pdfplumber. Marker and Docling are excluded from the preset by design because they are heavier quality-context baselines; add them manually when a benchmark needs that comparison. Benchmark and baseline-check JSON reports include `requested_baseline_presets` so saved results show when this preset was expanded.
 
+The wrappers prefer explicit binary overrides first, then project-local installs, then global commands. Use `scripts/setup-baselines.sh` to install the core baseline dependencies into `.glyphrush-baselines/` without mutating global Python or npm packages:
+
+```sh
+scripts/setup-baselines.sh
+```
+
+After setup, the LiteParse wrappers auto-detect `.glyphrush-baselines/node_modules/.bin/lit` and export `.glyphrush-baselines/tessdata` as `TESSDATA_PREFIX` when OCR is enabled. The PyMuPDF/pdfplumber wrappers auto-detect `.glyphrush-baselines/venv/bin/python3`. Override these with `LITEPARSE_BIN=/path/to/lit`, `TESSDATA_PREFIX=/path/to/tessdata`, or `GLYPHRUSH_BASELINE_PYTHON=/path/to/python` when a benchmark needs a specific installed toolchain.
+
 Use explicit baselines when you want to include optional tools:
 
 ```sh
