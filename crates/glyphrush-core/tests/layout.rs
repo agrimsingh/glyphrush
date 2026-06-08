@@ -1261,6 +1261,113 @@ fn positioned_table_recovery_preserves_cross_column_section_rows() {
 }
 
 #[test]
+fn positioned_table_recovery_preserves_first_column_section_rows() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-table-first-column-section-row".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Parameter\n",
+                "Symbol\n",
+                "Typ\n",
+                "Max\n",
+                "Unit\n",
+                "Input voltage\n",
+                "VIN\n",
+                "3.3\n",
+                "5.5\n",
+                "V\n",
+                "Protection features\n",
+                "Current limit\n",
+                "ILIM\n",
+                "650\n",
+                "900\n",
+                "mA\n",
+                "Thermal shutdown\n",
+                "TSD\n",
+                "150\n",
+                "175\n",
+                "C"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                span("Symbol", 220.0, 100.0, 270.0, 114.0),
+                span("Typ", 300.0, 100.0, 330.0, 114.0),
+                span("Max", 360.0, 100.0, 390.0, 114.0),
+                span("Unit", 420.0, 100.0, 450.0, 114.0),
+                span("Input voltage", 72.0, 132.0, 160.0, 146.0),
+                span("VIN", 220.0, 132.0, 248.0, 146.0),
+                span("3.3", 300.0, 132.0, 326.0, 146.0),
+                span("5.5", 360.0, 132.0, 386.0, 146.0),
+                span("V", 420.0, 132.0, 430.0, 146.0),
+                span("Protection features", 72.0, 164.0, 184.0, 178.0),
+                span("Current limit", 72.0, 196.0, 160.0, 210.0),
+                span("ILIM", 220.0, 196.0, 252.0, 210.0),
+                span("650", 300.0, 196.0, 326.0, 210.0),
+                span("900", 360.0, 196.0, 386.0, 210.0),
+                span("mA", 420.0, 196.0, 440.0, 210.0),
+                span("Thermal shutdown", 72.0, 220.0, 184.0, 234.0),
+                span("TSD", 220.0, 220.0, 248.0, 234.0),
+                span("150", 300.0, 220.0, 326.0, 234.0),
+                span("175", 360.0, 220.0, 386.0, 234.0),
+                span("C", 420.0, 220.0, 430.0, 234.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 21,
+                native_text_bytes: 142,
+                glyph_count: 112,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        concat!(
+            "Parameter Symbol Typ Max Unit\n",
+            "Input voltage VIN 3.3 5.5 V\n",
+            "Protection features\n",
+            "Current limit ILIM 650 900 mA\n",
+            "Thermal shutdown TSD 150 175 C"
+        )
+    );
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Parameter", "Symbol", "Typ", "Max", "Unit"],
+            vec!["Input voltage", "VIN", "3.3", "5.5", "V"],
+            vec!["Protection features", "", "", "", ""],
+            vec!["Current limit", "ILIM", "650", "900", "mA"],
+            vec!["Thermal shutdown", "TSD", "150", "175", "C"],
+        ]
+    );
+    assert_eq!(table.rows[2].cells[0].bbox.as_ref().unwrap().x0, 72.0);
+    assert_eq!(table.rows[2].cells[0].bbox.as_ref().unwrap().x1, 184.0);
+    assert!(table.rows[2].cells[1].bbox.is_none());
+}
+
+#[test]
 fn positioned_table_recovery_preserves_surrounding_text_blocks() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-with-context".to_string(),

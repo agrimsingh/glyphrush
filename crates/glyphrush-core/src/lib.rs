@@ -1243,6 +1243,7 @@ fn table_block_from_positioned_rows(
 fn table_payload_from_positioned_rows(rows: &[Vec<&TextSpan>]) -> Option<LayoutTable> {
     let columns = positioned_table_columns(rows)?;
     let tolerance = table_column_x_tolerance(rows);
+    let row_count = rows.len();
     let rows = rows
         .iter()
         .enumerate()
@@ -1250,7 +1251,7 @@ fn table_payload_from_positioned_rows(rows: &[Vec<&TextSpan>]) -> Option<LayoutT
             let cells = positioned_table_cells_from_row(row, &columns, tolerance);
             let non_empty_cell_count = cells.iter().filter(|cell| !cell.text.is_empty()).count();
             (non_empty_cell_count >= 2
-                || positioned_row_is_spanning_table_section(row, &columns, tolerance))
+                || positioned_row_is_table_section(row, &columns, tolerance, row_index, row_count))
             .then_some(LayoutTableRow {
                 row_index,
                 bbox: union_span_refs_bbox(row),
@@ -1325,8 +1326,9 @@ fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> 
     let tolerance = table_column_x_tolerance(rows);
     let column_count = columns.len();
     let mut regular_row_count = 0;
-    for row in rows {
-        if positioned_row_is_spanning_table_section(row, &columns, tolerance) {
+    let row_count = rows.len();
+    for (row_index, row) in rows.iter().enumerate() {
+        if positioned_row_is_table_section(row, &columns, tolerance, row_index, row_count) {
             continue;
         }
 
@@ -1439,6 +1441,51 @@ fn positioned_row_is_spanning_table_section(
     };
 
     (span.bbox.x0 - *first_x0).abs() <= tolerance && span.bbox.x1 >= *second_x1 - tolerance
+}
+
+fn positioned_row_is_table_section(
+    row: &[&TextSpan],
+    columns: &[(f32, f32)],
+    tolerance: f32,
+    row_index: usize,
+    row_count: usize,
+) -> bool {
+    positioned_row_is_spanning_table_section(row, columns, tolerance)
+        || positioned_row_is_first_column_table_section(
+            row, columns, tolerance, row_index, row_count,
+        )
+}
+
+fn positioned_row_is_first_column_table_section(
+    row: &[&TextSpan],
+    columns: &[(f32, f32)],
+    tolerance: f32,
+    row_index: usize,
+    row_count: usize,
+) -> bool {
+    if row.len() != 1 || columns.len() < 2 || row_index == 0 || row_index + 1 >= row_count {
+        return false;
+    }
+
+    let span = row[0];
+    let text = span.text.trim();
+    if !looks_like_positioned_table_section_label(text) || is_standalone_list_marker(text) {
+        return false;
+    }
+
+    let Some((first_x0, _)) = columns.first() else {
+        return false;
+    };
+    let Some((_, second_x1)) = columns.get(1) else {
+        return false;
+    };
+
+    (span.bbox.x0 - *first_x0).abs() <= tolerance && span.bbox.x1 < *second_x1 - tolerance
+}
+
+fn looks_like_positioned_table_section_label(text: &str) -> bool {
+    let tokens = text.split_whitespace().collect::<Vec<_>>();
+    looks_like_wrapped_descriptor_fragment(&tokens) || is_heading_line(text)
 }
 
 fn is_wrapped_same_column_cell(previous: &TextSpan, span: &TextSpan) -> bool {

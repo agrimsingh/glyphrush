@@ -308,6 +308,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
             .unwrap()
             .contains("same-line fragmented positioned cells")
     );
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
+            .contains("first-column positioned section rows")
+    );
 
     let ocr = capability(capabilities, "ocr");
     assert_eq!(ocr["liteparse"], "tesseract_or_http_ocr");
