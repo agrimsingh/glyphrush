@@ -44,6 +44,43 @@ fn native_text_is_split_into_deterministic_layout_blocks() {
 }
 
 #[test]
+fn pipe_table_payload_preserves_empty_cells_and_column_indexes() {
+    let artifact = parse_extracted_pages(
+        "doc-table-empty-cells".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "| Part | Value | Note |\n",
+                "| A | | missing value |\n",
+                "| B | 2 | |"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let table = artifact.pages[0].layout_blocks[0]
+        .table
+        .as_ref()
+        .expect("table payload");
+    assert_eq!(table.rows.len(), 3);
+    assert_eq!(table.rows[1].cells.len(), 3);
+    assert_eq!(table.rows[1].cells[0].column_index, 0);
+    assert_eq!(table.rows[1].cells[0].text, "A");
+    assert_eq!(table.rows[1].cells[1].column_index, 1);
+    assert_eq!(table.rows[1].cells[1].text, "");
+    assert_eq!(table.rows[1].cells[2].column_index, 2);
+    assert_eq!(table.rows[1].cells[2].text, "missing value");
+    assert_eq!(table.rows[2].cells[2].column_index, 2);
+    assert_eq!(table.rows[2].cells[2].text, "");
+}
+
+#[test]
 fn ocr_text_can_produce_layout_blocks_when_native_text_is_missing() {
     let artifact = parse_extracted_pages(
         "doc-ocr-layout".to_string(),

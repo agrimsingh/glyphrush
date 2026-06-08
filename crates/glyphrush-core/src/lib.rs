@@ -1683,22 +1683,23 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
 }
 
 fn table_cells_from_text_line(line: &str) -> Vec<String> {
-    let cells = if line.contains('|') {
-        line.trim()
-            .trim_matches('|')
-            .split('|')
-            .map(str::trim)
-            .collect::<Vec<_>>()
+    if line.contains('|') {
+        split_delimited_table_cells(line, '|')
     } else if line.contains('\t') {
-        line.split('\t').map(str::trim).collect::<Vec<_>>()
+        split_delimited_table_cells(line, '\t')
     } else {
-        line.split_whitespace().collect::<Vec<_>>()
-    };
+        line.split_whitespace().map(ToString::to_string).collect()
+    }
+}
 
-    cells
-        .into_iter()
-        .filter(|cell| !cell.is_empty())
-        .map(ToString::to_string)
+fn split_delimited_table_cells(line: &str, delimiter: char) -> Vec<String> {
+    let trimmed = line.trim_matches(|ch: char| ch.is_ascii_whitespace() && ch != delimiter);
+    let trimmed = trimmed.strip_prefix(delimiter).unwrap_or(trimmed);
+    let trimmed = trimmed.strip_suffix(delimiter).unwrap_or(trimmed);
+
+    trimmed
+        .split(delimiter)
+        .map(|cell| cell.trim().to_string())
         .collect()
 }
 

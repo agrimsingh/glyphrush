@@ -8602,7 +8602,6 @@ fn table_rows_from_grid(table: &LayoutTable) -> Vec<Vec<String>> {
             row.cells
                 .iter()
                 .map(|cell| cell.text.trim().to_string())
-                .filter(|cell| !cell.is_empty())
                 .collect::<Vec<_>>()
         })
         .filter(|row| row.len() >= 2)
@@ -8613,17 +8612,9 @@ fn parse_table_rows(text: &str) -> Vec<Vec<String>> {
     text.lines()
         .filter_map(|line| {
             let row = if line.contains('|') {
-                line.split('|')
-                    .map(str::trim)
-                    .filter(|cell| !cell.is_empty())
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>()
+                split_delimited_table_cells(line, '|')
             } else if line.contains('\t') {
-                line.split('\t')
-                    .map(str::trim)
-                    .filter(|cell| !cell.is_empty())
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>()
+                split_delimited_table_cells(line, '\t')
             } else {
                 line.split_whitespace()
                     .map(str::trim)
@@ -8636,15 +8627,25 @@ fn parse_table_rows(text: &str) -> Vec<Vec<String>> {
         .collect()
 }
 
+fn split_delimited_table_cells(line: &str, delimiter: char) -> Vec<String> {
+    let trimmed = line.trim_matches(|ch: char| ch.is_ascii_whitespace() && ch != delimiter);
+    let trimmed = trimmed.strip_prefix(delimiter).unwrap_or(trimmed);
+    let trimmed = trimmed.strip_suffix(delimiter).unwrap_or(trimmed);
+
+    trimmed
+        .split(delimiter)
+        .map(|cell| cell.trim().to_string())
+        .collect()
+}
+
 fn normalize_table_rows(rows: &[Vec<String>]) -> Vec<Vec<String>> {
     rows.iter()
         .map(|row| {
             row.iter()
                 .map(|cell| cell.trim().to_string())
-                .filter(|cell| !cell.is_empty())
                 .collect::<Vec<_>>()
         })
-        .filter(|row| !row.is_empty())
+        .filter(|row| row.len() >= 2)
         .collect()
 }
 

@@ -11802,6 +11802,74 @@ fn eval_manifest_reports_table_structure_scores() {
 }
 
 #[test]
+fn eval_manifest_preserves_empty_table_cells_in_structure_scores() {
+    let dir = temp_dir("eval-table-empty-cells");
+    let pdf_path = dir.join("table-empty-cells.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream(
+            "BT /F1 12 Tf 72 720 Td 24 TL (| Part | Value | Note |) Tj T* (| A | | missing value |) Tj T* (| B | 2 | |) Tj ET",
+        ),
+    )
+    .unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "table-empty-cells.pdf",
+              "expect": {
+                "table_structure": [
+                  {
+                    "page": 0,
+                    "expected_rows": [
+                      ["Part", "Value", "Note"],
+                      ["A", "", "missing value"],
+                      ["B", "2", ""]
+                    ],
+                    "min_cell_recall": 1.0
+                  }
+                ]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush eval with empty table cells");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("eval output is json");
+    let actual = &json["documents"][0]["checks"]["table_structure.page_000000"]["actual"];
+
+    assert_eq!(json["passed"], true);
+    assert_eq!(
+        actual["extracted_rows"],
+        serde_json::json!([
+            ["Part", "Value", "Note"],
+            ["A", "", "missing value"],
+            ["B", "2", ""]
+        ])
+    );
+    assert_eq!(actual["cell_recall"], 1.0);
+}
+
+#[test]
 fn eval_manifest_recovers_whitespace_rows_from_ruled_table_signal() {
     let dir = temp_dir("eval-ruled-table-structure");
     let pdf_path = dir.join("ruled-table.pdf");
