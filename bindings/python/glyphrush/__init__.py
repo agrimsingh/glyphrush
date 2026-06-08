@@ -75,6 +75,37 @@ def parse_text(
     )
 
 
+def inspect_pages(
+    pdf: str | os.PathLike[str],
+    *,
+    binary: str | os.PathLike[str] | None = None,
+    backend: str | None = None,
+    span_geometry: bool = False,
+    ocr_sidecar: str | os.PathLike[str] | None = None,
+    ocr_command: str | os.PathLike[str] | None = None,
+    ocr_http_url: str | None = None,
+    ocr_command_input: str | None = None,
+    ocr_timeout_ms: int | None = None,
+    cache_dir: str | os.PathLike[str] | None = None,
+    jobs: int | None = None,
+    env: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    command = _base_command(binary, backend)
+    command.extend(["inspect", _path(pdf), "--pages"])
+    _append_common_options(
+        command,
+        span_geometry=span_geometry,
+        ocr_sidecar=ocr_sidecar,
+        ocr_command=ocr_command,
+        ocr_http_url=ocr_http_url,
+        ocr_command_input=ocr_command_input,
+        ocr_timeout_ms=ocr_timeout_ms,
+        cache_dir=cache_dir,
+        jobs=jobs,
+    )
+    return json.loads(_run(command, env=env))
+
+
 def _base_command(
     binary: str | os.PathLike[str] | None,
     backend: str | None,
@@ -140,4 +171,4 @@ def _path(path: str | os.PathLike[str]) -> str:
     return str(Path(path))
 
 
-__all__ = ["GlyphrushError", "parse", "parse_text"]
+__all__ = ["GlyphrushError", "inspect_pages", "parse", "parse_text"]

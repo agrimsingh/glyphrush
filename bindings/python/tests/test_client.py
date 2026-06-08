@@ -83,6 +83,36 @@ class GlyphrushClientTests(unittest.TestCase):
 
         self.assertEqual(text, "fake text output\n")
 
+    def test_inspect_pages_delegates_to_native_page_triage_and_decodes_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            pdf = root / "sample.pdf"
+            pdf.write_bytes(b"%PDF-1.4 fake")
+
+            report = glyphrush.inspect_pages(
+                pdf,
+                binary=fake,
+                backend="lopdf",
+                cache_dir=root / "cache",
+                jobs=3,
+            )
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "--backend",
+                "lopdf",
+                "inspect",
+                str(pdf),
+                "--pages",
+                "--cache-dir",
+                str(root / "cache"),
+                "--jobs",
+                "3",
+            ],
+        )
+
     def test_cli_failure_raises_with_exit_status_and_stderr(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

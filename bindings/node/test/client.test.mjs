@@ -84,6 +84,34 @@ test("parseText returns stdout without JSON decoding", async () => {
   });
 });
 
+test("inspectPages delegates to native page triage and decodes JSON", async () => {
+  await withTempDir(async (root) => {
+    const { inspectPages } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+    const pdf = path.join(root, "sample.pdf");
+    await writeFile(pdf, "%PDF-1.4 fake");
+
+    const report = inspectPages(pdf, {
+      binary: fake,
+      backend: "lopdf",
+      cacheDir: path.join(root, "cache"),
+      jobs: 3,
+    });
+
+    assert.deepEqual(report.argv, [
+      "--backend",
+      "lopdf",
+      "inspect",
+      pdf,
+      "--pages",
+      "--cache-dir",
+      path.join(root, "cache"),
+      "--jobs",
+      "3",
+    ]);
+  });
+});
+
 test("CLI failures raise GlyphrushError with exit status and stderr", async () => {
   await withTempDir(async (root) => {
     const fake = await writeFakeGlyphrush(root);

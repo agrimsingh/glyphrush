@@ -28,6 +28,13 @@ export function parseText(pdf, options = {}) {
   return parse(pdf, { ...options, outputFormat: "text" });
 }
 
+export function inspectPages(pdf, options = {}) {
+  const command = baseCommand(options);
+  command.push("inspect", pathString(pdf), "--pages");
+  appendCommonOptions(command, options);
+  return JSON.parse(run(command, options.env));
+}
+
 function baseCommand(options) {
   const command = [pathString(options.binary ?? process.env.GLYPHRUSH_BIN ?? "glyphrush")];
   if (options.backend !== undefined) {
