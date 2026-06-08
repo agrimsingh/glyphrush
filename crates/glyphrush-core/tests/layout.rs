@@ -2446,6 +2446,61 @@ fn text_table_recovery_extracts_package_pin_description_tables() {
 }
 
 #[test]
+fn text_table_recovery_extracts_part_number_ordering_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-part-number-ordering-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Part Number VOUT Package Identification Code\n",
+                "AP7354-11FS4-7 1.1V X2-DFN1010-4 (Type B) A8M\n",
+                "AP7354-12FS4-7 1.2V X2-DFN1010-4 (Type B) A8A\n",
+                "AP7354D-33FS4-7 3.3V X2-DFN1010-4 (Type B) A9H\n"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 4,
+                native_text_bytes: 230,
+                glyph_count: 185,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Part Number", "VOUT", "Package", "Identification Code"],
+            vec!["AP7354-11FS4-7", "1.1V", "X2-DFN1010-4 (Type B)", "A8M"],
+            vec!["AP7354-12FS4-7", "1.2V", "X2-DFN1010-4 (Type B)", "A8A"],
+            vec!["AP7354D-33FS4-7", "3.3V", "X2-DFN1010-4 (Type B)", "A9H"],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_merges_two_column_descriptor_value_rows() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-two-column-table".to_string(),

@@ -3116,6 +3116,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = part_number_ordering_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     if let Some(rows) = aligned_whitespace_table_rows(&lines) {
         return layout_table_from_text_rows(rows);
     }
@@ -3218,6 +3222,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
     }
 
     if package_pin_description_table_rows(lines).is_some() {
+        return true;
+    }
+
+    if part_number_ordering_table_rows(lines).is_some() {
         return true;
     }
 
@@ -3653,6 +3661,79 @@ fn normalize_package_pin_cell(token: &str) -> String {
 
 fn is_dash_placeholder(token: &str) -> bool {
     matches!(token, "-" | "–" | "—")
+}
+
+fn part_number_ordering_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    if lines.len() < 3
+        || normalize_pin_table_header(lines[0]) != "part number vout package identification code"
+    {
+        return None;
+    }
+
+    let mut rows = vec![vec![
+        "Part Number".to_string(),
+        "VOUT".to_string(),
+        "Package".to_string(),
+        "Identification Code".to_string(),
+    ]];
+
+    for line in lines.iter().skip(1) {
+        let tokens = line.split_whitespace().collect::<Vec<_>>();
+        let row = part_number_ordering_data_row(&tokens)?;
+        rows.push(row);
+    }
+
+    (rows.len() >= 3).then_some(rows)
+}
+
+fn part_number_ordering_data_row(tokens: &[&str]) -> Option<Vec<String>> {
+    if tokens.len() < 4 {
+        return None;
+    }
+
+    let part_number = *tokens.first()?;
+    let vout = *tokens.get(1)?;
+    let identification_code = *tokens.last()?;
+    let package_tokens = &tokens[2..tokens.len() - 1];
+    if !looks_like_ordering_part_number(part_number)
+        || !looks_like_voltage_cell(vout)
+        || !looks_like_identification_code(identification_code)
+        || package_tokens.is_empty()
+    {
+        return None;
+    }
+
+    Some(vec![
+        part_number.to_string(),
+        vout.to_string(),
+        package_tokens.join(" "),
+        identification_code.to_string(),
+    ])
+}
+
+fn looks_like_ordering_part_number(token: &str) -> bool {
+    let token = token.trim();
+    token.len() >= 6
+        && token.contains('-')
+        && token.chars().any(|ch| ch.is_ascii_digit())
+        && token
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '/'))
+}
+
+fn looks_like_voltage_cell(token: &str) -> bool {
+    let Some(value) = token.strip_suffix('V') else {
+        return false;
+    };
+    !value.is_empty() && value.chars().all(|ch| ch.is_ascii_digit() || ch == '.')
+}
+
+fn looks_like_identification_code(token: &str) -> bool {
+    let token = token.trim();
+    (2..=8).contains(&token.len())
+        && token.chars().all(|ch| ch.is_ascii_alphanumeric())
+        && token.chars().any(|ch| ch.is_ascii_digit())
+        && token.chars().any(|ch| ch.is_ascii_alphabetic())
 }
 
 fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {

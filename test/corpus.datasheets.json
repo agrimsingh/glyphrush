@@ -107,6 +107,35 @@
               "min_row_recall": 1.0,
               "min_cell_recall": 1.0,
               "min_cell_f1": 1.0
+            },
+            {
+              "page": 13,
+              "expected_rows": [
+                ["Part Number", "VOUT", "Package", "Identification Code"],
+                ["AP7354-11FS4-7", "1.1V", "X2-DFN1010-4 (Type B)", "A8M"],
+                ["AP7354-12FS4-7", "1.2V", "X2-DFN1010-4 (Type B)", "A8A"],
+                ["AP7354-15FS4-7", "1.5V", "X2-DFN1010-4 (Type B)", "A8B"],
+                ["AP7354-18FS4-7", "1.8V", "X2-DFN1010-4 (Type B)", "A8C"],
+                ["AP7354-185FS4-7", "1.85V", "X2-DFN1010-4 (Type B)", "A8D"],
+                ["AP7354-25FS4-7", "2.5V", "X2-DFN1010-4 (Type B)", "A8E"],
+                ["AP7354-28FS4-7", "2.8V", "X2-DFN1010-4 (Type B)", "A8F"],
+                ["AP7354-30FS4-7", "3.0V", "X2-DFN1010-4 (Type B)", "A8G"],
+                ["AP7354-33FS4-7", "3.3V", "X2-DFN1010-4 (Type B)", "A8H"],
+                ["AP7354-45FS4-7", "4.5V", "X2-DFN1010-4 (Type B)", "A8J"],
+                ["AP7354D-11FS4-7", "1.1V", "X2-DFN1010-4 (Type B)", "A9M"],
+                ["AP7354D-12FS4-7", "1.2V", "X2-DFN1010-4 (Type B)", "A9A"],
+                ["AP7354D-15FS4-7", "1.5V", "X2-DFN1010-4 (Type B)", "A9B"],
+                ["AP7354D-18FS4-7", "1.8V", "X2-DFN1010-4 (Type B)", "A9C"],
+                ["AP7354D-185FS4-7", "1.85V", "X2-DFN1010-4 (Type B)", "A9D"],
+                ["AP7354D-25FS4-7", "2.5V", "X2-DFN1010-4 (Type B)", "A9E"],
+                ["AP7354D-28FS4-7", "2.8V", "X2-DFN1010-4 (Type B)", "A9F"],
+                ["AP7354D-30FS4-7", "3.0V", "X2-DFN1010-4 (Type B)", "A9G"],
+                ["AP7354D-33FS4-7", "3.3V", "X2-DFN1010-4 (Type B)", "A9H"],
+                ["AP7354D-45FS4-7", "4.5V", "X2-DFN1010-4 (Type B)", "A9J"]
+              ],
+              "min_row_recall": 1.0,
+              "min_cell_recall": 1.0,
+              "min_cell_f1": 1.0
             }
           ]
         }

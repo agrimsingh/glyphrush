@@ -2902,9 +2902,15 @@ fn seed_datasheet_manifest_tracks_pdfium_package_pin_table() {
         .find(|document| document["path"] == "LDO_AP7354D-15W5-7.pdf")
         .expect("AP7354 datasheet expectation exists");
 
-    assert_eq!(
-        document["expect_by_backend"]["pdfium"]["table_structure"],
-        serde_json::json!([
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
+
+    assert!(
+        table_structure
+            .iter()
+            .any(|expectation| expectation
+                == &serde_json::json!(
           {
             "page": 1,
             "expected_rows": [
@@ -2919,8 +2925,50 @@ fn seed_datasheet_manifest_tracks_pdfium_package_pin_table() {
             "min_cell_recall": 1.0,
             "min_cell_f1": 1.0
           }
-        ])
+                ))
     );
+}
+
+#[test]
+fn seed_datasheet_manifest_tracks_pdfium_part_number_ordering_table() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_AP7354D-15W5-7.pdf")
+        .expect("AP7354 datasheet expectation exists");
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
+
+    let expectation = table_structure
+        .iter()
+        .find(|expectation| expectation["page"] == 13)
+        .expect("AP7354 page 13 ordering table expectation exists");
+    let expected_rows = expectation["expected_rows"]
+        .as_array()
+        .expect("expected rows are recorded");
+
+    assert_eq!(expected_rows.len(), 21);
+    assert_eq!(
+        expected_rows.first().unwrap(),
+        &serde_json::json!(["Part Number", "VOUT", "Package", "Identification Code"])
+    );
+    assert_eq!(
+        expected_rows.get(1).unwrap(),
+        &serde_json::json!(["AP7354-11FS4-7", "1.1V", "X2-DFN1010-4 (Type B)", "A8M"])
+    );
+    assert_eq!(
+        expected_rows.last().unwrap(),
+        &serde_json::json!(["AP7354D-45FS4-7", "4.5V", "X2-DFN1010-4 (Type B)", "A9J"])
+    );
+    assert_eq!(expectation["min_row_recall"], 1.0);
+    assert_eq!(expectation["min_cell_recall"], 1.0);
+    assert_eq!(expectation["min_cell_f1"], 1.0);
 }
 
 #[test]
