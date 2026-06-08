@@ -51,6 +51,7 @@ const BASELINE_CHECK_REPORT_VERSION: &str = "glyphrush-baseline-check-report-v1"
 const BACKEND_CHECK_REPORT_VERSION: &str = "glyphrush-backend-check-report-v1";
 const OCR_CHECK_REPORT_VERSION: &str = "glyphrush-ocr-check-report-v1";
 const FEATURE_PARITY_REPORT_VERSION: &str = "glyphrush-feature-parity-report-v1";
+const FEATURE_PARITY_RECOMMENDED_GATE: &str = "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0";
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
@@ -496,6 +497,7 @@ struct FeatureParityOutput {
     speed_policy: &'static str,
     recommended_gate: &'static str,
     summary: FeatureParitySummary,
+    readiness: FeatureParityReadiness,
     capabilities: Vec<FeatureParityCapability>,
 }
 
@@ -506,6 +508,32 @@ struct FeatureParitySummary {
     partial: usize,
     planned: usize,
     not_planned: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct FeatureParityReadiness {
+    native_text_speed_race_ready: bool,
+    full_liteparse_drop_in_ready: bool,
+    glyphrush_product_parity_ready: bool,
+    native_text_speed_race_gate: &'static str,
+    hot_path: FeatureParityHotPathReadiness,
+    liteparse_capabilities: FeatureParityCapabilityCoverage,
+    remaining_partial: Vec<&'static str>,
+    remaining_planned: Vec<&'static str>,
+    not_planned_by_design: Vec<&'static str>,
+}
+
+#[derive(Debug, Serialize)]
+struct FeatureParityHotPathReadiness {
+    capability_count: usize,
+    implemented: usize,
+    ready: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct FeatureParityCapabilityCoverage {
+    target: usize,
+    implemented_or_partial: usize,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
@@ -1993,6 +2021,7 @@ fn baseline_preset_names(preset: Option<BaselinePreset>) -> Vec<&'static str> {
 fn feature_parity_output<B: PdfBackend>(backend: &B) -> FeatureParityOutput {
     let capabilities = liteparse_feature_parity_capabilities();
     let summary = feature_parity_summary(&capabilities);
+    let readiness = feature_parity_readiness(&capabilities, &summary);
     FeatureParityOutput {
         report_version: FEATURE_PARITY_REPORT_VERSION,
         comparison_target: "liteparse",
@@ -2000,8 +2029,9 @@ fn feature_parity_output<B: PdfBackend>(backend: &B) -> FeatureParityOutput {
         run_metadata: benchmark_run_metadata(backend),
         quality_policy: "adaptive_fallback_no_silent_failure",
         speed_policy: "quality_backed_speedup_claims_required",
-        recommended_gate: "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0",
+        recommended_gate: FEATURE_PARITY_RECOMMENDED_GATE,
         summary,
+        readiness,
         capabilities,
     }
 }
@@ -2145,6 +2175,61 @@ fn feature_parity_summary(capabilities: &[FeatureParityCapability]) -> FeaturePa
         }
     }
     summary
+}
+
+fn feature_parity_readiness(
+    capabilities: &[FeatureParityCapability],
+    summary: &FeatureParitySummary,
+) -> FeatureParityReadiness {
+    let hot_path_capability_count = capabilities
+        .iter()
+        .filter(|capability| capability.hot_path)
+        .count();
+    let hot_path_implemented = capabilities
+        .iter()
+        .filter(|capability| {
+            capability.hot_path && capability.glyphrush_status == FeatureParityStatus::Implemented
+        })
+        .count();
+    let hot_path_ready =
+        hot_path_capability_count > 0 && hot_path_implemented == hot_path_capability_count;
+    let quality_gate_ready = capabilities.iter().any(|capability| {
+        capability.id == "quality_backed_benchmarking"
+            && capability.glyphrush_status == FeatureParityStatus::Implemented
+    });
+
+    FeatureParityReadiness {
+        native_text_speed_race_ready: hot_path_ready && quality_gate_ready,
+        full_liteparse_drop_in_ready: summary.partial == 0
+            && summary.planned == 0
+            && summary.not_planned == 0,
+        glyphrush_product_parity_ready: summary.partial == 0 && summary.planned == 0,
+        native_text_speed_race_gate: FEATURE_PARITY_RECOMMENDED_GATE,
+        hot_path: FeatureParityHotPathReadiness {
+            capability_count: hot_path_capability_count,
+            implemented: hot_path_implemented,
+            ready: hot_path_ready,
+        },
+        liteparse_capabilities: FeatureParityCapabilityCoverage {
+            target: summary.target_capability_count,
+            implemented_or_partial: summary.implemented + summary.partial,
+        },
+        remaining_partial: capabilities
+            .iter()
+            .filter(|capability| capability.glyphrush_status == FeatureParityStatus::Partial)
+            .map(|capability| capability.id)
+            .collect(),
+        remaining_planned: capabilities
+            .iter()
+            .filter(|capability| capability.glyphrush_status == FeatureParityStatus::Planned)
+            .map(|capability| capability.id)
+            .collect(),
+        not_planned_by_design: capabilities
+            .iter()
+            .filter(|capability| capability.glyphrush_status == FeatureParityStatus::NotPlanned)
+            .map(|capability| capability.id)
+            .collect(),
+    }
 }
 
 fn backend_check_output<B: PdfBackend + Sync>(

@@ -211,6 +211,40 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         json["recommended_gate"],
         "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0"
     );
+    assert_eq!(json["readiness"]["native_text_speed_race_ready"], true);
+    assert_eq!(json["readiness"]["full_liteparse_drop_in_ready"], false);
+    assert_eq!(json["readiness"]["glyphrush_product_parity_ready"], false);
+    assert_eq!(
+        json["readiness"]["native_text_speed_race_gate"],
+        json["recommended_gate"]
+    );
+    assert_eq!(json["readiness"]["hot_path"]["capability_count"], 3);
+    assert_eq!(json["readiness"]["hot_path"]["implemented"], 3);
+    assert_eq!(json["readiness"]["hot_path"]["ready"], true);
+    assert_eq!(
+        json["readiness"]["liteparse_capabilities"]["implemented_or_partial"],
+        10
+    );
+    assert_eq!(json["readiness"]["liteparse_capabilities"]["target"], 12);
+    assert_eq!(
+        json["readiness"]["remaining_partial"],
+        serde_json::json!([
+            "span_geometry_layout",
+            "ocr",
+            "page_render_for_ocr",
+            "table_recovery",
+            "artifact_cache_snapshots",
+            "python_node_wasm_bindings"
+        ])
+    );
+    assert_eq!(
+        json["readiness"]["remaining_planned"],
+        serde_json::json!(["mupdf_backend"])
+    );
+    assert_eq!(
+        json["readiness"]["not_planned_by_design"],
+        serde_json::json!(["bundled_builtin_ocr"])
+    );
 
     let capabilities = json["capabilities"].as_array().unwrap();
     assert_eq!(capabilities.len(), 12);
