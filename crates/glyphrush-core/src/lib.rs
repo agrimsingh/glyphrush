@@ -1800,6 +1800,12 @@ fn group_span_refs_by_full_width_bands<'a>(
 
     for (index, span) in sorted_spans.iter().copied().enumerate() {
         if is_full_width_layout_span(span, dimensions)
+            || is_cross_column_leading_band_span(
+                span,
+                &pending_band,
+                &sorted_spans[index + 1..],
+                dimensions,
+            )
             || is_cross_column_trailing_band_span(
                 span,
                 &pending_band,
@@ -1943,6 +1949,20 @@ fn is_cross_column_trailing_band_span(
         && split_two_columns(previous_band, dimensions).is_some()
 }
 
+fn is_cross_column_leading_band_span(
+    span: &TextSpan,
+    previous_band: &[&TextSpan],
+    following_spans: &[&TextSpan],
+    dimensions: &PageDimensions,
+) -> bool {
+    is_cross_column_layout_span_candidate(span, dimensions)
+        && previous_band.is_empty()
+        && following_spans.len() >= 4
+        && !has_same_row_neighbor(span, following_spans.iter().copied())
+        && has_leading_band_vertical_gap(span, following_spans)
+        && split_two_columns(following_spans, dimensions).is_some()
+}
+
 fn is_cross_column_layout_span_candidate(span: &TextSpan, dimensions: &PageDimensions) -> bool {
     if dimensions.width <= 0.0 {
         return false;
@@ -1965,6 +1985,19 @@ fn has_trailing_band_vertical_gap(span: &TextSpan, previous_band: &[&TextSpan]) 
 
     let height = span.bbox.y1 - span.bbox.y0;
     span.bbox.y0 - previous_bottom > (height * 0.75).max(8.0)
+}
+
+fn has_leading_band_vertical_gap(span: &TextSpan, following_spans: &[&TextSpan]) -> bool {
+    let Some(following_top) = following_spans
+        .iter()
+        .map(|following| following.bbox.y0)
+        .min_by(f32::total_cmp)
+    else {
+        return false;
+    };
+
+    let height = span.bbox.y1 - span.bbox.y0;
+    following_top - span.bbox.y1 > (height * 0.75).max(8.0)
 }
 
 fn split_two_columns<'a>(
