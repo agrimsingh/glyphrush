@@ -10,6 +10,7 @@ cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --span-geom
 cargo run -p glyphrush-cli -- parse test/your-file.pdf --format markdown
 cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --ocr-sidecar test/ocr
 cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --ocr-command test/ocr-command.sh
+cargo run -p glyphrush-cli --features pdfium -- --backend pdfium parse test/your-file.pdf --format json --ocr-command tools/ocr/tesseract-rendered-image.sh --ocr-command-input rendered-image
 cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --ocr-http-url http://127.0.0.1:8080/ocr
 cargo run -p glyphrush-cli -- parse test/your-file.pdf --format json --cache-dir .glyphrush-cache
 cargo run -p glyphrush-cli -- bench test/your-file.pdf
@@ -21,6 +22,7 @@ cargo run -p glyphrush-cli -- bench test/your-file.pdf --ocr-http-url http://127
 cargo run -p glyphrush-cli -- bench test/your-file.pdf --cache-dir .glyphrush-cache
 cargo run -p glyphrush-cli -- ocr-check test/your-file.pdf --page-index 0 --ocr-sidecar test/ocr --strict
 cargo run -p glyphrush-cli -- ocr-check test/your-file.pdf --page-index 0 --ocr-command test/ocr-command.sh --strict
+cargo run -p glyphrush-cli --features pdfium -- --backend pdfium ocr-check test/your-file.pdf --page-index 0 --ocr-command tools/ocr/tesseract-rendered-image.sh --ocr-command-input rendered-image --strict
 cargo run -p glyphrush-cli -- ocr-check test/your-file.pdf --page-index 0 --ocr-http-url http://127.0.0.1:8080/ocr --strict
 cargo run -p glyphrush-cli -- manifest test/your-file.pdf > test/corpus.generated.json
 cargo run -p glyphrush-cli -- debug-page test/your-file.pdf 0
@@ -44,7 +46,7 @@ cargo run -p glyphrush-cli -- manifest test/ --category clean_digital --coverage
 
 Sidecar OCR files use zero-based page indexes. For `your-file.pdf`, OCR text for page `0` should be written to `test/ocr/your-file.p000000.txt`.
 
-OCR command adapters are invoked only for pages routed to OCR fallback. The command receives the PDF path as `$1` and the zero-based page index as `$2`, and stdout becomes that page's OCR text. Use `--ocr-timeout-ms <ms>` to bound slow adapters; the default is `120000`.
+OCR command adapters are invoked only for pages routed to OCR fallback. The default command contract receives the PDF path as `$1` and the zero-based page index as `$2`, and stdout becomes that page's OCR text. With `--backend pdfium --ocr-command-input rendered-image`, the command receives a temporary rendered page image as `$1`; `tools/ocr/tesseract-rendered-image.sh` adapts that contract to local Tesseract. Use `--ocr-timeout-ms <ms>` to bound slow adapters; the default is `120000`.
 
 HTTP OCR adapters are also page-selective. Glyphrush POSTs JSON containing `pdf_path` and `page_index`, accepts plain response bodies as OCR text, and accepts `application/json` responses with a string `text` field. It does not make hidden network calls unless `--ocr-http-url` is explicitly set.
 

@@ -279,7 +279,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(ocr["liteparse"], "tesseract_or_http_ocr");
     assert_eq!(
         ocr["glyphrush"],
-        "sidecar_command_or_http_adapter_invoked_page_selectively"
+        "sidecar_command_http_or_tesseract_rendered_image_wrapper_invoked_page_selectively"
     );
     assert_eq!(ocr["glyphrush_status"], "partial");
     assert_eq!(ocr["hot_path"], false);
@@ -8294,6 +8294,63 @@ fn python_baseline_wrappers_use_project_local_venv_python() {
             format!("local python {}\n", pdf_path.display())
         );
     }
+}
+
+#[test]
+fn tesseract_rendered_image_ocr_wrapper_describes_and_invokes_tesseract() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let wrapper = workspace_root.join("tools/ocr/tesseract-rendered-image.sh");
+
+    let describe = Command::new(&wrapper)
+        .arg("--describe")
+        .output()
+        .expect("run tesseract OCR wrapper --describe");
+    assert!(
+        describe.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&describe.stderr)
+    );
+    let describe_json: Value =
+        serde_json::from_slice(&describe.stdout).expect("OCR wrapper describe output is json");
+    assert_eq!(describe_json["name"], "tesseract-rendered-image");
+    assert_eq!(describe_json["target"], "Tesseract OCR");
+    assert_eq!(describe_json["input"], "rendered-image");
+    assert_eq!(describe_json["requires"], serde_json::json!(["tesseract"]));
+
+    let dir = temp_dir("tesseract-rendered-image-wrapper");
+    let image = dir.join("page.ppm");
+    let log_path = dir.join("tesseract.log");
+    fs::write(&image, b"P6\n1 1\n255\n\0\0\0").unwrap();
+    let fake_tesseract = dir.join("tesseract");
+    write_executable(
+        &fake_tesseract,
+        &format!(
+            "#!/bin/sh\nprintf '%s\\n' \"$*\" > '{}'\nprintf 'Fake OCR text from %s\\n' \"$1\"\n",
+            log_path.display()
+        ),
+    );
+
+    let output = Command::new(&wrapper)
+        .env("TESSERACT_BIN", &fake_tesseract)
+        .env("TESSERACT_LANG", "eng")
+        .env("TESSERACT_PSM", "6")
+        .arg(&image)
+        .arg("3")
+        .output()
+        .expect("run tesseract OCR wrapper");
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        format!("Fake OCR text from {}\n", image.display())
+    );
+    assert_eq!(
+        fs::read_to_string(log_path).unwrap(),
+        format!("{} stdout -l eng --psm 6\n", image.display())
+    );
 }
 
 #[test]
