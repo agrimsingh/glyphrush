@@ -2158,9 +2158,19 @@ fn group_span_refs_by_fragmented_cross_column_bands<'a>(
     let mut groups = Vec::new();
     let mut pending_band = Vec::new();
     let mut split_columns = false;
+    let mut saw_fragmented_band = false;
 
     for (row_index, row) in rows.iter().enumerate() {
-        if is_fragmented_cross_column_band_row(row, dimensions) {
+        if row.len() == 1 && is_full_width_layout_span(row[0], dimensions) {
+            append_column_aware_band_groups(
+                &mut groups,
+                std::mem::take(&mut pending_band),
+                dimensions,
+                &mut split_columns,
+            );
+            groups.push(row.to_vec());
+            continue;
+        } else if is_fragmented_layout_band_row(row, dimensions) {
             let following_band =
                 following_fragmented_cross_column_context(&rows[row_index + 1..], dimensions);
             if fragmented_cross_column_band_has_context(
@@ -2177,6 +2187,7 @@ fn group_span_refs_by_fragmented_cross_column_bands<'a>(
                 );
                 groups.push(row.to_vec());
                 split_columns = true;
+                saw_fragmented_band = true;
                 continue;
             }
         }
@@ -2186,7 +2197,7 @@ fn group_span_refs_by_fragmented_cross_column_bands<'a>(
 
     append_column_aware_band_groups(&mut groups, pending_band, dimensions, &mut split_columns);
 
-    split_columns.then_some(groups)
+    (saw_fragmented_band && split_columns).then_some(groups)
 }
 
 fn following_fragmented_cross_column_context<'a>(
@@ -2198,7 +2209,7 @@ fn following_fragmented_cross_column_context<'a>(
         if row.iter().any(|span| {
             is_full_width_layout_span(span, dimensions)
                 || is_cross_column_layout_span_candidate(span, dimensions)
-        }) || is_fragmented_cross_column_band_row(row, dimensions)
+        }) || is_fragmented_layout_band_row(row, dimensions)
         {
             break;
         }
@@ -2329,6 +2340,11 @@ fn has_fragmented_row_band_vertical_gap(
         && has_leading_row_band_vertical_gap(row, following_spans)
 }
 
+fn is_fragmented_layout_band_row(row: &[&TextSpan], dimensions: &PageDimensions) -> bool {
+    is_fragmented_cross_column_band_row(row, dimensions)
+        || is_fragmented_column_section_separator_row(row, dimensions)
+}
+
 fn is_fragmented_cross_column_band_row(row: &[&TextSpan], dimensions: &PageDimensions) -> bool {
     if !(2..=4).contains(&row.len()) || !fragmented_row_spans_are_tightly_joined(row) {
         return false;
@@ -2347,6 +2363,26 @@ fn is_fragmented_cross_column_band_row(row: &[&TextSpan], dimensions: &PageDimen
         && width >= dimensions.width * 0.45
         && bbox.x0 <= dimensions.width * 0.25
         && bbox.x1 >= dimensions.width * 0.65
+}
+
+fn is_fragmented_column_section_separator_row(
+    row: &[&TextSpan],
+    dimensions: &PageDimensions,
+) -> bool {
+    if !(2..=4).contains(&row.len()) || !fragmented_row_spans_are_tightly_joined(row) {
+        return false;
+    }
+
+    let Some(bbox) = union_span_refs_bbox(row) else {
+        return false;
+    };
+    let text = text_line_from_positioned_row(row);
+    let trimmed = text.trim();
+
+    dimensions.width > 0.0
+        && bbox.x0 <= dimensions.width * 0.25
+        && !is_standalone_list_marker(trimmed)
+        && is_heading_line(trimmed)
 }
 
 fn is_column_section_separator_span(

@@ -726,6 +726,58 @@ fn positioned_native_spans_preserve_short_section_heading_between_two_column_reg
 }
 
 #[test]
+fn positioned_native_spans_preserve_fragmented_short_section_heading_between_two_column_regions() {
+    let artifact = parse_extracted_pages(
+        "doc-fragmented-short-section-between-columns".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "FULL WIDTH TITLE\n",
+                "Left intro starts\n",
+                "Left intro continues\n",
+                "Right intro starts\n",
+                "Right intro continues\n",
+                "ELECTRICAL CHARACTERISTICS\n",
+                "Left specs starts\n",
+                "Left specs continues\n",
+                "Right specs starts\n",
+                "Right specs continues"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("FULL WIDTH TITLE", 72.0, 72.0, 540.0, 88.0),
+                span("Left intro starts", 72.0, 120.0, 230.0, 134.0),
+                span("Right intro starts", 330.0, 120.0, 500.0, 134.0),
+                span("Left intro continues", 72.0, 138.0, 248.0, 152.0),
+                span("Right intro continues", 330.0, 138.0, 520.0, 152.0),
+                span("ELECTRICAL", 72.0, 196.0, 150.0, 212.0),
+                span("CHARACTERISTICS", 158.0, 196.0, 280.0, 212.0),
+                span("Left specs starts", 72.0, 238.0, 230.0, 252.0),
+                span("Right specs starts", 330.0, 238.0, 500.0, 252.0),
+                span("Left specs continues", 72.0, 256.0, 248.0, 270.0),
+                span("Right specs continues", 330.0, 256.0, 520.0, 270.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let blocks = &artifact.pages[0].layout_blocks;
+    assert_eq!(blocks.len(), 6);
+    assert_eq!(blocks[0].kind, LayoutBlockKind::Heading);
+    assert_eq!(blocks[0].text, "FULL WIDTH TITLE");
+    assert_eq!(blocks[1].text, "Left intro starts\nLeft intro continues");
+    assert_eq!(blocks[2].text, "Right intro starts\nRight intro continues");
+    assert_eq!(blocks[3].kind, LayoutBlockKind::Heading);
+    assert_eq!(blocks[3].text, "ELECTRICAL CHARACTERISTICS");
+    assert_eq!(blocks[4].text, "Left specs starts\nLeft specs continues");
+    assert_eq!(blocks[5].text, "Right specs starts\nRight specs continues");
+}
+
+#[test]
 fn positioned_native_spans_preserve_middle_cross_column_caption_between_two_column_regions() {
     let artifact = parse_extracted_pages(
         "doc-middle-cross-column-caption".to_string(),
