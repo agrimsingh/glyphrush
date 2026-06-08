@@ -49,6 +49,7 @@ const EVAL_REPORT_VERSION: &str = "glyphrush-eval-report-v1";
 const BASELINE_CHECK_REPORT_VERSION: &str = "glyphrush-baseline-check-report-v1";
 const BACKEND_CHECK_REPORT_VERSION: &str = "glyphrush-backend-check-report-v1";
 const OCR_CHECK_REPORT_VERSION: &str = "glyphrush-ocr-check-report-v1";
+const FEATURE_PARITY_REPORT_VERSION: &str = "glyphrush-feature-parity-report-v1";
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
@@ -265,6 +266,7 @@ enum Commands {
         #[arg(long)]
         strict: bool,
     },
+    FeatureParity,
     BackendCheck {
         #[arg(long)]
         pdf: Option<PathBuf>,
@@ -467,6 +469,49 @@ struct BackendCapabilityMatrix {
     image_metadata: bool,
     render_pages: bool,
     builtin_ocr: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct FeatureParityOutput {
+    report_version: &'static str,
+    comparison_target: &'static str,
+    selected_backend: &'static str,
+    run_metadata: BenchmarkRunMetadata,
+    quality_policy: &'static str,
+    speed_policy: &'static str,
+    recommended_gate: &'static str,
+    summary: FeatureParitySummary,
+    capabilities: Vec<FeatureParityCapability>,
+}
+
+#[derive(Debug, Default, Serialize)]
+struct FeatureParitySummary {
+    target_capability_count: usize,
+    implemented: usize,
+    partial: usize,
+    planned: usize,
+    not_planned: usize,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum FeatureParityStatus {
+    Implemented,
+    Partial,
+    Planned,
+    NotPlanned,
+}
+
+#[derive(Debug, Serialize)]
+struct FeatureParityCapability {
+    id: &'static str,
+    area: &'static str,
+    liteparse: &'static str,
+    glyphrush: &'static str,
+    glyphrush_status: FeatureParityStatus,
+    hot_path: bool,
+    quality_guard: &'static str,
+    notes: &'static str,
 }
 
 #[derive(Debug, Serialize)]
@@ -1919,6 +1964,163 @@ fn baseline_preset_names(preset: Option<BaselinePreset>) -> Vec<&'static str> {
         .collect::<Vec<_>>()
 }
 
+fn feature_parity_output<B: PdfBackend>(backend: &B) -> FeatureParityOutput {
+    let capabilities = liteparse_feature_parity_capabilities();
+    let summary = feature_parity_summary(&capabilities);
+    FeatureParityOutput {
+        report_version: FEATURE_PARITY_REPORT_VERSION,
+        comparison_target: "liteparse",
+        selected_backend: backend.name(),
+        run_metadata: benchmark_run_metadata(backend),
+        quality_policy: "adaptive_fallback_no_silent_failure",
+        speed_policy: "quality_backed_speedup_claims_required",
+        recommended_gate: "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0",
+        summary,
+        capabilities,
+    }
+}
+
+fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
+    vec![
+        FeatureParityCapability {
+            id: "native_text_extraction",
+            area: "extraction",
+            liteparse: "pdfium_native_text",
+            glyphrush: "lopdf_or_pdfium_native_text",
+            glyphrush_status: FeatureParityStatus::Implemented,
+            hot_path: true,
+            quality_guard: "text_recall_and_silent_failure_eval",
+            notes: "PDFium is the fast backend when the pdfium feature is enabled; lopdf remains the dependency-light default.",
+        },
+        FeatureParityCapability {
+            id: "page_classifier_quality_flags",
+            area: "quality",
+            liteparse: "implicit_parser_behavior",
+            glyphrush: "explicit_page_routes_flags_and_reasons",
+            glyphrush_status: FeatureParityStatus::Implemented,
+            hot_path: true,
+            quality_guard: "requires_ocr_low_confidence_unsupported_flags",
+            notes: "Glyphrush treats uncertain extraction as a reported condition instead of silently claiming success.",
+        },
+        FeatureParityCapability {
+            id: "structured_json_text_markdown_exports",
+            area: "outputs",
+            liteparse: "text_markdown_json_bindings",
+            glyphrush: "document_artifact_plus_text_and_markdown",
+            glyphrush_status: FeatureParityStatus::Implemented,
+            hot_path: true,
+            quality_guard: "derived_outputs_from_single_artifact",
+            notes: "The structured artifact is the source of truth; text and markdown are derived views.",
+        },
+        FeatureParityCapability {
+            id: "quality_backed_benchmarking",
+            area: "evaluation",
+            liteparse: "latency_benchmarks",
+            glyphrush: "strict_speedup_claim_gate",
+            glyphrush_status: FeatureParityStatus::Implemented,
+            hot_path: false,
+            quality_guard: "require_speedup_claim_requires_glyphrush_and_baseline_quality",
+            notes: "This is intentionally stronger than a speed-only comparison.",
+        },
+        FeatureParityCapability {
+            id: "span_geometry_layout",
+            area: "layout",
+            liteparse: "layout_projection_and_character_geometry",
+            glyphrush: "bounded_span_geometry_and_conservative_layout_blocks",
+            glyphrush_status: FeatureParityStatus::Partial,
+            hot_path: false,
+            quality_guard: "layout_uncertain_flag_and_reading_order_eval",
+            notes: "Glyphrush avoids always-on per-character metadata and escalates layout work when signals require it.",
+        },
+        FeatureParityCapability {
+            id: "ocr",
+            area: "ocr",
+            liteparse: "tesseract_or_http_ocr",
+            glyphrush: "sidecar_or_command_adapter_invoked_page_selectively",
+            glyphrush_status: FeatureParityStatus::Partial,
+            hot_path: false,
+            quality_guard: "requires_ocr_flag_when_unavailable",
+            notes: "OCR is adapter-based and deliberately outside the default hot path.",
+        },
+        FeatureParityCapability {
+            id: "page_render_for_ocr",
+            area: "ocr",
+            liteparse: "render_pages_for_ocr",
+            glyphrush: "pdfium_rendered_image_command_input",
+            glyphrush_status: FeatureParityStatus::Partial,
+            hot_path: false,
+            quality_guard: "ocr_check_render_backend_required",
+            notes: "Rendered-image OCR handoff exists for the PDFium backend; non-rendering backends report the limitation.",
+        },
+        FeatureParityCapability {
+            id: "table_recovery",
+            area: "tables",
+            liteparse: "layout_projection_tables",
+            glyphrush: "table_likelihood_and_basic_structure_recovery",
+            glyphrush_status: FeatureParityStatus::Partial,
+            hot_path: false,
+            quality_guard: "table_uncertain_flag_and_table_structure_eval",
+            notes: "Current table support is conservative and tied to explicit uncertainty flags.",
+        },
+        FeatureParityCapability {
+            id: "artifact_cache_snapshots",
+            area: "runtime",
+            liteparse: "fresh_parse_by_default",
+            glyphrush: "cache_dir_artifact_reuse",
+            glyphrush_status: FeatureParityStatus::Partial,
+            hot_path: false,
+            quality_guard: "cache_key_includes_parser_backend_ocr_options",
+            notes: "JSON artifact caching is implemented; mmap-friendly snapshots remain a later runtime optimization.",
+        },
+        FeatureParityCapability {
+            id: "python_node_wasm_bindings",
+            area: "bindings",
+            liteparse: "python_node_wasm_bindings",
+            glyphrush: "cli_first_native_core",
+            glyphrush_status: FeatureParityStatus::Planned,
+            hot_path: false,
+            quality_guard: "bindings_must_share_native_core_artifact",
+            notes: "Bindings should wrap the same core instead of becoming independent parser implementations.",
+        },
+        FeatureParityCapability {
+            id: "mupdf_backend",
+            area: "backend",
+            liteparse: "pdfium_core",
+            glyphrush: "mupdf_adapter_candidate",
+            glyphrush_status: FeatureParityStatus::Planned,
+            hot_path: false,
+            quality_guard: "backend_check_reports_adapter_status",
+            notes: "MuPDF remains a comparison candidate, not the current fast path.",
+        },
+        FeatureParityCapability {
+            id: "bundled_builtin_ocr",
+            area: "ocr",
+            liteparse: "ocr_dependency_integrated_with_parser_package",
+            glyphrush: "optional_external_ocr_adapters",
+            glyphrush_status: FeatureParityStatus::NotPlanned,
+            hot_path: false,
+            quality_guard: "no_hidden_ocr_or_network_dependency",
+            notes: "Bundling OCR into the default parser would violate the hot-path dependency policy.",
+        },
+    ]
+}
+
+fn feature_parity_summary(capabilities: &[FeatureParityCapability]) -> FeatureParitySummary {
+    let mut summary = FeatureParitySummary {
+        target_capability_count: capabilities.len(),
+        ..FeatureParitySummary::default()
+    };
+    for capability in capabilities {
+        match capability.glyphrush_status {
+            FeatureParityStatus::Implemented => summary.implemented += 1,
+            FeatureParityStatus::Partial => summary.partial += 1,
+            FeatureParityStatus::Planned => summary.planned += 1,
+            FeatureParityStatus::NotPlanned => summary.not_planned += 1,
+        }
+    }
+    summary
+}
+
 fn backend_check_output<B: PdfBackend + Sync>(
     backend: &B,
     smoke_pdf: Option<&Path>,
@@ -3071,6 +3273,9 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             if let Some(error) = error {
                 bail!("{error}");
             }
+        }
+        Commands::FeatureParity => {
+            write_json(&feature_parity_output(backend))?;
         }
         Commands::BackendCheck { pdf, jobs } => {
             let output = backend_check_output(backend, pdf.as_deref(), jobs);

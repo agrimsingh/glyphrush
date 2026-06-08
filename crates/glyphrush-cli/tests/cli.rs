@@ -145,6 +145,71 @@ fn backend_auto_selects_fastest_enabled_backend() {
     );
 }
 
+#[test]
+fn feature_parity_reports_liteparse_capability_gaps() {
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args(["--backend", "lopdf", "feature-parity"])
+        .output()
+        .expect("run glyphrush feature-parity");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
+
+    assert_eq!(json["report_version"], "glyphrush-feature-parity-report-v1");
+    assert_eq!(json["comparison_target"], "liteparse");
+    assert_eq!(json["selected_backend"], "lopdf");
+    assert_eq!(
+        json["run_metadata"]["parser_version"],
+        env!("CARGO_PKG_VERSION")
+    );
+    assert_eq!(json["summary"]["target_capability_count"], 12);
+    assert_eq!(json["summary"]["implemented"], 4);
+    assert_eq!(json["summary"]["partial"], 5);
+    assert_eq!(json["summary"]["planned"], 2);
+    assert_eq!(json["summary"]["not_planned"], 1);
+    assert_eq!(
+        json["quality_policy"],
+        "adaptive_fallback_no_silent_failure"
+    );
+    assert_eq!(
+        json["speed_policy"],
+        "quality_backed_speedup_claims_required"
+    );
+    assert_eq!(
+        json["recommended_gate"],
+        "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0"
+    );
+
+    let capabilities = json["capabilities"].as_array().unwrap();
+    assert_eq!(capabilities.len(), 12);
+
+    let native_text = capability(capabilities, "native_text_extraction");
+    assert_eq!(native_text["liteparse"], "pdfium_native_text");
+    assert_eq!(native_text["glyphrush_status"], "implemented");
+    assert_eq!(native_text["hot_path"], true);
+
+    let benchmark = capability(capabilities, "quality_backed_benchmarking");
+    assert_eq!(benchmark["glyphrush_status"], "implemented");
+    assert_eq!(benchmark["glyphrush"], "strict_speedup_claim_gate");
+
+    let ocr = capability(capabilities, "ocr");
+    assert_eq!(ocr["liteparse"], "tesseract_or_http_ocr");
+    assert_eq!(ocr["glyphrush_status"], "partial");
+    assert_eq!(ocr["hot_path"], false);
+    assert_eq!(ocr["quality_guard"], "requires_ocr_flag_when_unavailable");
+
+    let bindings = capability(capabilities, "python_node_wasm_bindings");
+    assert_eq!(bindings["glyphrush_status"], "planned");
+
+    let builtin_ocr = capability(capabilities, "bundled_builtin_ocr");
+    assert_eq!(builtin_ocr["glyphrush_status"], "not_planned");
+}
+
 #[cfg(feature = "pdfium")]
 #[test]
 fn backend_check_reports_feature_gated_pdfium_backend() {
@@ -11974,4 +12039,11 @@ fn expected_generated_manifest_corpus_fingerprint(json: &Value) -> Value {
         payload.push('\n');
     }
     Value::String(sha256_hex(payload))
+}
+
+fn capability<'a>(capabilities: &'a [Value], id: &str) -> &'a Value {
+    capabilities
+        .iter()
+        .find(|capability| capability["id"] == id)
+        .unwrap_or_else(|| panic!("missing capability {id}"))
 }
