@@ -3097,6 +3097,54 @@ fn seed_datasheet_manifest_tracks_pdfium_reflow_profile_table() {
 }
 
 #[test]
+fn seed_datasheet_manifest_tracks_pdfium_classification_temperature_tables() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_APL5324BI-TRG.pdf")
+        .expect("APL5324 datasheet expectation exists");
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
+
+    assert!(table_structure.iter().any(|expectation| expectation
+        == &serde_json::json!(
+        {
+          "page": 14,
+          "expected_rows": [
+            ["Package Thickness", "Volume mm3 <350", "Volume mm3 ³350"],
+            ["<2.5 mm", "235 °C", "220 °C"],
+            ["³2.5 mm", "220 °C", "220 °C"]
+          ],
+          "min_row_recall": 1.0,
+          "min_cell_recall": 1.0,
+          "min_cell_f1": 1.0
+        }
+              )));
+
+    assert!(table_structure.iter().any(|expectation| expectation
+        == &serde_json::json!(
+        {
+          "page": 14,
+          "expected_rows": [
+            ["Package Thickness", "Volume mm3 <350", "Volume mm3 350-2000", "Volume mm3 >2000"],
+            ["<1.6 mm", "260 °C", "260 °C", "260 °C"],
+            ["1.6 mm – 2.5 mm", "260 °C", "250 °C", "245 °C"],
+            ["³2.5 mm", "250 °C", "245 °C", "245 °C"]
+          ],
+          "min_row_recall": 1.0,
+          "min_cell_recall": 1.0,
+          "min_cell_f1": 1.0
+        }
+              )));
+}
+
+#[test]
 fn seed_datasheet_manifest_tracks_pdfium_package_pin_table() {
     let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let manifest_path = workspace_root.join("test/corpus.datasheets.json");
@@ -13622,6 +13670,84 @@ fn eval_manifest_reports_table_structure_scores() {
     assert_eq!(
         json["documents"][0]["checks"]["table_structure.page_000000"]["actual"]["extracted_rows"],
         serde_json::json!([["Part", "Value"], ["A", "1"]])
+    );
+}
+
+#[test]
+fn eval_manifest_scores_multiple_table_structure_expectations_on_same_page() {
+    let dir = temp_dir("eval-multiple-table-structures-same-page");
+    let pdf_path = dir.join("tables.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream(
+            "BT /F1 12 Tf 72 720 Td 24 TL (| First | Value |) Tj T* (| A | 1 |) Tj T* (| Second | Value |) Tj T* (| B | 2 |) Tj ET",
+        ),
+    )
+    .unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "tables.pdf",
+              "expect": {
+                "table_structure": [
+                  {
+                    "page": 0,
+                    "expected_rows": [["First", "Value"], ["A", "1"]],
+                    "min_row_recall": 1.0,
+                    "min_cell_recall": 1.0,
+                    "min_cell_f1": 1.0
+                  },
+                  {
+                    "page": 0,
+                    "expected_rows": [["Second", "Value"], ["B", "2"]],
+                    "min_row_recall": 1.0,
+                    "min_cell_recall": 1.0,
+                    "min_cell_f1": 1.0
+                  }
+                ]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush eval with multiple same-page table expectations");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("eval output is json");
+    let checks = json["documents"][0]["checks"]
+        .as_object()
+        .expect("checks object");
+
+    assert_eq!(json["passed"], true);
+    assert_eq!(
+        checks["table_structure.page_000000.expectation_000000"]["actual"]["extracted_rows"],
+        serde_json::json!([["First", "Value"], ["A", "1"]])
+    );
+    assert_eq!(
+        checks["table_structure.page_000000.expectation_000001"]["actual"]["extracted_rows"],
+        serde_json::json!([["Second", "Value"], ["B", "2"]])
+    );
+    assert_eq!(
+        checks["table_structure.page_000000.expectation_000001"]["actual"]["cell_f1"],
+        1.0
     );
 }
 

@@ -2894,6 +2894,13 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
         return;
     }
 
+    if let Some(split_blocks) =
+        split_classification_temperature_table_blocks(lines, run_table_recovery)
+    {
+        blocks.extend(split_blocks);
+        return;
+    }
+
     if let Some(split_blocks) = split_bullet_leader_table_blocks(lines, run_table_recovery) {
         blocks.extend(split_blocks);
         return;
@@ -3076,6 +3083,41 @@ fn split_reflow_profile_table_blocks(
 
     let table_end = header_index + consumed_table_lines;
     blocks.push(lines[header_index..table_end].join("\n"));
+    if table_end < lines.len() {
+        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
+    }
+
+    Some(blocks)
+}
+
+fn split_classification_temperature_table_blocks(
+    lines: &[String],
+    run_table_recovery: bool,
+) -> Option<Vec<String>> {
+    if !run_table_recovery || lines.len() < 6 {
+        return None;
+    }
+
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let caption_index = refs
+        .iter()
+        .position(|line| looks_like_classification_temperature_caption(line))?;
+    let (_, consumed_table_lines) =
+        classification_temperature_table_rows_prefix(&refs[caption_index + 1..])?;
+
+    let mut blocks = Vec::new();
+    if caption_index > 0 {
+        blocks.push(reflow_text_block(
+            &lines[..caption_index],
+            run_table_recovery,
+        ));
+    }
+
+    blocks.push(lines[caption_index].trim().to_string());
+
+    let table_start = caption_index + 1;
+    let table_end = table_start + consumed_table_lines;
+    blocks.push(lines[table_start..table_end].join("\n"));
     if table_end < lines.len() {
         blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
     }
@@ -3392,6 +3434,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = classification_temperature_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     if let Some(rows) = bullet_leader_table_rows(&lines) {
         return layout_table_from_text_rows(rows);
     }
@@ -3518,6 +3564,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
     }
 
     if reflow_profile_table_rows(lines).is_some() {
+        return true;
+    }
+
+    if classification_temperature_table_rows(lines).is_some() {
         return true;
     }
 
@@ -4527,6 +4577,109 @@ fn looks_like_reflow_profile_table_terminator(line: &str) -> bool {
         || normalized.starts_with("table 1.")
         || normalized.starts_with("table 2.")
         || normalized.starts_with("reliability test program")
+}
+
+fn classification_temperature_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    let (rows, consumed) = classification_temperature_table_rows_prefix(lines)?;
+    (consumed == lines.len()).then_some(rows)
+}
+
+fn classification_temperature_table_rows_prefix(
+    lines: &[&str],
+) -> Option<(Vec<Vec<String>>, usize)> {
+    if lines.len() < 5 {
+        return None;
+    }
+
+    let first_header = lines.first()?.trim();
+    let second_header = lines.get(1)?.trim();
+    if !first_header.eq_ignore_ascii_case("package")
+        || !second_header.eq_ignore_ascii_case("thickness")
+    {
+        return None;
+    }
+
+    let mut header = vec!["Package Thickness".to_string()];
+    let mut index = 2;
+    while index + 1 < lines.len() {
+        let label = lines[index].trim();
+        let value = lines[index + 1].trim();
+        if !label.eq_ignore_ascii_case("volume mm3") || !looks_like_package_volume_limit(value) {
+            break;
+        }
+        header.push(format!("Volume mm3 {value}"));
+        index += 2;
+    }
+
+    let value_count = header.len().checked_sub(1)?;
+    if value_count < 2 {
+        return None;
+    }
+
+    let mut rows = vec![header];
+    while index < lines.len() {
+        let line = lines[index].trim();
+        if line.is_empty() || looks_like_classification_temperature_terminator(line) {
+            break;
+        }
+
+        let Some(row) = classification_temperature_data_row(line, value_count) else {
+            break;
+        };
+        rows.push(row);
+        index += 1;
+    }
+
+    (rows.len() >= 3).then_some((rows, index))
+}
+
+fn looks_like_classification_temperature_caption(line: &str) -> bool {
+    let normalized = line.trim().to_ascii_lowercase();
+    normalized.starts_with("table ")
+        && normalized.contains("classification temperatures")
+        && normalized.contains("(tc)")
+}
+
+fn looks_like_package_volume_limit(value: &str) -> bool {
+    let trimmed = value.trim();
+    !trimmed.is_empty()
+        && trimmed.chars().any(|ch| ch.is_ascii_digit())
+        && trimmed
+            .chars()
+            .all(|ch| ch.is_ascii_digit() || matches!(ch, '<' | '>' | '-' | '–' | '³' | ' '))
+}
+
+fn classification_temperature_data_row(line: &str, value_count: usize) -> Option<Vec<String>> {
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    let value_token_count = value_count.checked_mul(2)?;
+    if tokens.len() <= value_token_count {
+        return None;
+    }
+
+    let label_tokens = tokens.len() - value_token_count;
+    let label = tokens[..label_tokens].join(" ");
+    if !label.contains("mm") {
+        return None;
+    }
+
+    let mut row = vec![label];
+    for pair in tokens[label_tokens..].chunks_exact(2) {
+        let amount = pair[0];
+        let unit = pair[1];
+        if !amount.chars().all(|ch| ch.is_ascii_digit()) || unit != "°C" {
+            return None;
+        }
+        row.push(format!("{amount} {unit}"));
+    }
+
+    (row.len() == value_count + 1).then_some(row)
+}
+
+fn looks_like_classification_temperature_terminator(line: &str) -> bool {
+    let normalized = line.trim().to_ascii_lowercase();
+    normalized.starts_with("table ")
+        || normalized.starts_with("reliability test program")
+        || normalized.starts_with("test item ")
 }
 
 fn bullet_leader_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {

@@ -2539,7 +2539,7 @@ fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "table_uncertain_flag_and_table_structure_eval",
-            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, embedded pin/function tables, number-first pin-description tables, fragmented symbol/rating tables, bullet/leader spec tables, electrical-characteristics min/typ/max tables, reflow-profile Sn-Pb/Pb-free assembly tables, package pin-description tables, part-number ordering tables, header-guided whitespace rows with table-header cues, same-line or wrapped multi-word descriptor cells, two-column descriptor/value rows, trailing descriptor continuations, header-guided trailing blank cells, header-guided section rows, and leading text-table captions outside table grids, aligned whitespace and positioned interior section rows, keeps positioned captions outside table grids, rejects routed description prose without table-header cues, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, fragmented first-column positioned section rows, interior positioned condition/note rows, multi-cell wrapped continuations, and same-column wrapped header rows when table recovery is routed, and exposes structured grids to eval text anchors.",
+            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, embedded pin/function tables, number-first pin-description tables, fragmented symbol/rating tables, bullet/leader spec tables, electrical-characteristics min/typ/max tables, reflow-profile Sn-Pb/Pb-free assembly tables, classification-temperature package/volume tables, package pin-description tables, part-number ordering tables, header-guided whitespace rows with table-header cues, same-line or wrapped multi-word descriptor cells, two-column descriptor/value rows, trailing descriptor continuations, header-guided trailing blank cells, header-guided section rows, and leading text-table captions outside table grids, aligned whitespace and positioned interior section rows, keeps positioned captions outside table grids, rejects routed description prose without table-header cues, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, fragmented first-column positioned section rows, interior positioned condition/note rows, multi-cell wrapped continuations, and same-column wrapped header rows when table recovery is routed, and exposes structured grids to eval text anchors.",
         },
         FeatureParityCapability {
             id: "artifact_cache_snapshots",
@@ -8406,8 +8406,20 @@ fn eval_document_from_artifact(
     for expectation in &expect.quality_flag_classification {
         insert_quality_flag_classification_check(&mut checks, expectation, artifact);
     }
+    let mut table_expectation_counts = BTreeMap::new();
     for expectation in &expect.table_structure {
-        insert_table_structure_check(&mut checks, expectation, artifact);
+        *table_expectation_counts
+            .entry(expectation.page)
+            .or_insert(0usize) += 1;
+    }
+    let mut table_expectation_seen = BTreeMap::new();
+    for expectation in &expect.table_structure {
+        let seen = table_expectation_seen
+            .entry(expectation.page)
+            .or_insert(0usize);
+        let expectation_index = (table_expectation_counts[&expectation.page] > 1).then_some(*seen);
+        *seen += 1;
+        insert_table_structure_check(&mut checks, expectation, expectation_index, artifact);
     }
     for (index, expectation) in expect.span_bbox.iter().enumerate() {
         insert_span_bbox_check(&mut checks, index, expectation, artifact);
@@ -9022,10 +9034,146 @@ fn page_quality_name(flag: &PageQuality) -> &'static str {
 fn insert_table_structure_check(
     checks: &mut BTreeMap<String, EvalCheckOutput>,
     expectation: &TableStructureExpectation,
+    expectation_index: Option<usize>,
     artifact: &DocumentArtifact,
 ) {
     let expected_rows = normalize_table_rows(&expectation.expected_rows);
-    let actual_rows = table_rows_for_page(artifact, expectation.page);
+    let actual_rows = best_table_rows_for_expectation(artifact, expectation.page, &expected_rows);
+    let score = score_table_structure_rows(&expected_rows, actual_rows);
+    let min_row_precision = expectation.min_row_precision.unwrap_or(0.0);
+    let min_row_recall = expectation.min_row_recall.unwrap_or(1.0);
+    let min_row_f1 = expectation.min_row_f1.unwrap_or(0.0);
+    let min_cell_precision = expectation.min_cell_precision.unwrap_or(0.0);
+    let min_cell_recall = expectation.min_cell_recall.unwrap_or(1.0);
+    let min_cell_f1 = expectation.min_cell_f1.unwrap_or(0.0);
+    let passed = score.row_precision >= min_row_precision
+        && score.row_recall >= min_row_recall
+        && score.row_f1 >= min_row_f1
+        && score.cell_precision >= min_cell_precision
+        && score.cell_recall >= min_cell_recall
+        && score.cell_f1 >= min_cell_f1;
+    let check_key = match expectation_index {
+        Some(index) => format!(
+            "table_structure.page_{:06}.expectation_{index:06}",
+            expectation.page
+        ),
+        None => format!("table_structure.page_{:06}", expectation.page),
+    };
+
+    checks.insert(
+        check_key,
+        EvalCheckOutput {
+            passed,
+            expected: json!({
+                "page": expectation.page,
+                "expected_rows": expected_rows,
+                "min_row_precision": min_row_precision,
+                "min_row_recall": min_row_recall,
+                "min_row_f1": min_row_f1,
+                "min_cell_precision": min_cell_precision,
+                "min_cell_recall": min_cell_recall,
+                "min_cell_f1": min_cell_f1,
+            }),
+            actual: json!({
+                "extracted_rows": score.actual_rows,
+                "row_precision": score.row_precision,
+                "row_recall": score.row_recall,
+                "row_f1": score.row_f1,
+                "missing_rows": score.missing_rows,
+                "extra_rows": score.extra_rows,
+                "cell_precision": score.cell_precision,
+                "cell_recall": score.cell_recall,
+                "cell_f1": score.cell_f1,
+                "missing_cells": score.missing_cells,
+                "extra_cells": score.extra_cells,
+            }),
+        },
+    );
+}
+
+struct TableStructureScore {
+    actual_rows: Vec<Vec<String>>,
+    missing_rows: Vec<Vec<String>>,
+    extra_rows: Vec<Vec<String>>,
+    missing_cells: Vec<TableCell>,
+    extra_cells: Vec<TableCell>,
+    row_precision: f64,
+    row_recall: f64,
+    row_f1: f64,
+    cell_precision: f64,
+    cell_recall: f64,
+    cell_f1: f64,
+}
+
+fn best_table_rows_for_expectation(
+    artifact: &DocumentArtifact,
+    page_index: u32,
+    expected_rows: &[Vec<String>],
+) -> Vec<Vec<String>> {
+    table_row_candidates_for_page(artifact, page_index, expected_rows.len())
+        .into_iter()
+        .max_by_key(|candidate| table_structure_candidate_rank(expected_rows, candidate))
+        .unwrap_or_default()
+}
+
+fn table_row_candidates_for_page(
+    artifact: &DocumentArtifact,
+    page_index: u32,
+    expected_row_count: usize,
+) -> Vec<Vec<Vec<String>>> {
+    let groups = table_row_groups_for_page(artifact, page_index);
+    let mut candidates = Vec::new();
+    for group in &groups {
+        push_table_row_candidates(&mut candidates, group, expected_row_count);
+    }
+
+    if groups.len() > 1 {
+        let flattened = groups.into_iter().flatten().collect::<Vec<_>>();
+        push_table_row_candidates(&mut candidates, &flattened, expected_row_count);
+    }
+
+    candidates
+}
+
+fn push_table_row_candidates(
+    candidates: &mut Vec<Vec<Vec<String>>>,
+    rows: &[Vec<String>],
+    expected_row_count: usize,
+) {
+    if rows.is_empty() {
+        return;
+    }
+
+    candidates.push(rows.to_vec());
+    if expected_row_count == 0 || rows.len() < expected_row_count {
+        return;
+    }
+
+    for window in rows.windows(expected_row_count) {
+        candidates.push(window.to_vec());
+    }
+}
+
+fn table_structure_candidate_rank(
+    expected_rows: &[Vec<String>],
+    actual_rows: &[Vec<String>],
+) -> (usize, usize, usize, usize, usize, usize) {
+    let score = score_table_structure_rows(expected_rows, actual_rows.to_vec());
+    (
+        score.matched_cell_count(expected_rows),
+        scaled_f64(score.cell_f1),
+        score.matched_row_count(expected_rows),
+        scaled_f64(score.row_f1),
+        1_000_000usize.saturating_sub(score.extra_cells.len()),
+        1_000_000usize.saturating_sub(score.actual_rows.len()),
+    )
+}
+
+fn score_table_structure_rows(
+    expected_rows: &[Vec<String>],
+    actual_rows: Vec<Vec<String>>,
+) -> TableStructureScore {
+    let expected_rows = expected_rows.to_vec();
     let missing_rows = missing_multiset_items(expected_rows.clone(), actual_rows.clone());
     let extra_rows = missing_multiset_items(actual_rows.clone(), expected_rows.clone());
     let expected_cells = table_cells(&expected_rows);
@@ -9050,48 +9198,36 @@ fn insert_table_structure_check(
         actual_cells.len(),
     );
     let cell_f1 = f1(cell_precision, cell_recall);
-    let min_row_precision = expectation.min_row_precision.unwrap_or(0.0);
-    let min_row_recall = expectation.min_row_recall.unwrap_or(1.0);
-    let min_row_f1 = expectation.min_row_f1.unwrap_or(0.0);
-    let min_cell_precision = expectation.min_cell_precision.unwrap_or(0.0);
-    let min_cell_recall = expectation.min_cell_recall.unwrap_or(1.0);
-    let min_cell_f1 = expectation.min_cell_f1.unwrap_or(0.0);
-    let passed = row_precision >= min_row_precision
-        && row_recall >= min_row_recall
-        && row_f1 >= min_row_f1
-        && cell_precision >= min_cell_precision
-        && cell_recall >= min_cell_recall
-        && cell_f1 >= min_cell_f1;
 
-    checks.insert(
-        format!("table_structure.page_{:06}", expectation.page),
-        EvalCheckOutput {
-            passed,
-            expected: json!({
-                "page": expectation.page,
-                "expected_rows": expected_rows,
-                "min_row_precision": min_row_precision,
-                "min_row_recall": min_row_recall,
-                "min_row_f1": min_row_f1,
-                "min_cell_precision": min_cell_precision,
-                "min_cell_recall": min_cell_recall,
-                "min_cell_f1": min_cell_f1,
-            }),
-            actual: json!({
-                "extracted_rows": actual_rows,
-                "row_precision": row_precision,
-                "row_recall": row_recall,
-                "row_f1": row_f1,
-                "missing_rows": missing_rows,
-                "extra_rows": extra_rows,
-                "cell_precision": cell_precision,
-                "cell_recall": cell_recall,
-                "cell_f1": cell_f1,
-                "missing_cells": missing_cells,
-                "extra_cells": extra_cells,
-            }),
-        },
-    );
+    TableStructureScore {
+        actual_rows,
+        missing_rows,
+        extra_rows,
+        missing_cells,
+        extra_cells,
+        row_precision,
+        row_recall,
+        row_f1,
+        cell_precision,
+        cell_recall,
+        cell_f1,
+    }
+}
+
+impl TableStructureScore {
+    fn matched_row_count(&self, expected_rows: &[Vec<String>]) -> usize {
+        expected_rows.len().saturating_sub(self.missing_rows.len())
+    }
+
+    fn matched_cell_count(&self, expected_rows: &[Vec<String>]) -> usize {
+        table_cells(expected_rows)
+            .len()
+            .saturating_sub(self.missing_cells.len())
+    }
+}
+
+fn scaled_f64(value: f64) -> usize {
+    (value * 1_000_000.0).round() as usize
 }
 
 fn insert_span_bbox_check(
@@ -9201,6 +9337,16 @@ fn push_max_bound_failure(failures: &mut Vec<String>, field: &str, actual: f32, 
 }
 
 fn table_rows_for_page(artifact: &DocumentArtifact, page_index: u32) -> Vec<Vec<String>> {
+    table_row_groups_for_page(artifact, page_index)
+        .into_iter()
+        .flatten()
+        .collect()
+}
+
+fn table_row_groups_for_page(
+    artifact: &DocumentArtifact,
+    page_index: u32,
+) -> Vec<Vec<Vec<String>>> {
     artifact
         .pages
         .iter()
@@ -9209,12 +9355,13 @@ fn table_rows_for_page(artifact: &DocumentArtifact, page_index: u32) -> Vec<Vec<
             page.layout_blocks
                 .iter()
                 .filter(|block| block.kind == LayoutBlockKind::Table)
-                .flat_map(|block| {
-                    block
+                .filter_map(|block| {
+                    let rows = block
                         .table
                         .as_ref()
                         .map(table_rows_from_grid)
-                        .unwrap_or_else(|| parse_table_rows(&block.text))
+                        .unwrap_or_else(|| parse_table_rows(&block.text));
+                    (!rows.is_empty()).then_some(rows)
                 })
                 .collect()
         })

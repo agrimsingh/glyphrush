@@ -2969,6 +2969,104 @@ fn text_table_recovery_extracts_reflow_profile_tables() {
 }
 
 #[test]
+fn text_table_recovery_extracts_classification_temperature_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-classification-temperature-tables".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Table 1. SnPb Eutectic Process – Classification Temperatures (Tc)\n",
+                "Package\n",
+                "Thickness\n",
+                "Volume mm3\n",
+                "<350\n",
+                "Volume mm3\n",
+                "³350\n",
+                "<2.5 mm 235 °C 220 °C\n",
+                "³2.5 mm 220 °C 220 °C\n",
+                "\n",
+                "Table 2. Pb-free Process – Classification Temperatures (Tc)\n",
+                "Package\n",
+                "Thickness\n",
+                "Volume mm3 \n",
+                "<350\n",
+                "Volume mm3 \n",
+                "350-2000\n",
+                "Volume mm3 \n",
+                ">2000\n",
+                "<1.6 mm 260 °C 260 °C 260 °C\n",
+                "1.6 mm – 2.5 mm 260 °C 250 °C 245 °C\n",
+                "³2.5 mm 250 °C 245 °C 245 °C\n",
+                "\n",
+                "Reliability Test Program\n",
+                "Test item Method Description\n",
+                "SOLDERABILITY JESD-22, B102 5 Sec, 245°C"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.50,
+                native_span_count: 22,
+                native_text_bytes: 760,
+                glyph_count: 640,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_rows = page
+        .layout_blocks
+        .iter()
+        .filter(|block| block.kind == LayoutBlockKind::Table)
+        .map(|block| {
+            assert!(!block.text.contains("Table 1."));
+            assert!(!block.text.contains("Table 2."));
+            assert!(!block.text.contains("Reliability Test Program"));
+            block
+                .table
+                .as_ref()
+                .expect("table payload")
+                .rows
+                .iter()
+                .map(|row| {
+                    row.cells
+                        .iter()
+                        .map(|cell| cell.text.as_str())
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        table_rows,
+        vec![
+            vec![
+                vec!["Package Thickness", "Volume mm3 <350", "Volume mm3 ³350"],
+                vec!["<2.5 mm", "235 °C", "220 °C"],
+                vec!["³2.5 mm", "220 °C", "220 °C"],
+            ],
+            vec![
+                vec![
+                    "Package Thickness",
+                    "Volume mm3 <350",
+                    "Volume mm3 350-2000",
+                    "Volume mm3 >2000"
+                ],
+                vec!["<1.6 mm", "260 °C", "260 °C", "260 °C"],
+                vec!["1.6 mm – 2.5 mm", "260 °C", "250 °C", "245 °C"],
+                vec!["³2.5 mm", "250 °C", "245 °C", "245 °C"],
+            ],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_extracts_package_pin_description_tables() {
     let artifact = parse_extracted_pages(
         "doc-package-pin-description-table".to_string(),

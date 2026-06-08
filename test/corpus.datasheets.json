@@ -352,6 +352,29 @@
               "min_row_recall": 1.0,
               "min_cell_recall": 1.0,
               "min_cell_f1": 1.0
+            },
+            {
+              "page": 14,
+              "expected_rows": [
+                ["Package Thickness", "Volume mm3 <350", "Volume mm3 ³350"],
+                ["<2.5 mm", "235 °C", "220 °C"],
+                ["³2.5 mm", "220 °C", "220 °C"]
+              ],
+              "min_row_recall": 1.0,
+              "min_cell_recall": 1.0,
+              "min_cell_f1": 1.0
+            },
+            {
+              "page": 14,
+              "expected_rows": [
+                ["Package Thickness", "Volume mm3 <350", "Volume mm3 350-2000", "Volume mm3 >2000"],
+                ["<1.6 mm", "260 °C", "260 °C", "260 °C"],
+                ["1.6 mm – 2.5 mm", "260 °C", "250 °C", "245 °C"],
+                ["³2.5 mm", "250 °C", "245 °C", "245 °C"]
+              ],
+              "min_row_recall": 1.0,
+              "min_cell_recall": 1.0,
+              "min_cell_f1": 1.0
             }
           ]
         }
