@@ -266,6 +266,15 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(benchmark["glyphrush_status"], "implemented");
     assert_eq!(benchmark["glyphrush"], "strict_speedup_claim_gate");
 
+    let span_geometry = capability(capabilities, "span_geometry_layout");
+    assert_eq!(span_geometry["glyphrush_status"], "partial");
+    assert!(
+        span_geometry["notes"]
+            .as_str()
+            .unwrap()
+            .contains("trailing cross-column notes")
+    );
+
     let cache = capability(capabilities, "artifact_cache_snapshots");
     assert_eq!(cache["glyphrush_status"], "implemented");
     assert_eq!(

@@ -339,6 +339,56 @@ fn positioned_native_spans_preserve_two_column_reading_order() {
 }
 
 #[test]
+fn positioned_native_spans_preserve_trailing_cross_column_note_after_two_columns() {
+    let artifact = parse_extracted_pages(
+        "doc-two-column-trailing-note".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Left column starts\n",
+                "Left column continues\n",
+                "Right column starts\n",
+                "Right column continues\n",
+                "Note: output voltage measured after startup"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("Left column starts", 72.0, 100.0, 230.0, 114.0),
+                span("Right column starts", 330.0, 100.0, 500.0, 114.0),
+                span("Left column continues", 72.0, 118.0, 248.0, 132.0),
+                span("Right column continues", 330.0, 118.0, 520.0, 132.0),
+                span(
+                    "Note: output voltage measured after startup",
+                    72.0,
+                    172.0,
+                    430.0,
+                    186.0,
+                ),
+            ],
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let blocks = &artifact.pages[0].layout_blocks;
+    assert_eq!(blocks.len(), 3);
+    assert_eq!(blocks[0].text, "Left column starts\nLeft column continues");
+    assert_eq!(
+        blocks[1].text,
+        "Right column starts\nRight column continues"
+    );
+    assert_eq!(
+        blocks[2].text,
+        "Note: output voltage measured after startup"
+    );
+    assert_eq!(blocks[2].bbox.x0, 72.0);
+    assert_eq!(blocks[2].bbox.x1, 430.0);
+}
+
+#[test]
 fn positioned_native_spans_preserve_full_width_heading_before_two_columns() {
     let artifact = parse_extracted_pages(
         "doc-heading-two-column-layout".to_string(),

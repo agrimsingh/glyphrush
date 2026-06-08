@@ -1777,9 +1777,10 @@ fn group_span_refs_by_full_width_bands<'a>(
     dimensions: &PageDimensions,
 ) -> Option<Vec<Vec<&'a TextSpan>>> {
     if span_refs.len() < 5
-        || !span_refs
-            .iter()
-            .any(|span| is_full_width_layout_span(span, dimensions))
+        || !span_refs.iter().any(|span| {
+            is_full_width_layout_span(span, dimensions)
+                || is_cross_column_layout_span_candidate(span, dimensions)
+        })
     {
         return None;
     }
@@ -1799,6 +1800,12 @@ fn group_span_refs_by_full_width_bands<'a>(
 
     for (index, span) in sorted_spans.iter().copied().enumerate() {
         if is_full_width_layout_span(span, dimensions)
+            || is_cross_column_trailing_band_span(
+                span,
+                &pending_band,
+                &sorted_spans[index + 1..],
+                dimensions,
+            )
             || is_column_section_separator_span(
                 span,
                 &pending_band,
@@ -1920,6 +1927,44 @@ fn is_full_width_layout_span(span: &TextSpan, dimensions: &PageDimensions) -> bo
     width >= dimensions.width * 0.6
         && span.bbox.x0 <= dimensions.width * 0.2
         && span.bbox.x1 >= dimensions.width * 0.8
+}
+
+fn is_cross_column_trailing_band_span(
+    span: &TextSpan,
+    previous_band: &[&TextSpan],
+    following_spans: &[&TextSpan],
+    dimensions: &PageDimensions,
+) -> bool {
+    is_cross_column_layout_span_candidate(span, dimensions)
+        && previous_band.len() >= 4
+        && following_spans.is_empty()
+        && !has_same_row_neighbor(span, previous_band.iter().copied())
+        && has_trailing_band_vertical_gap(span, previous_band)
+        && split_two_columns(previous_band, dimensions).is_some()
+}
+
+fn is_cross_column_layout_span_candidate(span: &TextSpan, dimensions: &PageDimensions) -> bool {
+    if dimensions.width <= 0.0 {
+        return false;
+    }
+
+    let width = span.bbox.x1 - span.bbox.x0;
+    width >= dimensions.width * 0.45
+        && span.bbox.x0 <= dimensions.width * 0.25
+        && span.bbox.x1 >= dimensions.width * 0.65
+}
+
+fn has_trailing_band_vertical_gap(span: &TextSpan, previous_band: &[&TextSpan]) -> bool {
+    let Some(previous_bottom) = previous_band
+        .iter()
+        .map(|previous| previous.bbox.y1)
+        .max_by(f32::total_cmp)
+    else {
+        return false;
+    };
+
+    let height = span.bbox.y1 - span.bbox.y0;
+    span.bbox.y0 - previous_bottom > (height * 0.75).max(8.0)
 }
 
 fn split_two_columns<'a>(
