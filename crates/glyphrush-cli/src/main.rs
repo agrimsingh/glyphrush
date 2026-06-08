@@ -1944,8 +1944,8 @@ impl<'a> OcrOptions<'a> {
         if adapter_count > 1 {
             bail!("choose only one of --ocr-sidecar, --ocr-command, or --ocr-http-url");
         }
-        if command.is_none() && command_input != OcrCommandInput::PdfPage {
-            bail!("--ocr-command-input requires --ocr-command");
+        if command_input != OcrCommandInput::PdfPage && command.is_none() && http_url.is_none() {
+            bail!("--ocr-command-input requires --ocr-command or --ocr-http-url");
         }
 
         Ok(Self {
@@ -2122,7 +2122,7 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             id: "page_render_for_ocr",
             area: "ocr",
             liteparse: "render_pages_for_ocr",
-            glyphrush: "pdfium_rendered_image_command_input",
+            glyphrush: "pdfium_rendered_image_command_or_http_input",
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "ocr_check_render_backend_required",
@@ -2739,6 +2739,10 @@ fn pdfium_ocr_check_rendered_image_output(
     ocr: OcrOptions<'_>,
     strict: bool,
 ) -> OcrCheckOutput {
+    if let Some(http_url) = ocr.http_url {
+        return pdfium_ocr_check_rendered_image_http_output(pdf, page_index, http_url, ocr, strict);
+    }
+
     let timeout_ms = duration_millis(ocr.timeout);
     let started = Instant::now();
     let Some(command) = ocr.command else {
@@ -2896,6 +2900,164 @@ fn pdfium_ocr_check_rendered_image_output(
 }
 
 #[cfg(feature = "pdfium")]
+fn pdfium_ocr_check_rendered_image_http_output(
+    pdf: &Path,
+    page_index: u32,
+    http_url: &str,
+    ocr: OcrOptions<'_>,
+    strict: bool,
+) -> OcrCheckOutput {
+    let timeout_ms = duration_millis(ocr.timeout);
+    let started = Instant::now();
+    let adapter = "ocr_http_rendered_image";
+    let (rendered_path, render_us) = match render_pdfium_pdf_page_to_temp_ppm(pdf, page_index) {
+        Ok(rendered) => rendered,
+        Err(error) => {
+            return OcrCheckOutput {
+                report_version: OCR_CHECK_REPORT_VERSION,
+                parser_name: PARSER_NAME,
+                parser_version: PARSER_VERSION,
+                strict,
+                pdf: pdf.display().to_string(),
+                page_index,
+                adapter,
+                passed: false,
+                success: false,
+                command: None,
+                http_url: Some(http_url.to_string()),
+                sidecar_path: None,
+                exit_status: None,
+                timed_out: false,
+                timeout_ms,
+                wall_us: started.elapsed().as_micros(),
+                render_us: 0,
+                output_bytes: 0,
+                stdout_sha256: None,
+                stdout_line_count: 0,
+                stdout_word_count: 0,
+                stderr_bytes: 0,
+                empty_output: true,
+                stderr_preview: None,
+                error: Some(format!("{error:#}")),
+                error_kind: Some(pdfium_rendered_ocr_check_error_kind(&error)),
+            };
+        }
+    };
+
+    let response_result = run_ocr_http_request(
+        http_url,
+        OcrHttpInput::RenderedImage(&rendered_path),
+        page_index,
+        ocr.timeout,
+    );
+    let cleanup_error = fs::remove_file(&rendered_path)
+        .with_context(|| format!("remove temporary OCR image {}", rendered_path.display()))
+        .err();
+    let wall_us = started.elapsed().as_micros();
+
+    match response_result {
+        Ok(response) => {
+            let status_success = response
+                .status_code
+                .is_some_and(|status| (200..300).contains(&status));
+            let decoded_body = status_success.then(|| decode_ocr_http_response_body(&response));
+            let output_body = match decoded_body.as_ref() {
+                Some(Ok(text)) => text.as_bytes(),
+                _ => response.body.as_slice(),
+            };
+            let empty_output = status_success
+                && matches!(decoded_body.as_ref(), Some(Ok(text)) if text.is_empty());
+            let decode_failed = matches!(decoded_body, Some(Err(_)));
+            let cleanup_failed_after_success = status_success && cleanup_error.is_some();
+            let success = status_success && !cleanup_failed_after_success;
+            let error_kind = if cleanup_failed_after_success {
+                Some("cleanup_failed")
+            } else if decode_failed {
+                Some("http_response_decode_failed")
+            } else if empty_output {
+                Some("empty_output")
+            } else if status_success {
+                None
+            } else {
+                Some("http_status_failed")
+            };
+            let error = if let Some(error) = cleanup_error.filter(|_| cleanup_failed_after_success)
+            {
+                Some(format!("{error:#}"))
+            } else if let Some(Err(error)) = decoded_body.as_ref() {
+                Some(format!("{error:#}"))
+            } else if empty_output {
+                Some("OCR HTTP output was empty".to_string())
+            } else if status_success {
+                None
+            } else {
+                Some(format!(
+                    "OCR HTTP endpoint returned status {}",
+                    response.status_code.unwrap_or_default()
+                ))
+            };
+
+            OcrCheckOutput {
+                report_version: OCR_CHECK_REPORT_VERSION,
+                parser_name: PARSER_NAME,
+                parser_version: PARSER_VERSION,
+                strict,
+                pdf: pdf.display().to_string(),
+                page_index,
+                adapter,
+                passed: success && !empty_output && !decode_failed,
+                success,
+                command: None,
+                http_url: Some(http_url.to_string()),
+                sidecar_path: None,
+                exit_status: response.status_code.map(i32::from),
+                timed_out: false,
+                timeout_ms,
+                wall_us,
+                render_us,
+                output_bytes: output_body.len() as u64,
+                stdout_sha256: Some(stdout_sha256(output_body)),
+                stdout_line_count: stdout_line_count(output_body),
+                stdout_word_count: stdout_word_count(output_body),
+                stderr_bytes: 0,
+                empty_output,
+                stderr_preview: None,
+                error,
+                error_kind,
+            }
+        }
+        Err(error) => OcrCheckOutput {
+            report_version: OCR_CHECK_REPORT_VERSION,
+            parser_name: PARSER_NAME,
+            parser_version: PARSER_VERSION,
+            strict,
+            pdf: pdf.display().to_string(),
+            page_index,
+            adapter,
+            passed: false,
+            success: false,
+            command: None,
+            http_url: Some(http_url.to_string()),
+            sidecar_path: None,
+            exit_status: None,
+            timed_out: ocr_http_error_kind(&error) == "timeout",
+            timeout_ms,
+            wall_us,
+            render_us,
+            output_bytes: 0,
+            stdout_sha256: None,
+            stdout_line_count: 0,
+            stdout_word_count: 0,
+            stderr_bytes: 0,
+            empty_output: true,
+            stderr_preview: None,
+            error: Some(format!("{error:#}")),
+            error_kind: Some(ocr_http_error_kind(&error)),
+        },
+    }
+}
+
+#[cfg(feature = "pdfium")]
 fn pdfium_rendered_ocr_check_error_kind(error: &anyhow::Error) -> &'static str {
     let error = format!("{error:#}");
     if error.contains("page index") && error.contains("not found") {
@@ -2913,7 +3075,7 @@ fn ocr_http_check_output(
     strict: bool,
 ) -> OcrCheckOutput {
     let timeout_ms = duration_millis(timeout);
-    match run_ocr_http_request(http_url, pdf, page_index, timeout) {
+    match run_ocr_http_request(http_url, OcrHttpInput::PdfPage(pdf), page_index, timeout) {
         Ok(response) => {
             let success = response
                 .status_code
@@ -8948,7 +9110,11 @@ fn ocr_fingerprint(ocr: OcrOptions<'_>, source_path: &Path) -> Result<String> {
     }
 
     if let Some(http_url) = ocr.http_url {
-        return Ok(ocr_http_fingerprint(http_url, ocr.timeout));
+        return Ok(ocr_http_fingerprint(
+            http_url,
+            ocr.command_input,
+            ocr.timeout,
+        ));
     }
 
     Ok("no-sidecar".to_string())
@@ -9017,9 +9183,15 @@ fn ocr_command_fingerprint(
     Ok(sha256_hex(payload))
 }
 
-fn ocr_http_fingerprint(http_url: &str, timeout: Duration) -> String {
+fn ocr_http_fingerprint(
+    http_url: &str,
+    command_input: OcrCommandInput,
+    timeout: Duration,
+) -> String {
     let mut payload = Vec::new();
     payload.extend_from_slice(b"ocr-http");
+    payload.push(0);
+    payload.extend_from_slice(format!("{command_input:?}").as_bytes());
     payload.push(0);
     payload.extend_from_slice(http_url.as_bytes());
     payload.push(0);
@@ -9367,18 +9539,29 @@ fn load_pdfium_ocr_if_needed(
         return Ok((None, 0, 0));
     }
 
-    let Some(command) = ocr.command else {
+    if ocr.command.is_none() && ocr.http_url.is_none() {
         return Ok((None, 0, 0));
-    };
+    }
 
     let (rendered_path, render_us) =
         render_pdfium_page_to_temp_ppm(page, source_path, signals.page_index)?;
     let ocr_start = Instant::now();
-    let text_result = run_ocr_command(command, &rendered_path, signals.page_index, ocr.timeout);
-    let command_succeeded = text_result.is_ok();
+    let text_result = if let Some(command) = ocr.command {
+        run_ocr_command(command, &rendered_path, signals.page_index, ocr.timeout)
+    } else if let Some(http_url) = ocr.http_url {
+        run_ocr_http_with_input(
+            http_url,
+            OcrHttpInput::RenderedImage(&rendered_path),
+            signals.page_index,
+            ocr.timeout,
+        )
+    } else {
+        unreachable!("rendered-image OCR checked for an adapter before rendering")
+    };
+    let adapter_succeeded = text_result.is_ok();
     let cleanup_result = fs::remove_file(&rendered_path)
         .with_context(|| format!("remove temporary OCR image {}", rendered_path.display()));
-    if command_succeeded {
+    if adapter_succeeded {
         cleanup_result?;
     }
     let text = text_result?;
@@ -10382,6 +10565,30 @@ struct OcrHttpResponse {
     wall_us: u128,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum OcrHttpInput<'a> {
+    PdfPage(&'a Path),
+    #[cfg(feature = "pdfium")]
+    RenderedImage(&'a Path),
+}
+
+impl<'a> OcrHttpInput<'a> {
+    fn request_body(self, page_index: u32) -> Result<Vec<u8>> {
+        match self {
+            Self::PdfPage(source_path) => serde_json::to_vec(&json!({
+                "pdf_path": source_path.display().to_string(),
+                "page_index": page_index,
+            })),
+            #[cfg(feature = "pdfium")]
+            Self::RenderedImage(rendered_path) => serde_json::to_vec(&json!({
+                "rendered_image_path": rendered_path.display().to_string(),
+                "page_index": page_index,
+            })),
+        }
+        .context("encode OCR HTTP request")
+    }
+}
+
 #[derive(Debug)]
 struct ParsedHttpUrl {
     host: String,
@@ -10391,16 +10598,12 @@ struct ParsedHttpUrl {
 
 fn run_ocr_http_request(
     http_url: &str,
-    source_path: &Path,
+    input: OcrHttpInput<'_>,
     page_index: u32,
     timeout: Duration,
 ) -> Result<OcrHttpResponse> {
     let url = parse_http_url(http_url)?;
-    let body = serde_json::to_vec(&json!({
-        "pdf_path": source_path.display().to_string(),
-        "page_index": page_index,
-    }))
-    .context("encode OCR HTTP request")?;
+    let body = input.request_body(page_index)?;
     let request = format!(
         "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
         url.path,
@@ -10538,7 +10741,21 @@ fn run_ocr_http(
     page_index: u32,
     timeout: Duration,
 ) -> Result<String> {
-    let response = run_ocr_http_request(http_url, source_path, page_index, timeout)?;
+    run_ocr_http_with_input(
+        http_url,
+        OcrHttpInput::PdfPage(source_path),
+        page_index,
+        timeout,
+    )
+}
+
+fn run_ocr_http_with_input(
+    http_url: &str,
+    input: OcrHttpInput<'_>,
+    page_index: u32,
+    timeout: Duration,
+) -> Result<String> {
+    let response = run_ocr_http_request(http_url, input, page_index, timeout)?;
     let status_code = response.status_code.unwrap_or_default();
     if !(200..300).contains(&status_code) {
         bail!("OCR HTTP endpoint returned status {status_code}");

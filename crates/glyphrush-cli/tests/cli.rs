@@ -13,6 +13,16 @@ use std::{
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
+#[cfg(feature = "pdfium")]
+#[derive(Debug)]
+struct RenderedOcrHttpObservation {
+    request: String,
+    rendered_image_path: Option<String>,
+    image_existed: bool,
+    header: Option<String>,
+    bytes: Option<usize>,
+}
+
 #[test]
 fn inspect_reports_pdf_page_count_and_fingerprint() {
     let pdf_path = write_test_pdf("inspect", "Hello Glyphrush");
@@ -527,6 +537,91 @@ fn parse_pdfium_ocr_command_rendered_image_invokes_adapter_only_for_ocr_pages() 
     );
 }
 
+#[cfg(feature = "pdfium")]
+#[test]
+fn parse_pdfium_ocr_http_rendered_image_invokes_adapter_only_for_ocr_pages() {
+    let dir = temp_dir("pdfium-rendered-image-http-ocr");
+    let native_path = dir.join("native.pdf");
+    let scan_path = dir.join("scan.pdf");
+    fs::write(
+        &native_path,
+        minimal_pdf("Native PDFium rendered HTTP OCR bypass"),
+    )
+    .unwrap();
+    fs::write(&scan_path, minimal_pdf_with_full_page_image_and_text("")).unwrap();
+
+    let native = run_json([
+        "--backend",
+        "pdfium",
+        "parse",
+        native_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--ocr-http-url",
+        "http://127.0.0.1:1/ocr",
+        "--ocr-command-input",
+        "rendered-image",
+    ]);
+    let (ocr_url, request_rx, server) =
+        start_rendered_ocr_http_server("Rendered HTTP OCR text page 0");
+    let scan = run_json([
+        "--backend",
+        "pdfium",
+        "parse",
+        scan_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--ocr-http-url",
+        &ocr_url,
+        "--ocr-command-input",
+        "rendered-image",
+    ]);
+
+    let observed = request_rx
+        .recv_timeout(Duration::from_secs(1))
+        .expect("HTTP OCR server should receive one rendered-image request");
+    server
+        .join()
+        .expect("rendered-image HTTP OCR server should finish");
+
+    assert_eq!(native["global_diagnostics"]["ocr_required_pages"], 0);
+    assert_eq!(native["global_diagnostics"]["ocr_applied_pages"], 0);
+    assert_eq!(scan["global_diagnostics"]["ocr_required_pages"], 1);
+    assert_eq!(scan["global_diagnostics"]["ocr_applied_pages"], 1);
+    assert_eq!(
+        scan["pages"][0]["ocr_spans"][0]["text"],
+        "Rendered HTTP OCR text page 0"
+    );
+    assert!(
+        scan["pages"][0]["timings"]["render_us"].as_u64().unwrap() > 0,
+        "scan page timings: {}",
+        scan["pages"][0]["timings"]
+    );
+    assert!(scan["pages"][0]["timings"]["ocr_us"].as_u64().unwrap() > 0);
+
+    assert!(observed.request.starts_with("POST /ocr HTTP/1.1"));
+    assert!(observed.request.contains("\"page_index\":0"));
+    assert!(!observed.request.contains("\"pdf_path\""));
+    let rendered_path = observed
+        .rendered_image_path
+        .as_deref()
+        .expect("request should include rendered_image_path");
+    assert!(
+        rendered_path.ends_with(".ppm"),
+        "rendered path: {rendered_path}"
+    );
+    assert!(
+        observed.image_existed,
+        "rendered image should exist during HTTP request"
+    );
+    assert_eq!(observed.header.as_deref(), Some("P6"));
+    assert!(observed.bytes.unwrap_or_default() > 32);
+    assert!(
+        !PathBuf::from(rendered_path).exists(),
+        "temporary rendered image should be removed after HTTP OCR returns"
+    );
+}
+
 #[test]
 fn parse_lopdf_rejects_rendered_image_ocr_command_without_render_backend() {
     let dir = temp_dir("lopdf-rendered-image-ocr-reject");
@@ -625,6 +720,79 @@ fn ocr_check_pdfium_rendered_image_command_preflights_rendered_page() {
     assert!(
         !PathBuf::from(columns[0]).exists(),
         "temporary rendered image should be removed after ocr-check returns"
+    );
+}
+
+#[cfg(feature = "pdfium")]
+#[test]
+fn ocr_check_pdfium_rendered_image_http_preflights_rendered_page() {
+    let dir = temp_dir("ocr-check-pdfium-rendered-image-http");
+    let pdf_path = dir.join("scan.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_full_page_image_and_text("")).unwrap();
+    let (ocr_url, request_rx, server) =
+        start_rendered_ocr_http_server("Rendered HTTP check OCR text");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "pdfium",
+            "ocr-check",
+            pdf_path.to_str().unwrap(),
+            "--page-index",
+            "0",
+            "--ocr-http-url",
+            &ocr_url,
+            "--ocr-command-input",
+            "rendered-image",
+            "--strict",
+        ])
+        .output()
+        .expect("run glyphrush pdfium ocr-check with rendered-image HTTP adapter");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let observed = request_rx
+        .recv_timeout(Duration::from_secs(1))
+        .expect("HTTP OCR server should receive rendered-image preflight request");
+    server
+        .join()
+        .expect("rendered-image HTTP OCR server should finish");
+    let json: Value = serde_json::from_slice(&output.stdout).expect("ocr-check output is json");
+
+    assert_eq!(json["adapter"], "ocr_http_rendered_image");
+    assert_eq!(json["passed"], true);
+    assert_eq!(json["success"], true);
+    assert_eq!(json["exit_status"], 200);
+    assert_eq!(json["timed_out"], false);
+    assert_eq!(json["empty_output"], false);
+    assert!(json["render_us"].as_u64().unwrap() > 0, "json: {json}");
+    assert!(json["wall_us"].as_u64().unwrap() > 0, "json: {json}");
+    assert_eq!(json["stdout_word_count"], 5);
+    assert_eq!(json["error_kind"], Value::Null);
+    assert!(observed.request.starts_with("POST /ocr HTTP/1.1"));
+    assert!(observed.request.contains("\"page_index\":0"));
+    assert!(!observed.request.contains("\"pdf_path\""));
+    let rendered_path = observed
+        .rendered_image_path
+        .as_deref()
+        .expect("request should include rendered_image_path");
+    assert!(
+        rendered_path.ends_with(".ppm"),
+        "rendered path: {rendered_path}"
+    );
+    assert!(
+        observed.image_existed,
+        "rendered image should exist during HTTP request"
+    );
+    assert_eq!(observed.header.as_deref(), Some("P6"));
+    assert!(observed.bytes.unwrap_or_default() > 32);
+    assert!(
+        !PathBuf::from(rendered_path).exists(),
+        "temporary rendered image should be removed after HTTP OCR check returns"
     );
 }
 
@@ -12185,6 +12353,103 @@ fn start_ocr_http_server_with_response(
     (url, request_rx, server)
 }
 
+#[cfg(feature = "pdfium")]
+fn start_rendered_ocr_http_server(
+    response_text: &'static str,
+) -> (String, Receiver<RenderedOcrHttpObservation>, JoinHandle<()>) {
+    let listener = TcpListener::bind("127.0.0.1:0").expect("bind rendered OCR HTTP test server");
+    listener
+        .set_nonblocking(true)
+        .expect("set rendered OCR HTTP server nonblocking");
+    let url = format!(
+        "http://{}/ocr",
+        listener.local_addr().expect("read OCR HTTP server addr")
+    );
+    let (request_tx, request_rx) = mpsc::channel();
+    let server = std::thread::spawn(move || {
+        let deadline = Instant::now() + Duration::from_secs(120);
+        let (mut stream, _) = loop {
+            match listener.accept() {
+                Ok(accepted) => break accepted,
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                    if Instant::now() >= deadline {
+                        request_tx
+                            .send(RenderedOcrHttpObservation {
+                                request: String::new(),
+                                rendered_image_path: None,
+                                image_existed: false,
+                                header: None,
+                                bytes: None,
+                            })
+                            .expect("send missing rendered OCR HTTP request observation");
+                        return;
+                    }
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                Err(error) => panic!("accept rendered OCR HTTP request: {error}"),
+            }
+        };
+
+        let mut buffer = Vec::new();
+        let mut chunk = [0_u8; 512];
+        loop {
+            let read = stream
+                .read(&mut chunk)
+                .expect("read rendered OCR HTTP request");
+            if read == 0 {
+                break;
+            }
+            buffer.extend_from_slice(&chunk[..read]);
+            if complete_http_request(&buffer) {
+                break;
+            }
+        }
+        let request = String::from_utf8_lossy(&buffer).into_owned();
+        let body = http_request_body(&buffer);
+        let rendered_image_path = serde_json::from_slice::<Value>(body)
+            .ok()
+            .and_then(|value| {
+                value
+                    .get("rendered_image_path")
+                    .and_then(Value::as_str)
+                    .map(ToOwned::to_owned)
+            });
+        let (image_existed, header, bytes) = rendered_image_path
+            .as_deref()
+            .map(|path| {
+                let path = Path::new(path);
+                let image_existed = path.exists();
+                let header = fs::read(path)
+                    .ok()
+                    .and_then(|bytes| String::from_utf8(bytes.into_iter().take(2).collect()).ok());
+                let bytes = fs::metadata(path)
+                    .ok()
+                    .map(|metadata| metadata.len() as usize);
+                (image_existed, header, bytes)
+            })
+            .unwrap_or((false, None, None));
+        request_tx
+            .send(RenderedOcrHttpObservation {
+                request,
+                rendered_image_path,
+                image_existed,
+                header,
+                bytes,
+            })
+            .expect("send rendered OCR HTTP request observation");
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+            response_text.len(),
+            response_text
+        );
+        stream
+            .write_all(response.as_bytes())
+            .expect("write rendered OCR HTTP response");
+    });
+
+    (url, request_rx, server)
+}
+
 fn complete_http_request(buffer: &[u8]) -> bool {
     let Some(header_end) = buffer.windows(4).position(|window| window == b"\r\n\r\n") else {
         return false;
@@ -12201,6 +12466,14 @@ fn complete_http_request(buffer: &[u8]) -> bool {
         })
         .unwrap_or(0);
     buffer.len() >= header_end + content_length
+}
+
+#[cfg(feature = "pdfium")]
+fn http_request_body(buffer: &[u8]) -> &[u8] {
+    let Some(header_end) = buffer.windows(4).position(|window| window == b"\r\n\r\n") else {
+        return &[];
+    };
+    &buffer[(header_end + 4)..]
 }
 
 fn run_json<const N: usize>(args: [&str; N]) -> Value {
