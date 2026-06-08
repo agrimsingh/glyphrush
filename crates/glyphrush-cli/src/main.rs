@@ -58,6 +58,7 @@ const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
 const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
+const TABLE_ROUTE_DENSITY_THRESHOLD: f32 = 0.25;
 const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v39";
 const DEFAULT_BASELINE_TIMEOUT_MS: u64 = 120_000;
 const DEFAULT_OCR_TIMEOUT_MS: u64 = 120_000;
@@ -9250,7 +9251,7 @@ fn extract_pdfium_loaded_page(
     let image_area_ratio = image_artifact_coverage_ratio(&image_artifacts, &dimensions);
     let table_start = Instant::now();
     let table_line_density =
-        table_line_density(&native_text).max(pdfium_ruled_table_line_density(&page));
+        combined_table_line_density(&native_text, || pdfium_ruled_table_line_density(&page));
     let table_us = table_start
         .elapsed()
         .as_micros()
@@ -9785,7 +9786,7 @@ fn extract_lopdf_page(
         image_area_ratio_hint(&image_artifacts, &content, native_text_bytes, &dimensions);
     let table_start = Instant::now();
     let table_line_density =
-        table_line_density(&native_text).max(ruled_table_line_density(&content));
+        combined_table_line_density(&native_text, || ruled_table_line_density(&content));
     let table_us = table_start
         .elapsed()
         .as_micros()
@@ -11419,6 +11420,18 @@ fn table_line_density(text: &str) -> f32 {
     table_like as f32 / total as f32
 }
 
+fn combined_table_line_density(
+    native_text: &str,
+    vector_table_density: impl FnOnce() -> f32,
+) -> f32 {
+    let native_density = table_line_density(native_text);
+    if native_density >= TABLE_ROUTE_DENSITY_THRESHOLD {
+        native_density
+    } else {
+        native_density.max(vector_table_density())
+    }
+}
+
 #[derive(Default)]
 struct VectorPathState {
     current: Option<(f32, f32)>,
@@ -11973,6 +11986,36 @@ mod unit_tests {
     #[test]
     fn pdfium_document_worker_count_serializes_corpus_jobs() {
         assert_eq!(document_worker_count(&PdfiumBackend, 4, 3), 1);
+    }
+
+    #[test]
+    fn table_signal_skips_vector_scan_when_native_text_already_routes_table_fallback() {
+        let calls = Cell::new(0);
+
+        let density = combined_table_line_density("||||||||||abcdefghij", || {
+            calls.set(calls.get() + 1);
+            1.0
+        });
+
+        assert!(density >= TABLE_ROUTE_DENSITY_THRESHOLD);
+        assert_eq!(
+            calls.get(),
+            0,
+            "native table signal should avoid expensive vector traversal once fallback is guaranteed"
+        );
+    }
+
+    #[test]
+    fn table_signal_uses_vector_scan_when_native_text_is_below_route_threshold() {
+        let calls = Cell::new(0);
+
+        let density = combined_table_line_density("plain paragraph text", || {
+            calls.set(calls.get() + 1);
+            0.75
+        });
+
+        assert_eq!(calls.get(), 1);
+        assert_eq!(density, 0.75);
     }
 
     #[test]
