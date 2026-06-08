@@ -183,6 +183,29 @@ pub struct LayoutBlock {
     pub bbox: BBox,
     pub text: String,
     pub kind: LayoutBlockKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub table: Option<LayoutTable>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LayoutTable {
+    pub rows: Vec<LayoutTableRow>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LayoutTableRow {
+    pub row_index: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bbox: Option<BBox>,
+    pub cells: Vec<LayoutTableCell>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LayoutTableCell {
+    pub column_index: usize,
+    pub text: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bbox: Option<BBox>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -918,16 +941,21 @@ fn layout_blocks_from_text(
     split_text_blocks(text, run_table_recovery)
         .into_iter()
         .enumerate()
-        .map(|(block_index, block_text)| LayoutBlock {
-            block_id: format!("p{page_index:06}:b{block_index:06}"),
-            bbox: BBox {
-                x0: 0.0,
-                y0: 0.0,
-                x1: dimensions.width,
-                y1: dimensions.height,
-            },
-            kind: classify_layout_block(&block_text, run_table_recovery),
-            text: block_text,
+        .map(|(block_index, block_text)| {
+            let kind = classify_layout_block(&block_text, run_table_recovery);
+            let table = table_payload_from_text(&block_text, &kind);
+            LayoutBlock {
+                block_id: format!("p{page_index:06}:b{block_index:06}"),
+                bbox: BBox {
+                    x0: 0.0,
+                    y0: 0.0,
+                    x1: dimensions.width,
+                    y1: dimensions.height,
+                },
+                text: block_text,
+                kind,
+                table,
+            }
         })
         .collect()
 }
@@ -1099,7 +1127,34 @@ fn table_block_from_positioned_rows(
         bbox,
         text,
         kind: LayoutBlockKind::Table,
+        table: table_payload_from_positioned_rows(rows),
     })
+}
+
+fn table_payload_from_positioned_rows(rows: &[Vec<&TextSpan>]) -> Option<LayoutTable> {
+    let rows = rows
+        .iter()
+        .enumerate()
+        .map(|(row_index, row)| LayoutTableRow {
+            row_index,
+            bbox: union_span_refs_bbox(row),
+            cells: row
+                .iter()
+                .enumerate()
+                .filter_map(|(column_index, span)| {
+                    let text = span.text.trim();
+                    (!text.is_empty()).then(|| LayoutTableCell {
+                        column_index,
+                        text: text.to_string(),
+                        bbox: Some(span.bbox.clone()),
+                    })
+                })
+                .collect(),
+        })
+        .filter(|row| row.cells.len() >= 2)
+        .collect::<Vec<_>>();
+
+    (rows.len() >= 2).then_some(LayoutTable { rows })
 }
 
 fn layout_block_from_span_group(
@@ -1116,11 +1171,15 @@ fn layout_block_from_span_group(
         .collect::<Vec<_>>();
     let text = reflow_text_block(&lines, run_table_recovery);
 
+    let kind = classify_layout_block(&text, run_table_recovery);
+    let table = table_payload_from_text(&text, &kind);
+
     Some(LayoutBlock {
         block_id: format!("p{page_index:06}:b{block_index:06}"),
         bbox,
-        kind: classify_layout_block(&text, run_table_recovery),
         text,
+        kind,
+        table,
     })
 }
 
@@ -1591,6 +1650,56 @@ fn classify_layout_block(text: &str, run_table_recovery: bool) -> LayoutBlockKin
     }
 
     LayoutBlockKind::Paragraph
+}
+
+fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutTable> {
+    if *kind != LayoutBlockKind::Table {
+        return None;
+    }
+
+    let rows = text
+        .lines()
+        .enumerate()
+        .filter_map(|(row_index, line)| {
+            let cells = table_cells_from_text_line(line)
+                .into_iter()
+                .enumerate()
+                .map(|(column_index, text)| LayoutTableCell {
+                    column_index,
+                    text,
+                    bbox: None,
+                })
+                .collect::<Vec<_>>();
+
+            (cells.len() >= 2).then_some(LayoutTableRow {
+                row_index,
+                bbox: None,
+                cells,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    (rows.len() >= 2).then_some(LayoutTable { rows })
+}
+
+fn table_cells_from_text_line(line: &str) -> Vec<String> {
+    let cells = if line.contains('|') {
+        line.trim()
+            .trim_matches('|')
+            .split('|')
+            .map(str::trim)
+            .collect::<Vec<_>>()
+    } else if line.contains('\t') {
+        line.split('\t').map(str::trim).collect::<Vec<_>>()
+    } else {
+        line.split_whitespace().collect::<Vec<_>>()
+    };
+
+    cells
+        .into_iter()
+        .filter(|cell| !cell.is_empty())
+        .map(ToString::to_string)
+        .collect()
 }
 
 fn is_table_lines(lines: &[String]) -> bool {

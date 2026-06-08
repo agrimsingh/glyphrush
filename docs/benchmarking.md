@@ -178,7 +178,7 @@ Supported v0 expectations:
 - `span_bbox`: sample span text/provenance plus optional x0/y0/x1/y1 bounding-box ranges.
 - `pages`: page-level expectations with zero-based `index`, optional `artifact_id`, `page_fingerprint`, `route`, `empty_text_output`, `required_text`, `image_artifact_count`, `layout_block_counts`, `required_flags`, and `required_reasons`.
 
-Table checks score rows recovered from table layout blocks. In v0 those blocks can come from pipe/tab text, table-routed whitespace rows, or table-routed positioned spans that form aligned multi-column rows when `--span-geometry` is enabled.
+Table checks score rows recovered from table layout blocks. Eval uses a table block's structured `table.rows[].cells[]` payload when present, then falls back to parsing the block text for compatibility with older artifacts. In v0 those blocks can come from pipe/tab text, table-routed whitespace rows, or table-routed positioned spans that form aligned multi-column rows when `--span-geometry` is enabled.
 
 Example:
 

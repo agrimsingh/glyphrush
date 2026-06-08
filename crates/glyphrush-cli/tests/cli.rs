@@ -2618,6 +2618,44 @@ fn parse_markdown_renders_whitespace_table_blocks_as_markdown_tables() {
 }
 
 #[test]
+fn parse_json_emits_structured_cells_for_positioned_table_blocks() {
+    let dir = temp_dir("parse-json-positioned-table-cells");
+    let pdf_path = dir.join("positioned-table.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_positioned_ruled_table()).unwrap();
+
+    let json = run_json([
+        "parse",
+        pdf_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--span-geometry",
+    ]);
+    let blocks = json["pages"][0]["layout_blocks"].as_array().unwrap();
+    let table_block = blocks
+        .iter()
+        .find(|block| block["kind"] == "table")
+        .expect("positioned table block");
+
+    assert_eq!(table_block["text"], "Part Value\nA 1\nB 2");
+    assert_eq!(table_block["table"]["rows"][0]["cells"][0]["text"], "Part");
+    assert_eq!(table_block["table"]["rows"][0]["cells"][1]["text"], "Value");
+    assert_eq!(table_block["table"]["rows"][1]["cells"][0]["text"], "A");
+    assert_eq!(table_block["table"]["rows"][2]["cells"][1]["text"], "2");
+    assert_eq!(
+        table_block["table"]["rows"][0]["cells"][0]["bbox"]["x0"],
+        84.0
+    );
+    assert_eq!(
+        table_block["table"]["rows"][0]["cells"][0]["bbox"]["y0"],
+        218.0
+    );
+    assert_eq!(
+        table_block["table"]["rows"][0]["cells"][1]["bbox"]["x0"],
+        228.0
+    );
+}
+
+#[test]
 fn parse_text_emits_warnings_to_stderr_for_incomplete_ocr_pages() {
     let dir = temp_dir("parse-text-warning");
     let pdf_path = dir.join("scan.pdf");
@@ -3303,8 +3341,12 @@ fn cache_key_does_not_reuse_prior_schema_artifacts() {
         "glyphrush-cache-v37:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
         env!("CARGO_PKG_VERSION")
     ));
-    let expected_current_key = sha256_hex(format!(
+    let old_v38_key = sha256_hex(format!(
         "glyphrush-cache-v38:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
+        env!("CARGO_PKG_VERSION")
+    ));
+    let expected_current_key = sha256_hex(format!(
+        "glyphrush-cache-v39:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
         env!("CARGO_PKG_VERSION")
     ));
 
@@ -3529,6 +3571,12 @@ fn cache_key_does_not_reuse_prior_schema_artifacts() {
             .as_str()
             .expect("cache key is present"),
         old_v37_key
+    );
+    assert_ne!(
+        json["global_diagnostics"]["cache_key"]
+            .as_str()
+            .expect("cache key is present"),
+        old_v38_key
     );
     assert_eq!(
         json["global_diagnostics"]["cache_key"]

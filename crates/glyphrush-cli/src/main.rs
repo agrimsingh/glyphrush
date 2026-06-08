@@ -21,8 +21,8 @@ use anyhow::{Context, Result, anyhow, bail};
 use clap::{Parser, Subcommand, ValueEnum};
 use glyphrush_core::{
     BBox, CacheStatus, DocumentArtifact, DocumentMetadata, ExtractedImage, ExtractedPage,
-    ExtractedTextSpan, ImageArtifact, LayoutBlockKind, PageArtifact, PageDimensions, PageQuality,
-    PageQualityReport, PageRoute, PageSignals, PageTimings, SpanProvenance, TextSpan,
+    ExtractedTextSpan, ImageArtifact, LayoutBlockKind, LayoutTable, PageArtifact, PageDimensions,
+    PageQuality, PageQualityReport, PageRoute, PageSignals, PageTimings, SpanProvenance, TextSpan,
     classify_page, parse_extracted_pages,
 };
 use lopdf::{Dictionary, Document, Object, ObjectId, content::Content};
@@ -53,7 +53,7 @@ const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
 const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
-const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v38";
+const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v39";
 const DEFAULT_BASELINE_TIMEOUT_MS: u64 = 120_000;
 const DEFAULT_OCR_TIMEOUT_MS: u64 = 120_000;
 #[cfg(feature = "pdfium")]
@@ -7843,10 +7843,31 @@ fn table_rows_for_page(artifact: &DocumentArtifact, page_index: u32) -> Vec<Vec<
             page.layout_blocks
                 .iter()
                 .filter(|block| block.kind == LayoutBlockKind::Table)
-                .flat_map(|block| parse_table_rows(&block.text))
+                .flat_map(|block| {
+                    block
+                        .table
+                        .as_ref()
+                        .map(table_rows_from_grid)
+                        .unwrap_or_else(|| parse_table_rows(&block.text))
+                })
                 .collect()
         })
         .unwrap_or_default()
+}
+
+fn table_rows_from_grid(table: &LayoutTable) -> Vec<Vec<String>> {
+    table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.trim().to_string())
+                .filter(|cell| !cell.is_empty())
+                .collect::<Vec<_>>()
+        })
+        .filter(|row| row.len() >= 2)
+        .collect()
 }
 
 fn parse_table_rows(text: &str) -> Vec<Vec<String>> {
@@ -11020,12 +11041,19 @@ fn markdown_blocks(page: &PageArtifact) -> Vec<String> {
             | LayoutBlockKind::Figure
             | LayoutBlockKind::Header
             | LayoutBlockKind::Footer => block.text.trim().to_string(),
-            LayoutBlockKind::Table => {
-                markdown_table_block(&block.text).unwrap_or_else(|| block.text.trim().to_string())
-            }
+            LayoutBlockKind::Table => block
+                .table
+                .as_ref()
+                .and_then(markdown_table_grid)
+                .or_else(|| markdown_table_block(&block.text))
+                .unwrap_or_else(|| block.text.trim().to_string()),
         })
         .filter(|text| !text.is_empty())
         .collect()
+}
+
+fn markdown_table_grid(table: &LayoutTable) -> Option<String> {
+    markdown_table_rows(&table_rows_from_grid(table))
 }
 
 fn markdown_table_block(text: &str) -> Option<String> {
@@ -11033,6 +11061,10 @@ fn markdown_table_block(text: &str) -> Option<String> {
         .lines()
         .map(parse_markdown_table_row)
         .collect::<Option<Vec<_>>>()?;
+    markdown_table_rows(&rows)
+}
+
+fn markdown_table_rows(rows: &[Vec<String>]) -> Option<String> {
     let column_count = rows.first()?.len();
     if rows.len() < 2 || column_count < 2 || rows.iter().any(|row| row.len() != column_count) {
         return None;
