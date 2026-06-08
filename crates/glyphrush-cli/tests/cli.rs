@@ -510,6 +510,35 @@ fn feature_parity_can_require_quality_backed_liteparse_benchmark_evidence() {
         ])
     );
     assert_eq!(
+        json["benchmark_evidence"]["coverage_requirement"],
+        serde_json::json!({
+            "preset": "glyphrush-v0",
+            "required": false,
+            "required_categories": [
+                "clean_digital",
+                "scanned",
+                "hybrid",
+                "academic_columns",
+                "tables",
+                "forms",
+                "rotated",
+                "weird_encoding",
+                "large"
+            ],
+            "present_categories": ["clean_digital", "scanned"],
+            "missing_categories": [
+                "hybrid",
+                "academic_columns",
+                "tables",
+                "forms",
+                "rotated",
+                "weird_encoding",
+                "large"
+            ],
+            "passed": false
+        })
+    );
+    assert_eq!(
         json["benchmark_evidence"]["missing_required_claims"],
         serde_json::json!([])
     );
@@ -759,6 +788,7 @@ fn feature_parity_coverage_preset_gate_fails_when_benchmark_categories_are_missi
         json["benchmark_evidence"]["coverage_requirement"],
         serde_json::json!({
             "preset": "glyphrush-v0",
+            "required": true,
             "required_categories": [
                 "clean_digital",
                 "scanned",

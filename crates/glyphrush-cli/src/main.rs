@@ -607,8 +607,7 @@ struct FeatureParityBenchmarkEvidence {
     quality_status: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     quality_categories: Vec<FeatureParityBenchmarkCategoryEvidence>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    coverage_requirement: Option<FeatureParityBenchmarkCoverageRequirement>,
+    coverage_requirement: FeatureParityBenchmarkCoverageRequirement,
     required_claim_count: usize,
     claim_count: usize,
     quality_backed_claim_count: usize,
@@ -635,6 +634,7 @@ struct FeatureParityBenchmarkCategoryEvidence {
 #[derive(Clone, Debug, Serialize)]
 struct FeatureParityBenchmarkCoverageRequirement {
     preset: String,
+    required: bool,
     required_categories: Vec<String>,
     present_categories: Vec<String>,
     missing_categories: Vec<String>,
@@ -2249,12 +2249,7 @@ fn feature_parity_output<B: PdfBackend>(
     let benchmark_evidence = bench_report
         .map(|path| feature_parity_benchmark_evidence(path, coverage_preset))
         .transpose()?;
-    let readiness = feature_parity_readiness(
-        &capabilities,
-        &summary,
-        benchmark_evidence.as_ref(),
-        coverage_preset,
-    );
+    let readiness = feature_parity_readiness(&capabilities, &summary, benchmark_evidence.as_ref());
 
     Ok(FeatureParityOutput {
         report_version: FEATURE_PARITY_REPORT_VERSION,
@@ -2325,8 +2320,11 @@ fn feature_parity_benchmark_evidence(
         && claim_passed_count == FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len();
 
     let quality_categories = feature_parity_benchmark_quality_categories(&report);
-    let coverage_requirement = coverage_preset
-        .map(|preset| feature_parity_benchmark_coverage_requirement(preset, &quality_categories));
+    let coverage_requirement = feature_parity_benchmark_coverage_requirement(
+        coverage_preset.unwrap_or(CoveragePreset::GlyphrushV0),
+        coverage_preset.is_some(),
+        &quality_categories,
+    );
 
     Ok(FeatureParityBenchmarkEvidence {
         report_path: path.display().to_string(),
@@ -2357,6 +2355,7 @@ fn feature_parity_benchmark_evidence(
 
 fn feature_parity_benchmark_coverage_requirement(
     preset: CoveragePreset,
+    required: bool,
     quality_categories: &[FeatureParityBenchmarkCategoryEvidence],
 ) -> FeatureParityBenchmarkCoverageRequirement {
     let present_categories = quality_categories
@@ -2380,6 +2379,7 @@ fn feature_parity_benchmark_coverage_requirement(
 
     FeatureParityBenchmarkCoverageRequirement {
         preset: preset.name().to_string(),
+        required,
         required_categories,
         present_categories,
         passed: missing_categories.is_empty(),
@@ -2611,7 +2611,6 @@ fn feature_parity_readiness(
     capabilities: &[FeatureParityCapability],
     summary: &FeatureParitySummary,
     benchmark_evidence: Option<&FeatureParityBenchmarkEvidence>,
-    coverage_preset: Option<CoveragePreset>,
 ) -> FeatureParityReadiness {
     let hot_path_capability_count = capabilities
         .iter()
@@ -2631,11 +2630,7 @@ fn feature_parity_readiness(
     });
     let native_text_speed_race_ready = hot_path_ready && quality_gate_ready;
     let (native_text_speed_claim_ready, native_text_speed_claim_blockers) =
-        feature_parity_speed_claim_readiness(
-            native_text_speed_race_ready,
-            benchmark_evidence,
-            coverage_preset,
-        );
+        feature_parity_speed_claim_readiness(native_text_speed_race_ready, benchmark_evidence);
 
     FeatureParityReadiness {
         native_text_speed_race_ready,
@@ -2676,7 +2671,6 @@ fn feature_parity_readiness(
 fn feature_parity_speed_claim_readiness(
     capability_ready: bool,
     benchmark_evidence: Option<&FeatureParityBenchmarkEvidence>,
-    coverage_preset: Option<CoveragePreset>,
 ) -> (bool, Vec<String>) {
     let mut blockers = Vec::new();
 
@@ -2693,17 +2687,11 @@ fn feature_parity_speed_claim_readiness(
         blockers.push("missing_quality_backed_liteparse_claims".to_string());
     }
 
-    match benchmark_evidence.coverage_requirement.as_ref() {
-        Some(requirement) if !requirement.passed => {
-            blockers.push("coverage_preset_missing_categories".to_string());
-        }
-        Some(_) => {}
-        None if coverage_preset.is_none() => {
-            blockers.push("missing_coverage_preset".to_string());
-        }
-        None => {
-            blockers.push("coverage_preset_missing_categories".to_string());
-        }
+    let coverage_requirement = &benchmark_evidence.coverage_requirement;
+    if !coverage_requirement.required {
+        blockers.push("missing_coverage_preset".to_string());
+    } else if !coverage_requirement.passed {
+        blockers.push("coverage_preset_missing_categories".to_string());
     }
 
     (blockers.is_empty(), blockers)
@@ -4181,8 +4169,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 && !output
                     .benchmark_evidence
                     .as_ref()
-                    .and_then(|evidence| evidence.coverage_requirement.as_ref())
-                    .is_some_and(|coverage| coverage.passed);
+                    .is_some_and(|evidence| evidence.coverage_requirement.passed);
             write_json(&output)?;
             if speed_evidence_failed {
                 bail!(
