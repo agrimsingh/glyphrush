@@ -2353,6 +2353,87 @@ fn text_table_recovery_merges_split_pin_function_rows_from_pdfium_text() {
 }
 
 #[test]
+fn text_table_recovery_extracts_split_pin_number_name_function_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-split-pin-number-name-function-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Operating Waveforms (Cont.)\n",
+                "Pin Description\n",
+                "PIN\n",
+                "NO. NAME\n",
+                "FUNCTION\n",
+                "1 VIN Voltage supply input pin.\n",
+                "2 GND Ground pin.\n",
+                "3 SHDN Shutdown control pin, logic high: enable; logic low: shutdown.\n",
+                "4 SET Connect this pin to an external resistor divider to adjust output voltage.\n",
+                "5 VOUT Regulator output pin.\n",
+                "\n",
+                "Power On\n",
+                "CH1 : VIN , 2V/div\n",
+                "CH2 : VOUT , 2V/div"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 14,
+                native_text_bytes: 430,
+                glyph_count: 335,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 4);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Paragraph);
+    assert_eq!(page.layout_blocks[0].text, "Operating Waveforms (Cont.)");
+    assert_eq!(page.layout_blocks[1].kind, LayoutBlockKind::Heading);
+    assert_eq!(page.layout_blocks[1].text, "Pin Description");
+    assert_eq!(page.layout_blocks[2].kind, LayoutBlockKind::Table);
+    assert_eq!(page.layout_blocks[3].kind, LayoutBlockKind::Paragraph);
+    assert!(page.layout_blocks[3].text.starts_with("Power On"));
+
+    let table = page.layout_blocks[2].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Pin No.", "Name", "Function"],
+            vec!["1", "VIN", "Voltage supply input pin."],
+            vec!["2", "GND", "Ground pin."],
+            vec![
+                "3",
+                "SHDN",
+                "Shutdown control pin, logic high: enable; logic low: shutdown."
+            ],
+            vec![
+                "4",
+                "SET",
+                "Connect this pin to an external resistor divider to adjust output voltage."
+            ],
+            vec!["5", "VOUT", "Regulator output pin."],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_extracts_package_pin_description_tables() {
     let artifact = parse_extracted_pages(
         "doc-package-pin-description-table".to_string(),

@@ -272,6 +272,22 @@
               "min_precision": 1.0,
               "min_recall": 1.0
             }
+          ],
+          "table_structure": [
+            {
+              "page": 6,
+              "expected_rows": [
+                ["Pin No.", "Name", "Function"],
+                ["1", "VIN", "Voltage supply input pin."],
+                ["2", "GND", "Ground pin."],
+                ["3", "SHDN", "Shutdown control pin, logic high: enable; logic low: shutdown."],
+                ["4", "SET", "Connect this pin to an external resistor divider to adjust output voltage."],
+                ["5", "VOUT", "Regulator output pin."]
+              ],
+              "min_row_recall": 1.0,
+              "min_cell_recall": 1.0,
+              "min_cell_f1": 1.0
+            }
           ]
         }
       }

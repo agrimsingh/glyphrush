@@ -2890,6 +2890,40 @@ fn seed_datasheet_manifest_tracks_pdfium_pin_function_table() {
 }
 
 #[test]
+fn seed_datasheet_manifest_tracks_pdfium_pin_number_name_function_table() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_APL5324BI-TRG.pdf")
+        .expect("APL5324 datasheet expectation exists");
+
+    assert_eq!(
+        document["expect_by_backend"]["pdfium"]["table_structure"],
+        serde_json::json!([
+          {
+            "page": 6,
+            "expected_rows": [
+              ["Pin No.", "Name", "Function"],
+              ["1", "VIN", "Voltage supply input pin."],
+              ["2", "GND", "Ground pin."],
+              ["3", "SHDN", "Shutdown control pin, logic high: enable; logic low: shutdown."],
+              ["4", "SET", "Connect this pin to an external resistor divider to adjust output voltage."],
+              ["5", "VOUT", "Regulator output pin."]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          }
+        ])
+    );
+}
+
+#[test]
 fn seed_datasheet_manifest_tracks_pdfium_package_pin_table() {
     let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let manifest_path = workspace_root.join("test/corpus.datasheets.json");

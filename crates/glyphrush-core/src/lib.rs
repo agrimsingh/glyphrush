@@ -2793,6 +2793,13 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
     }
 
     if let Some(split_blocks) =
+        split_pin_number_name_function_table_blocks(lines, run_table_recovery)
+    {
+        blocks.extend(split_blocks);
+        return;
+    }
+
+    if let Some(split_blocks) =
         split_package_pin_description_table_blocks(lines, run_table_recovery)
     {
         blocks.extend(split_blocks);
@@ -2823,6 +2830,42 @@ fn split_embedded_pin_function_table_blocks(
         .iter()
         .position(|line| is_pin_function_table_header(line))?;
     let (_, consumed_table_lines) = pin_function_table_rows_prefix(&refs[header_index..])?;
+
+    let caption_index = header_index
+        .checked_sub(1)
+        .filter(|index| looks_like_pin_function_table_caption(refs[*index]));
+    let prefix_end = caption_index.unwrap_or(header_index);
+
+    let mut blocks = Vec::new();
+    if prefix_end > 0 {
+        blocks.push(reflow_text_block(&lines[..prefix_end], run_table_recovery));
+    }
+    if let Some(caption_index) = caption_index {
+        blocks.push(lines[caption_index].trim().to_string());
+    }
+
+    let table_end = header_index + consumed_table_lines;
+    blocks.push(lines[header_index..table_end].join("\n"));
+    if table_end < lines.len() {
+        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
+    }
+
+    Some(blocks)
+}
+
+fn split_pin_number_name_function_table_blocks(
+    lines: &[String],
+    run_table_recovery: bool,
+) -> Option<Vec<String>> {
+    if !run_table_recovery || lines.len() < 5 {
+        return None;
+    }
+
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let header_index = (0..refs.len())
+        .find(|index| pin_number_name_function_table_header_len(&refs[*index..]).is_some())?;
+    let (_, consumed_table_lines) =
+        pin_number_name_function_table_rows_prefix(&refs[header_index..])?;
 
     let caption_index = header_index
         .checked_sub(1)
@@ -3112,6 +3155,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = pin_number_name_function_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     if let Some(rows) = package_pin_description_table_rows(&lines) {
         return layout_table_from_text_rows(rows);
     }
@@ -3221,6 +3268,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
         return true;
     }
 
+    if pin_number_name_function_table_rows(lines).is_some() {
+        return true;
+    }
+
     if package_pin_description_table_rows(lines).is_some() {
         return true;
     }
@@ -3260,6 +3311,73 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
 fn pin_function_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
     let (rows, consumed) = pin_function_table_rows_prefix(lines)?;
     (consumed == lines.len()).then_some(rows)
+}
+
+fn pin_number_name_function_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    let (rows, consumed) = pin_number_name_function_table_rows_prefix(lines)?;
+    (consumed == lines.len()).then_some(rows)
+}
+
+fn pin_number_name_function_table_rows_prefix(lines: &[&str]) -> Option<(Vec<Vec<String>>, usize)> {
+    let header_len = pin_number_name_function_table_header_len(lines)?;
+    let mut rows = vec![vec![
+        "Pin No.".to_string(),
+        "Name".to_string(),
+        "Function".to_string(),
+    ]];
+    let mut consumed = header_len;
+
+    for (offset, line) in lines.iter().enumerate().skip(header_len) {
+        let tokens = line.split_whitespace().collect::<Vec<_>>();
+        let row = pin_number_name_function_data_row(&tokens)?;
+        rows.push(row);
+        consumed = offset + 1;
+    }
+
+    (rows.len() >= 3).then_some((rows, consumed))
+}
+
+fn pin_number_name_function_table_header_len(lines: &[&str]) -> Option<usize> {
+    let first = normalize_pin_table_header(lines.first()?);
+    if first == "pin no name function" {
+        return Some(1);
+    }
+
+    if lines.len() >= 2
+        && first == "pin no name"
+        && normalize_pin_table_header(lines[1]) == "function"
+    {
+        return Some(2);
+    }
+
+    if lines.len() >= 3
+        && first == "pin"
+        && normalize_pin_table_header(lines[1]) == "no name"
+        && normalize_pin_table_header(lines[2]) == "function"
+    {
+        return Some(3);
+    }
+
+    None
+}
+
+fn pin_number_name_function_data_row(tokens: &[&str]) -> Option<Vec<String>> {
+    if tokens.len() < 3 || !looks_like_pin_number_token(tokens[0]) {
+        return None;
+    }
+
+    let name = tokens[1].trim_matches(|ch: char| matches!(ch, ',' | ';'));
+    let name_tokens = vec![name.to_string()];
+    if !pin_name_tokens_look_plausible(&name_tokens) {
+        return None;
+    }
+
+    let function = tokens[2..].join(" ");
+    if function.trim().is_empty() {
+        return None;
+    }
+
+    Some(vec![tokens[0].to_string(), name.to_string(), function])
 }
 
 fn pin_function_table_rows_prefix(lines: &[&str]) -> Option<(Vec<Vec<String>>, usize)> {
