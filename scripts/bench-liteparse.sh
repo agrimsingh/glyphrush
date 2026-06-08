@@ -50,12 +50,30 @@ if [[ -n "$coverage_preset" ]]; then
   cmd+=(--require-coverage-preset "$coverage_preset")
 fi
 
+feature_parity_cmd=()
+if [[ -n "$output" && -n "$coverage_preset" ]]; then
+  feature_parity_cmd=(
+    cargo run -q --release -p glyphrush-cli
+    --features "$features"
+    --
+    --backend "$backend"
+    feature-parity
+    --bench-report "$output"
+    --require-speed-evidence
+    --require-coverage-preset "$coverage_preset"
+  )
+fi
+
 print_command() {
   printf '%q ' "${cmd[@]}"
   if [[ -n "$output" ]]; then
     printf '> %q' "$output"
   fi
   printf '\n'
+  if ((${#feature_parity_cmd[@]} > 0)); then
+    printf '%q ' "${feature_parity_cmd[@]}"
+    printf '\n'
+  fi
 }
 
 if [[ "$dry_run" == true ]]; then
@@ -69,4 +87,8 @@ if [[ -n "$output" ]]; then
   "${cmd[@]}" > "$output"
 else
   "${cmd[@]}"
+fi
+
+if ((${#feature_parity_cmd[@]} > 0)); then
+  "${feature_parity_cmd[@]}"
 fi
