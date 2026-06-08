@@ -312,6 +312,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         table_recovery["notes"]
             .as_str()
             .unwrap()
+            .contains("header-guided trailing blank cells")
+    );
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
             .contains("same-line fragmented positioned cells")
     );
     assert!(

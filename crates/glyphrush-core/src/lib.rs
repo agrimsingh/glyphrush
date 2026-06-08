@@ -2780,8 +2780,16 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
             pending_descriptor_tokens.clear();
         }
 
-        let overflow = tokens.len() - column_count;
-        if overflow > 0 || merge_pending_descriptor {
+        let mut overflow = tokens.len() - column_count;
+        let trailing_blank_cells = if overflow == 0
+            && header_guided_row_has_trailing_blank_descriptor(&tokens, column_count)
+        {
+            overflow = 1;
+            1
+        } else {
+            0
+        };
+        if overflow > 0 || trailing_blank_cells > 0 || merge_pending_descriptor {
             merged_descriptor_rows += 1;
         }
 
@@ -2798,6 +2806,9 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
                 .skip(overflow + 1)
                 .map(|token| (*token).to_string()),
         );
+        for _ in 0..trailing_blank_cells {
+            row.push(String::new());
+        }
 
         if row.len() != column_count {
             return None;
@@ -2821,6 +2832,16 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
         && merged_descriptor_rows > 0
         && rows_with_table_value_cells == data_row_count)
         .then_some(rows)
+}
+
+fn header_guided_row_has_trailing_blank_descriptor(tokens: &[&str], column_count: usize) -> bool {
+    tokens.len() == column_count
+        && column_count >= 3
+        && looks_like_wrapped_descriptor_fragment(&tokens[..2])
+        && tokens
+            .iter()
+            .skip(2)
+            .all(|token| looks_like_table_value_cell(token))
 }
 
 fn looks_like_wrapped_descriptor_fragment(tokens: &[&str]) -> bool {
