@@ -2269,20 +2269,35 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
     rows.push(header.iter().map(|cell| (*cell).to_string()).collect());
     let mut rows_with_table_value_cells = 0;
     let mut merged_descriptor_rows = 0;
+    let mut pending_descriptor_tokens: Vec<&str> = Vec::new();
 
     for line in lines.iter().skip(1) {
         let tokens = line.split_whitespace().collect::<Vec<_>>();
-        if tokens.len() < column_count || tokens.len() > column_count + 3 {
+        if tokens.len() < column_count {
+            if !pending_descriptor_tokens.is_empty()
+                || !looks_like_wrapped_descriptor_fragment(&tokens)
+            {
+                return None;
+            }
+            pending_descriptor_tokens.extend(tokens);
+            continue;
+        }
+        if tokens.len() > column_count + 3 {
             return None;
         }
 
         let overflow = tokens.len() - column_count;
-        if overflow > 0 {
+        if overflow > 0 || !pending_descriptor_tokens.is_empty() {
             merged_descriptor_rows += 1;
         }
 
         let mut row = Vec::with_capacity(column_count);
-        row.push(tokens[..=overflow].join(" "));
+        let mut descriptor = pending_descriptor_tokens
+            .drain(..)
+            .map(str::to_string)
+            .collect::<Vec<_>>();
+        descriptor.extend(tokens[..=overflow].iter().map(|token| (*token).to_string()));
+        row.push(descriptor.join(" "));
         row.extend(
             tokens
                 .iter()
@@ -2303,8 +2318,26 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
         rows.push(row);
     }
 
+    if !pending_descriptor_tokens.is_empty() {
+        return None;
+    }
+
     let data_row_count = rows.len().saturating_sub(1);
     (merged_descriptor_rows > 0 && rows_with_table_value_cells == data_row_count).then_some(rows)
+}
+
+fn looks_like_wrapped_descriptor_fragment(tokens: &[&str]) -> bool {
+    !tokens.is_empty()
+        && tokens.len() <= 3
+        && tokens.iter().all(|token| {
+            let trimmed = token.trim();
+            !trimmed.is_empty()
+                && trimmed.chars().count() <= 24
+                && trimmed
+                    .chars()
+                    .all(|ch| ch.is_alphabetic() || matches!(ch, '-' | '/'))
+                && !trimmed.chars().all(|ch| ch.is_uppercase())
+        })
 }
 
 fn looks_like_table_header_cell(cell: &str) -> bool {
