@@ -2406,10 +2406,10 @@ fn liteparse_feature_parity_capabilities(
             area: "ocr",
             liteparse: "tesseract_or_http_ocr",
             glyphrush: "sidecar_command_http_or_tesseract_rendered_image_wrapper_invoked_page_selectively",
-            glyphrush_status: FeatureParityStatus::Partial,
+            glyphrush_status: FeatureParityStatus::Implemented,
             hot_path: false,
-            quality_guard: "requires_ocr_flag_when_unavailable",
-            notes: "OCR is adapter-based, supports sidecar, generic command, HTTP endpoint, and an explicit local Tesseract rendered-image wrapper, and stays outside the default hot path.",
+            quality_guard: "page_selective_adapter_preflight_and_requires_ocr_flag",
+            notes: "OCR is adapter-based, supports sidecar, generic command, HTTP endpoint, and an explicit local Tesseract rendered-image wrapper, invokes adapters only for OCR-routed pages, exposes ocr-check preflights, and stays outside the default hot path.",
         },
         page_render_for_ocr,
         FeatureParityCapability {

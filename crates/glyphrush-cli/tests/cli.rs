@@ -205,8 +205,8 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         env!("CARGO_PKG_VERSION")
     );
     assert_eq!(json["summary"]["target_capability_count"], 12);
-    assert_eq!(json["summary"]["implemented"], 5);
-    assert_eq!(json["summary"]["partial"], 5);
+    assert_eq!(json["summary"]["implemented"], 6);
+    assert_eq!(json["summary"]["partial"], 4);
     assert_eq!(json["summary"]["planned"], 1);
     assert_eq!(json["summary"]["not_planned"], 1);
     assert_eq!(
@@ -240,7 +240,6 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         json["readiness"]["remaining_partial"],
         serde_json::json!([
             "span_geometry_layout",
-            "ocr",
             "page_render_for_ocr",
             "table_recovery",
             "python_node_wasm_bindings"
@@ -280,9 +279,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         ocr["glyphrush"],
         "sidecar_command_http_or_tesseract_rendered_image_wrapper_invoked_page_selectively"
     );
-    assert_eq!(ocr["glyphrush_status"], "partial");
+    assert_eq!(ocr["glyphrush_status"], "implemented");
     assert_eq!(ocr["hot_path"], false);
-    assert_eq!(ocr["quality_guard"], "requires_ocr_flag_when_unavailable");
+    assert_eq!(
+        ocr["quality_guard"],
+        "page_selective_adapter_preflight_and_requires_ocr_flag"
+    );
 
     let bindings = capability(capabilities, "python_node_wasm_bindings");
     assert_eq!(bindings["glyphrush_status"], "partial");
@@ -441,7 +443,7 @@ fn feature_parity_speed_evidence_gate_fails_when_liteparse_claim_is_missing() {
 
 #[cfg(feature = "pdfium")]
 #[test]
-fn feature_parity_counts_pdfium_rendered_ocr_handoff_and_cache_as_implemented() {
+fn feature_parity_counts_pdfium_ocr_runtime_caps_and_cache_as_implemented() {
     let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
         .args(["--backend", "pdfium", "feature-parity"])
         .output()
@@ -456,13 +458,12 @@ fn feature_parity_counts_pdfium_rendered_ocr_handoff_and_cache_as_implemented() 
         serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
 
     assert_eq!(json["selected_backend"], "pdfium");
-    assert_eq!(json["summary"]["implemented"], 6);
-    assert_eq!(json["summary"]["partial"], 4);
+    assert_eq!(json["summary"]["implemented"], 7);
+    assert_eq!(json["summary"]["partial"], 3);
     assert_eq!(
         json["readiness"]["remaining_partial"],
         serde_json::json!([
             "span_geometry_layout",
-            "ocr",
             "table_recovery",
             "python_node_wasm_bindings"
         ])
@@ -483,7 +484,7 @@ fn feature_parity_counts_pdfium_rendered_ocr_handoff_and_cache_as_implemented() 
     );
 
     let ocr = capability(capabilities, "ocr");
-    assert_eq!(ocr["glyphrush_status"], "partial");
+    assert_eq!(ocr["glyphrush_status"], "implemented");
 }
 
 #[test]
