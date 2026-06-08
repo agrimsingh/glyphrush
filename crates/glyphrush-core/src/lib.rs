@@ -1091,13 +1091,7 @@ fn positioned_table_row_ranges(rows: &[Vec<&TextSpan>]) -> Vec<(usize, usize)> {
 }
 
 fn positioned_rows_form_table(rows: &[Vec<&TextSpan>]) -> bool {
-    let Some(column_count) = rows.first().map(Vec::len) else {
-        return false;
-    };
-    if !(2..=8).contains(&column_count) || !rows.iter().all(|row| row.len() == column_count) {
-        return false;
-    }
-    table_rows_have_aligned_columns(rows)
+    positioned_table_columns(rows).is_some()
 }
 
 fn table_block_from_positioned_rows(
@@ -1132,29 +1126,127 @@ fn table_block_from_positioned_rows(
 }
 
 fn table_payload_from_positioned_rows(rows: &[Vec<&TextSpan>]) -> Option<LayoutTable> {
+    let columns = positioned_table_columns(rows)?;
+    let tolerance = table_column_x_tolerance(rows);
     let rows = rows
         .iter()
         .enumerate()
         .map(|(row_index, row)| LayoutTableRow {
             row_index,
             bbox: union_span_refs_bbox(row),
-            cells: row
-                .iter()
-                .enumerate()
-                .filter_map(|(column_index, span)| {
-                    let text = span.text.trim();
-                    (!text.is_empty()).then(|| LayoutTableCell {
-                        column_index,
-                        text: text.to_string(),
-                        bbox: Some(span.bbox.clone()),
-                    })
-                })
-                .collect(),
+            cells: positioned_table_cells_from_row(row, &columns, tolerance),
         })
-        .filter(|row| row.cells.len() >= 2)
+        .filter(|row| {
+            row.cells
+                .iter()
+                .filter(|cell| !cell.text.is_empty())
+                .count()
+                >= 2
+        })
         .collect::<Vec<_>>();
 
     (rows.len() >= 2).then_some(LayoutTable { rows })
+}
+
+fn positioned_table_cells_from_row(
+    row: &[&TextSpan],
+    columns: &[(f32, f32)],
+    tolerance: f32,
+) -> Vec<LayoutTableCell> {
+    let mut cells = (0..columns.len())
+        .map(|column_index| LayoutTableCell {
+            column_index,
+            text: String::new(),
+            bbox: None,
+        })
+        .collect::<Vec<_>>();
+
+    for span in row {
+        let text = span.text.trim();
+        if text.is_empty() {
+            continue;
+        }
+        if let Some(column_index) = nearest_positioned_column_index(span, columns, tolerance) {
+            let cell = &mut cells[column_index];
+            if !cell.text.is_empty() {
+                cell.text.push(' ');
+            }
+            cell.text.push_str(text);
+            cell.bbox = match cell.bbox.take() {
+                Some(existing) => Some(union_bboxes(&existing, &span.bbox)),
+                None => Some(span.bbox.clone()),
+            };
+        }
+    }
+
+    cells
+}
+
+fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> {
+    if rows.len() < 2 || rows.iter().any(|row| row.len() < 2) {
+        return None;
+    }
+
+    let column_count = rows.iter().map(Vec::len).max()?;
+    if !(2..=8).contains(&column_count) || rows.iter().any(|row| row.len() > column_count) {
+        return None;
+    }
+
+    let reference_row = rows.iter().find(|row| row.len() == column_count)?;
+    let columns = reference_row
+        .iter()
+        .map(|span| (span.bbox.x0, span.bbox.x1))
+        .collect::<Vec<_>>();
+    if !columns.windows(2).all(|window| window[0].0 < window[1].0) {
+        return None;
+    }
+
+    let tolerance = table_column_x_tolerance(rows);
+    for row in rows {
+        let mut seen = vec![false; column_count];
+        let mut previous_column = None;
+        for span in row {
+            let column_index = nearest_positioned_column_index(span, &columns, tolerance)?;
+            if seen[column_index]
+                || previous_column.is_some_and(|previous| column_index <= previous)
+            {
+                return None;
+            }
+            seen[column_index] = true;
+            previous_column = Some(column_index);
+        }
+    }
+
+    Some(columns)
+}
+
+fn nearest_positioned_column_index(
+    span: &TextSpan,
+    columns: &[(f32, f32)],
+    tolerance: f32,
+) -> Option<usize> {
+    columns
+        .iter()
+        .enumerate()
+        .map(|(column_index, (x0, x1))| {
+            let distance = (span.bbox.x0 - *x0).abs().min((span.bbox.x1 - *x1).abs());
+            (column_index, distance)
+        })
+        .min_by(|left, right| {
+            left.1
+                .total_cmp(&right.1)
+                .then_with(|| left.0.cmp(&right.0))
+        })
+        .and_then(|(column_index, distance)| (distance <= tolerance).then_some(column_index))
+}
+
+fn union_bboxes(left: &BBox, right: &BBox) -> BBox {
+    BBox {
+        x0: left.x0.min(right.x0),
+        y0: left.y0.min(right.y0),
+        x1: left.x1.max(right.x1),
+        y1: left.y1.max(right.y1),
+    }
 }
 
 fn layout_block_from_span_group(
@@ -1231,26 +1323,6 @@ fn table_row_y_tolerance(spans: &[&TextSpan]) -> f32 {
     (median_height * 0.75).max(6.0)
 }
 
-fn table_rows_have_aligned_columns(rows: &[Vec<&TextSpan>]) -> bool {
-    let Some(column_count) = rows.first().map(Vec::len) else {
-        return false;
-    };
-    let tolerance = table_column_x_tolerance(rows);
-
-    (0..column_count).all(|column_index| {
-        let x0_values = rows
-            .iter()
-            .map(|row| row[column_index].bbox.x0)
-            .collect::<Vec<_>>();
-        let x1_values = rows
-            .iter()
-            .map(|row| row[column_index].bbox.x1)
-            .collect::<Vec<_>>();
-
-        spread(&x0_values) <= tolerance || spread(&x1_values) <= tolerance
-    })
-}
-
 fn table_column_x_tolerance(rows: &[Vec<&TextSpan>]) -> f32 {
     let mut widths = rows
         .iter()
@@ -1266,12 +1338,6 @@ fn table_column_x_tolerance(rows: &[Vec<&TextSpan>]) -> f32 {
         .unwrap_or(48.0);
 
     (median_width * 0.75).max(24.0)
-}
-
-fn spread(values: &[f32]) -> f32 {
-    let min = values.iter().copied().min_by(f32::total_cmp).unwrap_or(0.0);
-    let max = values.iter().copied().max_by(f32::total_cmp).unwrap_or(0.0);
-    max - min
 }
 
 fn span_center_y(span: &TextSpan) -> f32 {

@@ -352,6 +352,56 @@ fn positioned_table_spans_preserve_rows_when_table_recovery_runs() {
 }
 
 #[test]
+fn positioned_table_spans_preserve_empty_cells_when_rows_omit_blank_columns() {
+    let artifact = parse_extracted_pages(
+        "doc-positioned-table-empty-cells".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: "Part\nValue\nNote\nA\nmissing value\nB\n2".to_string(),
+            native_spans: vec![
+                span("Part", 72.0, 100.0, 130.0, 114.0),
+                span("Value", 220.0, 100.0, 280.0, 114.0),
+                span("Note", 360.0, 100.0, 420.0, 114.0),
+                span("A", 72.0, 132.0, 92.0, 146.0),
+                span("missing value", 360.0, 132.0, 470.0, 146.0),
+                span("B", 72.0, 164.0, 92.0, 178.0),
+                span("2", 220.0, 164.0, 240.0, 178.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 7,
+                native_text_bytes: 39,
+                glyph_count: 32,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    assert_eq!(
+        page.layout_blocks[0].text,
+        "Part Value Note\nA missing value\nB 2"
+    );
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    assert_eq!(table.rows.len(), 3);
+    assert_eq!(table.rows[1].cells.len(), 3);
+    assert_eq!(table.rows[1].cells[0].text, "A");
+    assert_eq!(table.rows[1].cells[1].text, "");
+    assert_eq!(table.rows[1].cells[2].text, "missing value");
+    assert_eq!(table.rows[2].cells[0].text, "B");
+    assert_eq!(table.rows[2].cells[1].text, "2");
+    assert_eq!(table.rows[2].cells[2].text, "");
+    assert!(table.rows[1].cells[1].bbox.is_none());
+    assert!(table.rows[2].cells[2].bbox.is_none());
+}
+
+#[test]
 fn positioned_table_recovery_preserves_surrounding_text_blocks() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-with-context".to_string(),

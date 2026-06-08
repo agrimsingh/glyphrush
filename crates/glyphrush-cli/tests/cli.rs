@@ -3294,6 +3294,51 @@ fn parse_json_emits_structured_cells_for_positioned_table_blocks() {
 }
 
 #[test]
+fn parse_json_preserves_empty_cells_for_positioned_table_blocks() {
+    let dir = temp_dir("parse-json-positioned-empty-table-cells");
+    let pdf_path = dir.join("positioned-empty-table.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_positioned_ruled_table_empty_cells(),
+    )
+    .unwrap();
+
+    let json = run_json([
+        "parse",
+        pdf_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--span-geometry",
+    ]);
+    let blocks = json["pages"][0]["layout_blocks"].as_array().unwrap();
+    let table_block = blocks
+        .iter()
+        .find(|block| block["kind"] == "table")
+        .expect("positioned table block");
+
+    assert_eq!(table_block["table"]["rows"][0]["cells"][0]["text"], "Part");
+    assert_eq!(table_block["table"]["rows"][0]["cells"][1]["text"], "Value");
+    assert_eq!(table_block["table"]["rows"][0]["cells"][2]["text"], "Note");
+    assert_eq!(table_block["table"]["rows"][1]["cells"][0]["text"], "A");
+    assert_eq!(table_block["table"]["rows"][1]["cells"][1]["text"], "");
+    assert_eq!(
+        table_block["table"]["rows"][1]["cells"][2]["text"],
+        "missing value"
+    );
+    assert_eq!(table_block["table"]["rows"][2]["cells"][0]["text"], "B");
+    assert_eq!(table_block["table"]["rows"][2]["cells"][1]["text"], "2");
+    assert_eq!(table_block["table"]["rows"][2]["cells"][2]["text"], "");
+    assert_eq!(
+        table_block["table"]["rows"][1]["cells"][1].get("bbox"),
+        None
+    );
+    assert_eq!(
+        table_block["table"]["rows"][2]["cells"][2].get("bbox"),
+        None
+    );
+}
+
+#[test]
 fn parse_text_emits_warnings_to_stderr_for_incomplete_ocr_pages() {
     let dir = temp_dir("parse-text-warning");
     let pdf_path = dir.join("scan.pdf");
@@ -13455,6 +13500,28 @@ fn minimal_pdf_with_positioned_ruled_table() -> Vec<u8> {
         "BT /F1 12 Tf 228 574 Td (Value) Tj ET",
         "BT /F1 12 Tf 84 534 Td (A) Tj ET",
         "BT /F1 12 Tf 228 534 Td (1) Tj ET",
+        "BT /F1 12 Tf 84 494 Td (B) Tj ET",
+        "BT /F1 12 Tf 228 494 Td (2) Tj ET",
+    ]
+    .join("\n");
+    minimal_pdf_with_stream(&stream)
+}
+
+fn minimal_pdf_with_positioned_ruled_table_empty_cells() -> Vec<u8> {
+    let stream = [
+        "72 600 m 504 600 l S",
+        "72 560 m 504 560 l S",
+        "72 520 m 504 520 l S",
+        "72 480 m 504 480 l S",
+        "72 480 m 72 600 l S",
+        "216 480 m 216 600 l S",
+        "360 480 m 360 600 l S",
+        "504 480 m 504 600 l S",
+        "BT /F1 12 Tf 84 574 Td (Part) Tj ET",
+        "BT /F1 12 Tf 228 574 Td (Value) Tj ET",
+        "BT /F1 12 Tf 372 574 Td (Note) Tj ET",
+        "BT /F1 12 Tf 84 534 Td (A) Tj ET",
+        "BT /F1 12 Tf 372 534 Td (missing value) Tj ET",
         "BT /F1 12 Tf 84 494 Td (B) Tj ET",
         "BT /F1 12 Tf 228 494 Td (2) Tj ET",
     ]

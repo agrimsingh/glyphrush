@@ -2224,7 +2224,7 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "table_uncertain_flag_and_table_structure_eval",
-            notes: "Current table support is conservative, tied to explicit uncertainty flags, and preserves blank cells for delimited or fixed-width whitespace rows when table recovery is routed.",
+            notes: "Current table support is conservative, tied to explicit uncertainty flags, and preserves blank cells for delimited text, fixed-width whitespace, and aligned positioned rows when table recovery is routed.",
         },
         FeatureParityCapability {
             id: "artifact_cache_snapshots",
