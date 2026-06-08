@@ -53,7 +53,7 @@ const BASELINE_CHECK_REPORT_VERSION: &str = "glyphrush-baseline-check-report-v1"
 const BACKEND_CHECK_REPORT_VERSION: &str = "glyphrush-backend-check-report-v1";
 const OCR_CHECK_REPORT_VERSION: &str = "glyphrush-ocr-check-report-v1";
 const FEATURE_PARITY_REPORT_VERSION: &str = "glyphrush-feature-parity-report-v1";
-const FEATURE_PARITY_RECOMMENDED_GATE: &str = "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5";
+const FEATURE_PARITY_RECOMMENDED_GATE: &str = "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-coverage-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5";
 const FEATURE_PARITY_REQUIRED_SPEED_CLAIMS: [(&str, f64); 2] =
     [("liteparse", 2.0), ("liteparse-no-ocr", 1.5)];
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
@@ -272,6 +272,8 @@ enum Commands {
         require_baselines: bool,
         #[arg(long)]
         require_baseline_quality: bool,
+        #[arg(long, value_enum)]
+        require_coverage_preset: Option<CoveragePreset>,
         #[arg(long, value_name = "BASELINE=RATIO")]
         require_speedup: Vec<BenchmarkSpeedupRequirement>,
         #[arg(long, value_name = "BASELINE=RATIO")]
@@ -1086,6 +1088,8 @@ struct BenchmarkRequirements {
     require_quality: bool,
     require_baselines: bool,
     require_baseline_quality: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    require_coverage_preset: Option<&'static str>,
     require_speedups: Vec<BenchmarkSpeedupRequirement>,
     require_speedup_claims: Vec<BenchmarkSpeedupRequirement>,
 }
@@ -2164,6 +2168,7 @@ struct BenchRunConfig<'a> {
     require_quality: bool,
     require_baselines: bool,
     require_baseline_quality: bool,
+    require_coverage_preset: Option<CoveragePreset>,
     required_speedups: &'a [BenchmarkSpeedupRequirement],
     required_speedup_claims: &'a [BenchmarkSpeedupRequirement],
 }
@@ -3872,6 +3877,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             require_quality,
             require_baselines,
             require_baseline_quality,
+            require_coverage_preset,
             require_speedup,
             require_speedup_claim,
             cache_probe,
@@ -3907,6 +3913,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 require_quality,
                 require_baselines,
                 require_baseline_quality,
+                require_coverage_preset,
                 required_speedups: &require_speedup,
                 required_speedup_claims: &require_speedup_claim,
             };
@@ -3934,6 +3941,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                             run_configuration,
                             manifest,
                             eval_category.as_deref(),
+                            require_coverage_preset,
                             &artifacts_by_path,
                             EvalArtifactSelection::ExactManifest,
                         )?
@@ -3959,6 +3967,12 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                     output.quality.as_ref(),
                 );
                 write_json(&output)?;
+                if let Some(error) = benchmark_coverage_requirement_error(
+                    output.quality.as_ref(),
+                    require_coverage_preset,
+                ) {
+                    bail!("{error}");
+                }
                 if failed_checks > 0 {
                     bail!("bench quality failed: {failed_checks} check(s) failed");
                 }
@@ -4005,6 +4019,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                             run_configuration,
                             manifest,
                             eval_category.as_deref(),
+                            require_coverage_preset,
                             &artifacts_by_path,
                             EvalArtifactSelection::MatchingArtifacts,
                         )?
@@ -4028,6 +4043,12 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                     output.quality.as_ref(),
                 );
                 write_json(&output)?;
+                if let Some(error) = benchmark_coverage_requirement_error(
+                    output.quality.as_ref(),
+                    require_coverage_preset,
+                ) {
+                    bail!("{error}");
+                }
                 if failed_checks > 0 {
                     bail!("bench quality failed: {failed_checks} check(s) failed");
                 }
@@ -5162,9 +5183,41 @@ fn benchmark_requirements(config: BenchRunConfig<'_>) -> BenchmarkRequirements {
         require_quality: config.require_quality,
         require_baselines: config.require_baselines,
         require_baseline_quality: config.require_baseline_quality,
+        require_coverage_preset: config.require_coverage_preset.map(CoveragePreset::name),
         require_speedups: config.required_speedups.to_vec(),
         require_speedup_claims: config.required_speedup_claims.to_vec(),
     }
+}
+
+fn benchmark_coverage_requirement_error(
+    quality: Option<&EvalOutput>,
+    coverage_preset: Option<CoveragePreset>,
+) -> Option<String> {
+    let preset = coverage_preset?;
+    let Some(quality) = quality else {
+        return Some(format!(
+            "bench coverage preset {} required: no eval manifest quality report was checked",
+            preset.name()
+        ));
+    };
+    let Some(coverage) = quality.category_coverage.as_ref() else {
+        return Some(format!(
+            "bench coverage preset {} required: no category coverage was checked",
+            preset.name()
+        ));
+    };
+
+    (!coverage.passed).then(|| {
+        let missing = if coverage.missing.is_empty() {
+            "none".to_string()
+        } else {
+            coverage.missing.join(",")
+        };
+        format!(
+            "bench coverage preset {} failed: missing categories {missing}",
+            preset.name()
+        )
+    })
 }
 
 fn run_cache_probe<B: PdfBackend>(
@@ -5187,6 +5240,7 @@ fn run_cache_probe<B: PdfBackend>(
         require_quality: false,
         require_baselines: false,
         require_baseline_quality: false,
+        require_coverage_preset: None,
         required_speedups: &[],
         required_speedup_claims: &[],
     };
@@ -7867,6 +7921,7 @@ fn eval_manifest_from_artifacts(
     run_configuration: RunConfiguration,
     manifest_path: &Path,
     category: Option<&str>,
+    coverage_preset: Option<CoveragePreset>,
     artifacts_by_path: &BTreeMap<PathBuf, &DocumentArtifact>,
     selection: EvalArtifactSelection,
 ) -> Result<EvalOutput> {
@@ -7877,8 +7932,16 @@ fn eval_manifest_from_artifacts(
         .with_context(|| format!("decode eval manifest {}", manifest_path.display()))?;
     let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
     let category = normalize_manifest_category(category);
-    let required_categories =
-        normalize_required_categories(&manifest.required_categories, category.as_deref());
+    let mut required_categories = coverage_preset
+        .into_iter()
+        .flat_map(|preset| preset.categories().iter().copied())
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    required_categories.extend(normalize_required_categories(
+        &manifest.required_categories,
+        category.as_deref(),
+    ));
+    let required_categories = normalize_required_categories(&required_categories, None);
     let min_category_counts =
         normalize_min_category_counts(&manifest.min_category_counts, category.as_deref());
 

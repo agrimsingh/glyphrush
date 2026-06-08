@@ -219,7 +219,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     );
     assert_eq!(
         json["recommended_gate"],
-        "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5"
+        "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-coverage-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5"
     );
     assert_eq!(json["readiness"]["native_text_speed_race_ready"], true);
     assert_eq!(json["readiness"]["full_liteparse_drop_in_ready"], false);
@@ -724,6 +724,7 @@ fn liteparse_benchmark_gate_script_dry_run_uses_quality_backed_pdfium_command() 
     let output = Command::new(repo_root.join("scripts/bench-liteparse.sh"))
         .arg("--dry-run")
         .env("GLYPHRUSH_BENCH_JOBS", "3")
+        .env("GLYPHRUSH_BENCH_COVERAGE_PRESET", "glyphrush-v0")
         .env(
             "GLYPHRUSH_BENCH_OUTPUT",
             "/tmp/glyphrush-liteparse-gate.json",
@@ -746,6 +747,7 @@ fn liteparse_benchmark_gate_script_dry_run_uses_quality_backed_pdfium_command() 
     assert!(stdout.contains("--baseline-preset glyphrush-v0"));
     assert!(stdout.contains("--require-baselines"));
     assert!(stdout.contains("--require-baseline-quality"));
+    assert!(stdout.contains("--require-coverage-preset glyphrush-v0"));
     assert!(stdout.contains("--require-speedup-claim liteparse=2.0"));
     assert!(stdout.contains("--require-speedup-claim liteparse-no-ocr=1.5"));
     assert!(stdout.contains("--jobs 3"));
@@ -7086,6 +7088,95 @@ fn bench_directory_with_eval_manifest_reports_benchmark_category_summaries() {
     assert!(scanned_summary["pages_per_sec"].as_f64().unwrap() > 0.0);
     assert_eq!(scanned_summary["quality_passed"], true);
     assert_eq!(scanned_summary["failed_checks"], 0);
+}
+
+#[test]
+fn bench_require_coverage_preset_rejects_incomplete_speed_corpus_after_writing_json() {
+    let dir = temp_dir("bench-require-coverage-preset");
+    fs::write(
+        dir.join("clean.pdf"),
+        minimal_pdf("Clean coverage bench text"),
+    )
+    .unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "clean.pdf",
+              "category": "clean_digital",
+              "expect": {
+                "required_text": ["Clean coverage bench text"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            dir.to_str().unwrap(),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+            "--require-coverage-preset",
+            "glyphrush-v0",
+        ])
+        .output()
+        .expect("run glyphrush bench with coverage preset gate");
+
+    assert!(!output.status.success());
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+
+    assert_eq!(json["quality_status"], "checked");
+    assert_eq!(
+        json["requirements"]["require_coverage_preset"],
+        "glyphrush-v0"
+    );
+    assert_eq!(json["quality"]["quality_passed"], false);
+    assert_eq!(json["quality"]["failed_checks"], 1);
+    assert_eq!(
+        json["quality"]["category_coverage"],
+        serde_json::json!({
+            "required": [
+                "academic_columns",
+                "clean_digital",
+                "forms",
+                "hybrid",
+                "large",
+                "rotated",
+                "scanned",
+                "tables",
+                "weird_encoding",
+            ],
+            "present": ["clean_digital"],
+            "missing": [
+                "academic_columns",
+                "forms",
+                "hybrid",
+                "large",
+                "rotated",
+                "scanned",
+                "tables",
+                "weird_encoding",
+            ],
+            "passed": false
+        })
+    );
+    assert_eq!(
+        json["quality"]["failure_samples"][0]["check"],
+        "required_categories"
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("coverage preset glyphrush-v0"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 #[test]

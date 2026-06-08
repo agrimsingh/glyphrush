@@ -26,6 +26,7 @@ features="${GLYPHRUSH_BENCH_FEATURES:-pdfium}"
 speedup="${GLYPHRUSH_BENCH_LITEPARSE_SPEEDUP:-2.0}"
 no_ocr_speedup="${GLYPHRUSH_BENCH_LITEPARSE_NO_OCR_SPEEDUP:-1.5}"
 baseline_timeout_ms="${GLYPHRUSH_BENCH_BASELINE_TIMEOUT_MS:-120000}"
+coverage_preset="${GLYPHRUSH_BENCH_COVERAGE_PRESET:-}"
 output="${GLYPHRUSH_BENCH_OUTPUT:-}"
 
 cmd=(
@@ -44,6 +45,10 @@ cmd=(
   --baseline-timeout-ms "$baseline_timeout_ms"
   --jobs "$jobs"
 )
+
+if [[ -n "$coverage_preset" ]]; then
+  cmd+=(--require-coverage-preset "$coverage_preset")
+fi
 
 print_command() {
   printf '%q ' "${cmd[@]}"
