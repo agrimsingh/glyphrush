@@ -10,6 +10,7 @@ text = glyphrush.parse_text("test/example.pdf", binary="target/debug/glyphrush")
 triage = glyphrush.inspect_pages("test/example.pdf", binary="target/debug/glyphrush")
 quality = glyphrush.eval_manifest("test/corpus.json", binary="target/debug/glyphrush")
 speed = glyphrush.bench("test/example.pdf", binary="target/debug/glyphrush")
+generated = glyphrush.manifest("test/", binary="target/debug/glyphrush", category="datasheet")
 ```
 
 If `binary` is omitted, the wrapper uses `GLYPHRUSH_BIN` and then falls back to `glyphrush` on `PATH`.
@@ -19,6 +20,8 @@ If `binary` is omitted, the wrapper uses `GLYPHRUSH_BIN` and then falls back to 
 `eval_manifest()` delegates to `glyphrush eval <manifest>` and returns the native quality report, including silent-failure, text-recall, reading-order, table, category, and cache diagnostics when the manifest asks for them.
 
 `bench()` delegates to `glyphrush bench <pdf-or-directory>` and returns the native speed report, including quality-backed baseline and speedup-claim fields when an eval manifest and baselines are requested.
+
+`manifest()` delegates to `glyphrush manifest <pdf-or-directory>` and returns the native eval-manifest skeleton, including category coverage gates and deterministic document/page expectations for dropped PDFs.
 
 Run wrapper tests with:
 

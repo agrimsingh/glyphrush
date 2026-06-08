@@ -144,6 +144,50 @@ test("evalManifest delegates to native quality gate and decodes JSON", async () 
   });
 });
 
+test("manifest delegates to native corpus generator and decodes JSON", async () => {
+  await withTempDir(async (root) => {
+    const { mkdir } = await import("node:fs/promises");
+    const { manifest } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+    const pdfDir = path.join(root, "pdfs");
+    await mkdir(pdfDir);
+
+    const report = manifest(pdfDir, {
+      binary: fake,
+      backend: "lopdf",
+      category: "datasheet",
+      coveragePreset: "glyphrush-v0",
+      requiredCategory: ["datasheet", "scanned"],
+      minCategoryCount: ["datasheet=5"],
+      spanGeometry: true,
+      cacheDir: path.join(root, "cache"),
+      jobs: 4,
+    });
+
+    assert.deepEqual(report.argv, [
+      "--backend",
+      "lopdf",
+      "manifest",
+      pdfDir,
+      "--category",
+      "datasheet",
+      "--coverage-preset",
+      "glyphrush-v0",
+      "--required-category",
+      "datasheet",
+      "--required-category",
+      "scanned",
+      "--min-category-count",
+      "datasheet=5",
+      "--span-geometry",
+      "--cache-dir",
+      path.join(root, "cache"),
+      "--jobs",
+      "4",
+    ]);
+  });
+});
+
 test("bench delegates to native quality-backed speed gate and decodes JSON", async () => {
   await withTempDir(async (root) => {
     const { bench } = await import("../src/index.mjs");

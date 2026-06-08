@@ -140,6 +140,49 @@ def eval_manifest(
     return json.loads(_run(command, env=env))
 
 
+def manifest(
+    pdf: str | os.PathLike[str],
+    *,
+    binary: str | os.PathLike[str] | None = None,
+    backend: str | None = None,
+    category: str | None = None,
+    coverage_preset: str | None = None,
+    required_category: Sequence[str] = (),
+    min_category_count: Sequence[str] = (),
+    span_geometry: bool = False,
+    ocr_sidecar: str | os.PathLike[str] | None = None,
+    ocr_command: str | os.PathLike[str] | None = None,
+    ocr_http_url: str | None = None,
+    ocr_command_input: str | None = None,
+    ocr_timeout_ms: int | None = None,
+    cache_dir: str | os.PathLike[str] | None = None,
+    jobs: int | None = None,
+    env: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    command = _base_command(binary, backend)
+    command.extend(["manifest", _path(pdf)])
+    if category is not None:
+        command.extend(["--category", category])
+    if coverage_preset is not None:
+        command.extend(["--coverage-preset", coverage_preset])
+    for required in required_category:
+        command.extend(["--required-category", required])
+    for minimum in min_category_count:
+        command.extend(["--min-category-count", minimum])
+    _append_common_options(
+        command,
+        span_geometry=span_geometry,
+        ocr_sidecar=ocr_sidecar,
+        ocr_command=ocr_command,
+        ocr_http_url=ocr_http_url,
+        ocr_command_input=ocr_command_input,
+        ocr_timeout_ms=ocr_timeout_ms,
+        cache_dir=cache_dir,
+        jobs=jobs,
+    )
+    return json.loads(_run(command, env=env))
+
+
 def bench(
     pdf: str | os.PathLike[str],
     *,
@@ -269,4 +312,12 @@ def _path(path: str | os.PathLike[str]) -> str:
     return str(Path(path))
 
 
-__all__ = ["GlyphrushError", "bench", "eval_manifest", "inspect_pages", "parse", "parse_text"]
+__all__ = [
+    "GlyphrushError",
+    "bench",
+    "eval_manifest",
+    "inspect_pages",
+    "manifest",
+    "parse",
+    "parse_text",
+]

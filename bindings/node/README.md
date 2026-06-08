@@ -3,13 +3,14 @@
 This package is a thin wrapper over the native `glyphrush` CLI. It delegates parsing to the shared core and decodes the CLI JSON artifact instead of implementing a separate JavaScript parser.
 
 ```js
-import { bench, evalManifest, inspectPages, parse, parseText } from "glyphrush";
+import { bench, evalManifest, inspectPages, manifest, parse, parseText } from "glyphrush";
 
 const artifact = parse("test/example.pdf", { binary: "target/debug/glyphrush" });
 const text = parseText("test/example.pdf", { binary: "target/debug/glyphrush" });
 const triage = inspectPages("test/example.pdf", { binary: "target/debug/glyphrush" });
 const quality = evalManifest("test/corpus.json", { binary: "target/debug/glyphrush" });
 const speed = bench("test/example.pdf", { binary: "target/debug/glyphrush" });
+const generated = manifest("test/", { binary: "target/debug/glyphrush", category: "datasheet" });
 ```
 
 If `binary` is omitted, the wrapper uses `GLYPHRUSH_BIN` and then falls back to `glyphrush` on `PATH`.
@@ -19,6 +20,8 @@ If `binary` is omitted, the wrapper uses `GLYPHRUSH_BIN` and then falls back to 
 `evalManifest()` delegates to `glyphrush eval <manifest>` and returns the native quality report, including silent-failure, text-recall, reading-order, table, category, and cache diagnostics when the manifest asks for them.
 
 `bench()` delegates to `glyphrush bench <pdf-or-directory>` and returns the native speed report, including quality-backed baseline and speedup-claim fields when an eval manifest and baselines are requested.
+
+`manifest()` delegates to `glyphrush manifest <pdf-or-directory>` and returns the native eval-manifest skeleton, including category coverage gates and deterministic document/page expectations for dropped PDFs.
 
 Run wrapper tests with:
 

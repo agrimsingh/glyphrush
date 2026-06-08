@@ -2152,11 +2152,11 @@ fn liteparse_feature_parity_capabilities() -> Vec<FeatureParityCapability> {
             id: "python_node_wasm_bindings",
             area: "bindings",
             liteparse: "python_node_wasm_bindings",
-            glyphrush: "thin_python_node_parse_inspect_eval_bench_wrappers_wasm_planned",
+            glyphrush: "thin_python_node_parse_inspect_eval_bench_manifest_wrappers_wasm_planned",
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "bindings_must_share_native_core_artifact",
-            notes: "Dependency-free Python and Node wrappers delegate parse, inspect-page triage, eval-manifest quality gates, and benchmark reports to the native CLI artifact paths; WASM remains planned and must wrap the same core.",
+            notes: "Dependency-free Python and Node wrappers delegate parse, inspect-page triage, eval-manifest quality gates, benchmark reports, and manifest generation to the native CLI artifact paths; WASM remains planned and must wrap the same core.",
         },
         FeatureParityCapability {
             id: "mupdf_backend",

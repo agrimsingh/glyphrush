@@ -45,6 +45,21 @@ export function evalManifest(manifest, options = {}) {
   return JSON.parse(run(command, options.env));
 }
 
+export function manifest(pdf, options = {}) {
+  const command = baseCommand(options);
+  command.push("manifest", pathString(pdf));
+  if (options.category !== undefined) {
+    command.push("--category", options.category);
+  }
+  if (options.coveragePreset !== undefined) {
+    command.push("--coverage-preset", options.coveragePreset);
+  }
+  appendRepeated(command, "--required-category", options.requiredCategory);
+  appendRepeated(command, "--min-category-count", options.minCategoryCount);
+  appendCommonOptions(command, options);
+  return JSON.parse(run(command, options.env));
+}
+
 export function bench(pdf, options = {}) {
   const command = baseCommand(options);
   command.push("bench", pathString(pdf));

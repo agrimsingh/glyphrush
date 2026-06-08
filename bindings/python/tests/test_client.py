@@ -147,6 +147,51 @@ class GlyphrushClientTests(unittest.TestCase):
             ],
         )
 
+    def test_manifest_delegates_to_native_corpus_generator_and_decodes_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            pdf_dir = root / "pdfs"
+            pdf_dir.mkdir()
+
+            report = glyphrush.manifest(
+                pdf_dir,
+                binary=fake,
+                backend="lopdf",
+                category="datasheet",
+                coverage_preset="glyphrush-v0",
+                required_category=["datasheet", "scanned"],
+                min_category_count=["datasheet=5"],
+                span_geometry=True,
+                cache_dir=root / "cache",
+                jobs=4,
+            )
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "--backend",
+                "lopdf",
+                "manifest",
+                str(pdf_dir),
+                "--category",
+                "datasheet",
+                "--coverage-preset",
+                "glyphrush-v0",
+                "--required-category",
+                "datasheet",
+                "--required-category",
+                "scanned",
+                "--min-category-count",
+                "datasheet=5",
+                "--span-geometry",
+                "--cache-dir",
+                str(root / "cache"),
+                "--jobs",
+                "4",
+            ],
+        )
+
     def test_bench_delegates_to_native_quality_backed_speed_gate_and_decodes_json(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
