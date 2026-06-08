@@ -1806,6 +1806,12 @@ fn group_span_refs_by_full_width_bands<'a>(
                 &sorted_spans[index + 1..],
                 dimensions,
             )
+            || is_cross_column_middle_band_span(
+                span,
+                &pending_band,
+                &sorted_spans[index + 1..],
+                dimensions,
+            )
             || is_cross_column_trailing_band_span(
                 span,
                 &pending_band,
@@ -1961,6 +1967,36 @@ fn is_cross_column_leading_band_span(
         && !has_same_row_neighbor(span, following_spans.iter().copied())
         && has_leading_band_vertical_gap(span, following_spans)
         && split_two_columns(following_spans, dimensions).is_some()
+}
+
+fn is_cross_column_middle_band_span(
+    span: &TextSpan,
+    previous_band: &[&TextSpan],
+    following_spans: &[&TextSpan],
+    dimensions: &PageDimensions,
+) -> bool {
+    if !is_cross_column_layout_span_candidate(span, dimensions) {
+        return false;
+    }
+
+    let following_band = following_spans
+        .iter()
+        .copied()
+        .take_while(|following| {
+            !is_full_width_layout_span(following, dimensions)
+                && !is_cross_column_layout_span_candidate(following, dimensions)
+        })
+        .collect::<Vec<_>>();
+
+    previous_band.len() >= 4
+        && following_band.len() >= 4
+        && !has_same_row_neighbor(
+            span,
+            previous_band.iter().chain(following_band.iter()).copied(),
+        )
+        && has_section_separator_vertical_gap(span, previous_band, &following_band)
+        && split_two_columns(previous_band, dimensions).is_some()
+        && split_two_columns(&following_band, dimensions).is_some()
 }
 
 fn is_cross_column_layout_span_candidate(span: &TextSpan, dimensions: &PageDimensions) -> bool {

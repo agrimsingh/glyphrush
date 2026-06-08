@@ -525,6 +525,60 @@ fn positioned_native_spans_preserve_short_section_heading_between_two_column_reg
 }
 
 #[test]
+fn positioned_native_spans_preserve_middle_cross_column_caption_between_two_column_regions() {
+    let artifact = parse_extracted_pages(
+        "doc-middle-cross-column-caption".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Left intro starts\n",
+                "Left intro continues\n",
+                "Right intro starts\n",
+                "Right intro continues\n",
+                "Typical performance curves\n",
+                "Left details starts\n",
+                "Left details continues\n",
+                "Right details starts\n",
+                "Right details continues"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("Left intro starts", 72.0, 120.0, 230.0, 134.0),
+                span("Right intro starts", 330.0, 120.0, 500.0, 134.0),
+                span("Left intro continues", 72.0, 138.0, 248.0, 152.0),
+                span("Right intro continues", 330.0, 138.0, 520.0, 152.0),
+                span("Typical performance curves", 72.0, 196.0, 430.0, 212.0),
+                span("Left details starts", 72.0, 238.0, 230.0, 252.0),
+                span("Right details starts", 330.0, 238.0, 500.0, 252.0),
+                span("Left details continues", 72.0, 256.0, 248.0, 270.0),
+                span("Right details continues", 330.0, 256.0, 520.0, 270.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let blocks = &artifact.pages[0].layout_blocks;
+    assert_eq!(blocks.len(), 5);
+    assert_eq!(blocks[0].text, "Left intro starts\nLeft intro continues");
+    assert_eq!(blocks[1].text, "Right intro starts\nRight intro continues");
+    assert_eq!(blocks[2].text, "Typical performance curves");
+    assert_eq!(
+        blocks[3].text,
+        "Left details starts\nLeft details continues"
+    );
+    assert_eq!(
+        blocks[4].text,
+        "Right details starts\nRight details continues"
+    );
+    assert_eq!(blocks[2].bbox.x0, 72.0);
+    assert_eq!(blocks[2].bbox.x1, 430.0);
+}
+
+#[test]
 fn positioned_character_spans_reflow_into_readable_words() {
     let artifact = parse_extracted_pages(
         "doc-positioned-character-spans".to_string(),

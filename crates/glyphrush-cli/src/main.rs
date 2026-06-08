@@ -2399,7 +2399,7 @@ fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "layout_uncertain_flag_reading_order_and_span_bbox_eval",
-            notes: "Glyphrush avoids always-on per-character metadata, preserves full-width bands, leading and trailing cross-column bands, and conservative short section separators around clearly separated two-column sections when span geometry is available, seeds bounded span-bbox manifest samples, and escalates layout work when signals require it.",
+            notes: "Glyphrush avoids always-on per-character metadata, preserves full-width bands, leading, middle, and trailing cross-column bands, and conservative short section separators around clearly separated two-column sections when span geometry is available, seeds bounded span-bbox manifest samples, and escalates layout work when signals require it.",
         },
         FeatureParityCapability {
             id: "ocr",
