@@ -6685,28 +6685,56 @@ fn command_output_with_timeout(
         .stderr(Stdio::piped())
         .spawn()?;
 
-    loop {
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| io::Error::other("child stdout was not piped"))?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| io::Error::other("child stderr was not piped"))?;
+    let stdout_handle = thread::spawn(move || read_process_stream(stdout));
+    let stderr_handle = thread::spawn(move || read_process_stream(stderr));
+    let mut timed_out = false;
+
+    let status = loop {
         if start.elapsed() >= timeout {
+            timed_out = true;
             kill_timed_out_child(&mut child);
-            let output = child.wait_with_output()?;
-            return Ok(TimedProcessOutput {
-                output,
-                timed_out: true,
-                wall_us: start.elapsed().as_micros(),
-            });
+            break child.wait()?;
         }
 
-        if child.try_wait()?.is_some() {
-            let output = child.wait_with_output()?;
-            return Ok(TimedProcessOutput {
-                output,
-                timed_out: false,
-                wall_us: start.elapsed().as_micros(),
-            });
+        if let Some(status) = child.try_wait()? {
+            break status;
         }
 
         thread::sleep(Duration::from_millis(5));
-    }
+    };
+
+    let stdout = join_process_reader(stdout_handle)?;
+    let stderr = join_process_reader(stderr_handle)?;
+
+    Ok(TimedProcessOutput {
+        output: ProcessOutput {
+            status,
+            stdout,
+            stderr,
+        },
+        timed_out,
+        wall_us: start.elapsed().as_micros(),
+    })
+}
+
+fn read_process_stream(mut stream: impl Read) -> io::Result<Vec<u8>> {
+    let mut output = Vec::new();
+    stream.read_to_end(&mut output)?;
+    Ok(output)
+}
+
+fn join_process_reader(handle: thread::JoinHandle<io::Result<Vec<u8>>>) -> io::Result<Vec<u8>> {
+    handle
+        .join()
+        .map_err(|_| io::Error::other("process output reader panicked"))?
 }
 
 #[cfg(unix)]

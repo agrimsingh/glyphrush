@@ -10507,6 +10507,51 @@ exit 127"#,
 }
 
 #[test]
+fn baseline_check_drains_large_stdout_without_timing_out() {
+    let pdf_path = write_test_pdf("baseline-check-large-stdout-pdf", "Large stdout baseline");
+    let noisy = write_baseline_script(
+        "baseline-check-large-stdout",
+        r#"if [ "${1:-}" = "--describe" ]; then printf '{"name":"noisy","target":"Noisy Baseline","kind":"text-baseline-wrapper"}'; exit 0; fi
+python3 - <<'PY'
+import sys
+sys.stdout.write("word " * 40000)
+PY"#,
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "baseline-check",
+            "--pdf",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("noisy={}", noisy.display()),
+            "--baseline-timeout-ms",
+            "1000",
+            "--strict",
+        ])
+        .output()
+        .expect("run glyphrush baseline-check with large stdout");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("baseline-check output is json");
+    let smoke = &json["baselines"][0]["smoke"];
+
+    assert_eq!(smoke["success"], true);
+    assert_eq!(smoke["timed_out"], false);
+    assert!(smoke["output_bytes"].as_u64().unwrap() >= 200_000);
+    assert_eq!(smoke["stdout_word_count"], 40000);
+    assert_eq!(smoke["error"], Value::Null);
+}
+
+#[test]
 fn baseline_check_can_smoke_test_wrappers_against_directory() {
     let dir = temp_dir("baseline-check-smoke-dir");
     fs::write(dir.join("b.pdf"), minimal_pdf("Second baseline smoke")).unwrap();
