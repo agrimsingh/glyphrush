@@ -2936,6 +2936,43 @@ fn seed_datasheet_manifest_tracks_pdfium_bullet_leader_spec_table() {
 }
 
 #[test]
+fn seed_datasheet_manifest_tracks_pdfium_parameter_symbol_conditions_table() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_FP6183-33X7.pdf")
+        .expect("FP6183 datasheet expectation exists");
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
+
+    assert!(table_structure.iter().any(|expectation| expectation
+        == &serde_json::json!(
+        {
+          "page": 4,
+          "expected_rows": [
+            ["Current Limit", "ILIMIT", "", "", "320", "", "mA"],
+            ["Current Foldback", "ICFB", "RLoad=1Ω", "", "100", "", "mA"],
+            ["Output Discharge Resistance", "RDIS", "VEN=0V", "", "60", "", "Ω"],
+            ["EN Pin Current", "IEN", "VEN=2.5V", "", "0.3", "", "uA"],
+            ["Thermal Shutdown Threshold (Note 7)", "TSD", "", "", "160", "", "ºC"],
+            ["Thermal Shutdown Threshold Hysteresis (Note 7)", "TSD", "", "", "30", "", "ºC"],
+            ["EN Pin Threshold", "VEN(ON)", "Start-up", "", "1.0", "", "V"],
+            ["", "VEN(OFF)", "Shutdown", "", "0.4", "", "V"]
+          ],
+          "min_row_recall": 1.0,
+          "min_cell_recall": 1.0,
+          "min_cell_f1": 1.0
+        }
+              )));
+}
+
+#[test]
 fn seed_datasheet_manifest_tracks_pdfium_pin_number_name_function_table() {
     let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let manifest_path = workspace_root.join("test/corpus.datasheets.json");

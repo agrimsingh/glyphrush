@@ -2844,6 +2844,195 @@ fn text_table_recovery_extracts_electrical_characteristics_tables() {
 }
 
 #[test]
+fn text_table_recovery_extracts_parameter_symbol_conditions_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-parameter-symbol-conditions-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "FP6183\n",
+                "Electrical Characteristics\n",
+                "(VIN=VOUT+1V,EN pin connected to VIN, CIN=1µF, COUT=1µF, TA=25ºC, unless otherwise specified.)\n",
+                "Parameter Symbol Conditions Min Typ Max Unit\n",
+                "Input Voltage Range VIN 1.75 5.5 V\n",
+                "Quiescent Current\n",
+                "(Note 4)\n",
+                "IQ IOUT=0A 2 4 µA\n",
+                "Standby Current ISTBY EN Pin Connected to GND 0.1 1 µA\n",
+                "Output Voltage Accuracy VOUT IOUT=1mA -1 +1 %\n",
+                "Dropout Voltage (Note 5) VDROP IOUT=300mA\n",
+                "VOUT=1.0V 650 850\n",
+                "mV\n",
+                "VOUT=1.05V 590 770\n",
+                "Line Regulation VLINE IOUT=1mA, VIN=VOUT +1V to 5V 1 8 mV\n",
+                "Ripple Rejection (Note 7) PSRR\n",
+                "VIN=VOUT+1VDC+0.2VP-P(AC),\n",
+                "fRIPPLE=1KHz,VOUT=1.2V,\n",
+                "IOUT=30mA\n",
+                "65 dB\n",
+                "Output Noise Voltage (Note 7) VNOISE\n",
+                "COUT=1μF, IOUT=30mA\n",
+                "BW=10Hz ~ 100KHz\n",
+                "65 μVRMS\n",
+                "Current Foldback ICFB RLoad=1Ω 100 mA\n",
+                "Thermal Shutdown Threshold\n",
+                "(Note 7)\n",
+                "TSD 160 ºC\n",
+                "Thermal Shutdown Threshold\n",
+                "Hysteresis (Note 7)\n",
+                "TSD 30 ºC\n",
+                "EN Pin Threshold\n",
+                "VEN(ON) Start-up 1.0 V\n",
+                "VEN(OFF) Shutdown 0.4 V\n",
+                "Note 4: except EN pull down current (IEN).\n"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.50,
+                native_span_count: 48,
+                native_text_bytes: 1650,
+                glyph_count: 1250,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_block = page
+        .layout_blocks
+        .iter()
+        .find(|block| block.kind == LayoutBlockKind::Table)
+        .expect("parameter/symbol electrical characteristics table block");
+    assert!(!table_block.text.contains("Note 4:"));
+
+    let table = table_block.table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec![
+                "Parameter",
+                "Symbol",
+                "Conditions",
+                "Min.",
+                "Typ.",
+                "Max.",
+                "Unit"
+            ],
+            vec!["Input Voltage Range", "VIN", "", "1.75", "", "5.5", "V"],
+            vec![
+                "Quiescent Current (Note 4)",
+                "IQ",
+                "IOUT=0A",
+                "",
+                "2",
+                "4",
+                "µA"
+            ],
+            vec![
+                "Standby Current",
+                "ISTBY",
+                "EN Pin Connected to GND",
+                "",
+                "0.1",
+                "1",
+                "µA"
+            ],
+            vec![
+                "Output Voltage Accuracy",
+                "VOUT",
+                "IOUT=1mA",
+                "-1",
+                "",
+                "+1",
+                "%"
+            ],
+            vec![
+                "Dropout Voltage (Note 5)",
+                "VDROP",
+                "IOUT=300mA VOUT=1.0V",
+                "",
+                "650",
+                "850",
+                "mV"
+            ],
+            vec!["", "", "IOUT=300mA VOUT=1.05V", "", "590", "770", "mV"],
+            vec![
+                "Line Regulation",
+                "VLINE",
+                "IOUT=1mA, VIN=VOUT +1V to 5V",
+                "",
+                "1",
+                "8",
+                "mV"
+            ],
+            vec![
+                "Ripple Rejection (Note 7)",
+                "PSRR",
+                "VIN=VOUT+1VDC+0.2VP-P(AC), fRIPPLE=1KHz,VOUT=1.2V, IOUT=30mA",
+                "",
+                "65",
+                "",
+                "dB"
+            ],
+            vec![
+                "Output Noise Voltage (Note 7)",
+                "VNOISE",
+                "COUT=1μF, IOUT=30mA BW=10Hz ~ 100KHz",
+                "",
+                "65",
+                "",
+                "μVRMS"
+            ],
+            vec!["Current Foldback", "ICFB", "RLoad=1Ω", "", "100", "", "mA"],
+            vec![
+                "Thermal Shutdown Threshold (Note 7)",
+                "TSD",
+                "",
+                "",
+                "160",
+                "",
+                "ºC"
+            ],
+            vec![
+                "Thermal Shutdown Threshold Hysteresis (Note 7)",
+                "TSD",
+                "",
+                "",
+                "30",
+                "",
+                "ºC"
+            ],
+            vec![
+                "EN Pin Threshold",
+                "VEN(ON)",
+                "Start-up",
+                "",
+                "1.0",
+                "",
+                "V"
+            ],
+            vec!["", "VEN(OFF)", "Shutdown", "", "0.4", "", "V"],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_extracts_awinic_parameter_test_condition_tables() {
     let artifact = parse_extracted_pages(
         "doc-awinic-electrical-characteristics-table".to_string(),

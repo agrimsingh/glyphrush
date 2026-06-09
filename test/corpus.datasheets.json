@@ -668,10 +668,10 @@
       },
       "expect_by_backend": {
         "pdfium": {
-          "fallback_pages": 7,
+          "fallback_pages": 8,
           "route_counts": {
-            "native_fast_path": 3,
-            "needs_fallback": 4,
+            "native_fast_path": 2,
+            "needs_fallback": 5,
             "ocr_fallback": 0,
             "unsupported": 3
           },
@@ -680,18 +680,18 @@
             "low_confidence_text": 0,
             "broken_encoding": 0,
             "layout_uncertain": 1,
-            "table_uncertain": 5,
+            "table_uncertain": 6,
             "unsupported_feature": 3
           },
           "route_reason_counts": {
             "annotation_or_form": 3,
             "duplicate_char_ratio": 1,
-            "table_line_density": 5
+            "table_line_density": 6
           },
           "quality_flag_classification": [
             {
               "flag": "table_uncertain",
-              "expected_pages": [1, 2, 3, 6, 7],
+              "expected_pages": [1, 2, 3, 4, 6, 7],
               "min_precision": 1.0,
               "min_recall": 1.0
             },
@@ -730,6 +730,22 @@
                 ["Lead Temperature (Soldering, 10sec.)", "+260°C"],
                 ["Junction Temperature (TJ)", "-40°C to +150°C"],
                 ["Storage Temperature (TSTG)", "-65°C to +150°C"]
+              ],
+              "min_row_recall": 1.0,
+              "min_cell_recall": 1.0,
+              "min_cell_f1": 1.0
+            },
+            {
+              "page": 4,
+              "expected_rows": [
+                ["Current Limit", "ILIMIT", "", "", "320", "", "mA"],
+                ["Current Foldback", "ICFB", "RLoad=1Ω", "", "100", "", "mA"],
+                ["Output Discharge Resistance", "RDIS", "VEN=0V", "", "60", "", "Ω"],
+                ["EN Pin Current", "IEN", "VEN=2.5V", "", "0.3", "", "uA"],
+                ["Thermal Shutdown Threshold (Note 7)", "TSD", "", "", "160", "", "ºC"],
+                ["Thermal Shutdown Threshold Hysteresis (Note 7)", "TSD", "", "", "30", "", "ºC"],
+                ["EN Pin Threshold", "VEN(ON)", "Start-up", "", "1.0", "", "V"],
+                ["", "VEN(OFF)", "Shutdown", "", "0.4", "", "V"]
               ],
               "min_row_recall": 1.0,
               "min_cell_recall": 1.0,

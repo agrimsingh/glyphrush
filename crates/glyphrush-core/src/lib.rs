@@ -2813,6 +2813,7 @@ fn should_keep_electrical_characteristics_table_open(current: &[String]) -> bool
     let refs = current.iter().map(String::as_str).collect::<Vec<_>>();
     (0..refs.len()).any(|index| {
         electrical_characteristics_table_header_len(&refs[index..]).is_some()
+            || parameter_symbol_conditions_table_header_len(&refs[index..]).is_some()
             || parameter_test_condition_table_header_len(&refs[index..]).is_some()
     })
 }
@@ -2879,6 +2880,13 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
 
     if let Some(split_blocks) =
         split_fragmented_symbol_parameter_table_blocks(lines, run_table_recovery)
+    {
+        blocks.extend(split_blocks);
+        return;
+    }
+
+    if let Some(split_blocks) =
+        split_parameter_symbol_conditions_table_blocks(lines, run_table_recovery)
     {
         blocks.extend(split_blocks);
         return;
@@ -3061,6 +3069,41 @@ fn split_electrical_characteristics_table_blocks(
 
     let table_end = header_index + consumed_table_lines;
     blocks.push(lines[header_index..table_end].join("\n"));
+    if table_end < lines.len() {
+        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
+    }
+
+    Some(blocks)
+}
+
+fn split_parameter_symbol_conditions_table_blocks(
+    lines: &[String],
+    run_table_recovery: bool,
+) -> Option<Vec<String>> {
+    if !run_table_recovery || lines.len() < 4 {
+        return None;
+    }
+
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let header_index = (0..refs.len())
+        .find(|index| parameter_symbol_conditions_table_header_len(&refs[*index..]).is_some())?;
+    let (rows, consumed) = parameter_symbol_conditions_table_rows_prefix(&refs[header_index..])?;
+    if rows.len() < 4 {
+        return None;
+    }
+    let table_end = header_index + consumed;
+
+    let mut blocks = Vec::new();
+    if header_index > 0 {
+        blocks.push(reflow_text_block(
+            &lines[..header_index],
+            run_table_recovery,
+        ));
+    }
+    blocks.push(reflow_text_block(
+        &lines[header_index..table_end],
+        run_table_recovery,
+    ));
     if table_end < lines.len() {
         blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
     }
@@ -3470,6 +3513,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = parameter_symbol_conditions_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     if let Some(rows) = electrical_characteristics_table_rows(&lines) {
         return layout_table_from_text_rows(rows);
     }
@@ -3604,6 +3651,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
     }
 
     if fragmented_symbol_parameter_table_rows(lines).is_some() {
+        return true;
+    }
+
+    if parameter_symbol_conditions_table_rows(lines).is_some() {
         return true;
     }
 
@@ -3907,7 +3958,7 @@ fn fragmented_symbol_parameter_data_row(symbol: &str, fragments: &[&str]) -> Opt
 fn looks_like_symbol_parameter_unit_token(token: &str) -> bool {
     let normalized = token
         .trim_matches(|ch: char| matches!(ch, ',' | ';'))
-        .replace(['µ', '\u{f06d}'], "u")
+        .replace(['µ', 'μ', '\u{f06d}'], "u")
         .to_ascii_lowercase();
     matches!(
         normalized.as_str(),
@@ -4352,7 +4403,7 @@ fn electrical_unit_only_line(line: &str) -> Option<String> {
 fn looks_like_electrical_unit_token(token: &str) -> bool {
     let normalized = token
         .trim_matches(|ch: char| matches!(ch, ',' | ';'))
-        .replace(['µ', '\u{f06d}'], "u")
+        .replace(['µ', 'μ', '\u{f06d}'], "u")
         .to_ascii_lowercase();
     matches!(
         normalized.as_str(),
@@ -4370,6 +4421,7 @@ fn looks_like_electrical_unit_token(token: &str) -> bool {
             | "%/v"
             | "%/a"
             | "°c"
+            | "ºc"
             | "℃"
             | "oc"
             | "c"
@@ -4394,6 +4446,330 @@ fn looks_like_electrical_characteristics_table_terminator(line: &str) -> bool {
         || normalized.contains("package information")
         || normalized.contains("recommended operating conditions")
         || normalized.contains("thermal characteristics")
+}
+
+fn parameter_symbol_conditions_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    let (rows, consumed) = parameter_symbol_conditions_table_rows_prefix(lines)?;
+    (consumed == lines.len()).then_some(rows)
+}
+
+fn parameter_symbol_conditions_table_rows_prefix(
+    lines: &[&str],
+) -> Option<(Vec<Vec<String>>, usize)> {
+    let header_len = parameter_symbol_conditions_table_header_len(lines)?;
+    let mut rows = vec![vec![
+        "Parameter".to_string(),
+        "Symbol".to_string(),
+        "Conditions".to_string(),
+        "Min.".to_string(),
+        "Typ.".to_string(),
+        "Max.".to_string(),
+        "Unit".to_string(),
+    ]];
+    let mut consumed = header_len;
+    let mut pending_label: Option<ElectricalLabel> = None;
+    let mut pending_parameter_parts: Vec<String> = Vec::new();
+    let mut active_group_condition = String::new();
+    let mut last_unit = String::new();
+
+    for (offset, line) in lines.iter().enumerate().skip(header_len) {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if looks_like_parameter_symbol_conditions_table_terminator(trimmed) {
+            break;
+        }
+
+        if let Some(unit) = electrical_unit_only_line(trimmed) {
+            if parameter_symbol_conditions_apply_unit_continuation(&mut rows, &mut last_unit, &unit)
+            {
+                consumed = offset + 1;
+                continue;
+            }
+            break;
+        }
+
+        if let Some((prefix, mut values)) = parameter_symbol_conditions_values_from_line(trimmed) {
+            let mut label = parameter_symbol_conditions_label_from_tokens(&prefix);
+            if let Some(pending) = pending_label.take() {
+                if label.parameter.is_empty() && label.symbol.is_empty() {
+                    label.parameter = pending.parameter;
+                    label.symbol = pending.symbol;
+                    label.condition =
+                        combine_electrical_conditions(&pending.condition, &label.condition);
+                    active_group_condition = pending.condition;
+                } else {
+                    pending_label = Some(pending);
+                }
+            }
+
+            label.parameter =
+                combine_parameter_label_parts(&pending_parameter_parts, &label.parameter);
+            if label.parameter.is_empty()
+                && label.symbol.is_empty()
+                && !active_group_condition.is_empty()
+            {
+                label.condition =
+                    combine_electrical_conditions(&active_group_condition, &label.condition);
+            }
+
+            let starts_new_parameter = !label.parameter.is_empty() || !label.symbol.is_empty();
+            if values.unit.is_empty() && !last_unit.is_empty() && !starts_new_parameter {
+                values.unit = last_unit.clone();
+            }
+            if !values.unit.is_empty() {
+                last_unit = values.unit.clone();
+            }
+
+            push_parameter_symbol_conditions_row(&mut rows, label, values);
+            pending_parameter_parts.clear();
+            consumed = offset + 1;
+            continue;
+        }
+
+        let tokens = trimmed.split_whitespace().collect::<Vec<_>>();
+        let mut label = parameter_symbol_conditions_label_from_tokens(&tokens);
+        if !label.symbol.is_empty() {
+            label.parameter =
+                combine_parameter_label_parts(&pending_parameter_parts, &label.parameter);
+            pending_label = Some(label);
+            pending_parameter_parts.clear();
+            consumed = offset + 1;
+            continue;
+        }
+
+        if !label.condition.is_empty() {
+            if let Some(pending) = pending_label.as_mut() {
+                pending.condition =
+                    combine_electrical_conditions(&pending.condition, &label.condition);
+                consumed = offset + 1;
+                continue;
+            }
+            break;
+        }
+
+        if !label.parameter.is_empty() {
+            pending_parameter_parts.push(label.parameter);
+            consumed = offset + 1;
+            continue;
+        }
+
+        break;
+    }
+
+    if pending_label.is_some() || !pending_parameter_parts.is_empty() {
+        return None;
+    }
+
+    (rows.len() >= 4).then_some((rows, consumed))
+}
+
+fn parameter_symbol_conditions_table_header_len(lines: &[&str]) -> Option<usize> {
+    if lines.is_empty() {
+        return None;
+    }
+
+    (normalize_electrical_header_line(lines[0]) == "parameter symbol conditions min typ max unit")
+        .then_some(1)
+}
+
+fn parameter_symbol_conditions_values_from_line(
+    line: &str,
+) -> Option<(Vec<&str>, ElectricalValues)> {
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    let (prefix, values) = parameter_symbol_conditions_values_from_tokens(&tokens)?;
+    Some((prefix.to_vec(), values))
+}
+
+fn parameter_symbol_conditions_values_from_tokens<'tokens, 'text>(
+    tokens: &'tokens [&'text str],
+) -> Option<(&'tokens [&'text str], ElectricalValues)> {
+    if tokens.len() < 2 {
+        return None;
+    }
+
+    let mut value_end = tokens.len();
+    let unit = tokens
+        .last()
+        .filter(|token| looks_like_electrical_unit_token(token))
+        .copied()
+        .unwrap_or_default();
+    if !unit.is_empty() {
+        value_end -= 1;
+    }
+
+    let mut value_start = value_end;
+    while value_start > 0
+        && value_end - value_start < 3
+        && looks_like_parameter_test_condition_value_token(tokens[value_start - 1])
+    {
+        value_start -= 1;
+    }
+
+    if value_start == value_end {
+        return None;
+    }
+
+    let values = &tokens[value_start..value_end];
+    let prefix = &tokens[..value_start];
+    let label = parameter_symbol_conditions_label_from_tokens(prefix);
+    let value_cells = parameter_symbol_conditions_value_cells(&label.parameter, values)?;
+    Some((
+        prefix,
+        ElectricalValues {
+            condition: String::new(),
+            min: value_cells.0,
+            typ: value_cells.1,
+            max: value_cells.2,
+            unit: unit.to_string(),
+        },
+    ))
+}
+
+fn parameter_symbol_conditions_value_cells(
+    parameter: &str,
+    values: &[&str],
+) -> Option<(String, String, String)> {
+    let parameter = parameter.to_ascii_lowercase();
+    match values {
+        [only] => Some((String::new(), (*only).to_string(), String::new())),
+        [left, right] if parameter.contains("range") || parameter.contains("accuracy") => {
+            Some(((*left).to_string(), String::new(), (*right).to_string()))
+        }
+        [left, right] => Some((String::new(), (*left).to_string(), (*right).to_string())),
+        [left, middle, right] => Some((
+            (*left).to_string(),
+            (*middle).to_string(),
+            (*right).to_string(),
+        )),
+        _ => None,
+    }
+}
+
+fn parameter_symbol_conditions_label_from_tokens(tokens: &[&str]) -> ElectricalLabel {
+    let symbol_index = tokens
+        .iter()
+        .position(|token| looks_like_parameter_symbol_conditions_symbol(token));
+
+    let Some(symbol_index) = symbol_index else {
+        let (parameter_tokens, condition_tokens) =
+            split_parameter_symbol_conditions_descriptor_condition(tokens);
+        return ElectricalLabel {
+            symbol: String::new(),
+            parameter: parameter_tokens.join(" "),
+            condition: condition_tokens.join(" "),
+        };
+    };
+
+    ElectricalLabel {
+        parameter: tokens[..symbol_index].join(" "),
+        symbol: tokens[symbol_index].to_string(),
+        condition: tokens[symbol_index + 1..].join(" "),
+    }
+}
+
+fn split_parameter_symbol_conditions_descriptor_condition<'a>(
+    tokens: &'a [&'a str],
+) -> (&'a [&'a str], &'a [&'a str]) {
+    let condition_start = tokens
+        .iter()
+        .enumerate()
+        .find_map(|(index, token)| {
+            parameter_symbol_conditions_condition_starts_at(tokens, index, token).then_some(index)
+        })
+        .unwrap_or(tokens.len());
+
+    (&tokens[..condition_start], &tokens[condition_start..])
+}
+
+fn parameter_symbol_conditions_condition_starts_at(
+    tokens: &[&str],
+    index: usize,
+    token: &str,
+) -> bool {
+    let normalized = token.trim_matches(|ch: char| matches!(ch, ',' | ';'));
+    let next = tokens.get(index + 1).copied().unwrap_or_default();
+
+    normalized.contains('=')
+        || normalized.contains('Ω')
+        || normalized.starts_with("IOUT")
+        || normalized.starts_with("COUT")
+        || normalized.starts_with("BW")
+        || normalized.starts_with("RLoad")
+        || normalized.starts_with("VEN")
+        || normalized.starts_with("VIN")
+        || normalized.starts_with("fRIPPLE")
+        || (index == 0 && matches!(normalized, "Start-up" | "Shutdown"))
+        || (matches!(normalized, "VOUT" | "VIN" | "f") && next == "=")
+}
+
+fn looks_like_parameter_symbol_conditions_symbol(token: &str) -> bool {
+    let token = token.trim_matches(|ch: char| matches!(ch, ',' | ';'));
+    matches!(
+        token,
+        "VIN"
+            | "IQ"
+            | "ISTBY"
+            | "VDROP"
+            | "PSRR"
+            | "VNOISE"
+            | "ILIMIT"
+            | "ICFB"
+            | "RDIS"
+            | "IEN"
+            | "TSD"
+            | "VEN(ON)"
+            | "VEN(OFF)"
+            | "VOUT"
+            | "ΔVOUT"
+            | "VLINE"
+            | "ΔVLINE"
+            | "VLOAD"
+            | "ΔVLOAD"
+            | "TSD"
+            | "ΔTSD"
+    )
+}
+
+fn push_parameter_symbol_conditions_row(
+    rows: &mut Vec<Vec<String>>,
+    label: ElectricalLabel,
+    values: ElectricalValues,
+) {
+    rows.push(vec![
+        label.parameter,
+        label.symbol,
+        label.condition,
+        values.min,
+        values.typ,
+        values.max,
+        values.unit,
+    ]);
+}
+
+fn parameter_symbol_conditions_apply_unit_continuation(
+    rows: &mut [Vec<String>],
+    last_unit: &mut String,
+    unit: &str,
+) -> bool {
+    let Some(unit_cell) = rows.last_mut().and_then(|row| row.get_mut(6)) else {
+        return false;
+    };
+    if !unit_cell.is_empty() {
+        return false;
+    }
+
+    *unit_cell = unit.to_string();
+    *last_unit = unit.to_string();
+    true
+}
+
+fn looks_like_parameter_symbol_conditions_table_terminator(line: &str) -> bool {
+    let normalized = line.trim().to_ascii_lowercase();
+    looks_like_electrical_characteristics_table_terminator(line)
+        || normalized.starts_with("note ")
+        || normalized.contains("typical performance curves")
 }
 
 fn parameter_test_condition_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {

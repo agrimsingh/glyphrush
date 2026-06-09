@@ -203,6 +203,8 @@ Electrical-characteristics rows are scored through `table_structure` after norma
 
 AWINIC-style electrical rows are scored through `table_structure` after normalization into `Parameter`, `Test Condition`, `Min.`, `Typ.`, `Max.`, and `Unit` cells, including inherited conditions, split frequency ranges, symbol-font micro units, split `ppm/° C` units, ohm rows, thermal shutdown temperature rows, and footer exclusion.
 
+Parameter/symbol/conditions electrical rows are scored through `table_structure` after normalization into `Parameter`, `Symbol`, `Conditions`, `Min.`, `Typ.`, `Max.`, and `Unit` cells, including wrapped labels, inherited condition continuations, unit-only continuations, symbol-font delta/micro units, thermal shutdown rows, EN threshold tail rows, and footer exclusion.
+
 Reflow-profile Sn-Pb/Pb-free assembly rows are scored through `table_structure` after normalization into `Profile Feature`, `Sn-Pb Eutectic Assembly`, and `Pb-Free Assembly` cells, including PDFium value groups that arrive below their feature labels.
 
 Classification-temperature rows are scored through `table_structure` after normalization into `Package Thickness` and `Volume mm3` columns, with table captions kept outside extracted rows.

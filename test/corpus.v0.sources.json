@@ -1,0 +1,115 @@
+{
+  "registry_version": "glyphrush-corpus-sources-v1",
+  "manifest": "corpus.v0.json",
+  "local_root": "v0",
+  "selection_policy": "One small-to-moderate public or open PDF per glyphrush-v0 coverage category. PDFs are local ignored data; this registry and the generated manifest are the tracked test-case metadata.",
+  "documents": [
+    {
+      "path": "v0/academic_columns/acl-bert-naacl-2019.pdf",
+      "category": "academic_columns",
+      "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+      "direct_url": "https://aclanthology.org/N19-1423.pdf",
+      "source_page": "https://aclanthology.org/N19-1423/",
+      "license_note": "ACL Anthology post-2016 publication; scout reported CC BY 4.0.",
+      "expected_shape": "Two-column academic PDF with tables, citations, section hierarchy, and dense references.",
+      "selection_note": "Representative academic-columns fixture without adding a large paper."
+    },
+    {
+      "path": "v0/clean_digital/fema-firm-database-technical-reference-2024.pdf",
+      "category": "clean_digital",
+      "title": "FIRM Database Technical Reference, November 2024",
+      "direct_url": "https://www.fema.gov/sites/default/files/documents/fema_rm-firm-database-technical-reference-nov-2024.pdf",
+      "source_page": "https://www.fema.gov/media-collection/technical-references-flood-risk-analysis-and-mapping",
+      "license_note": "FEMA / US federal publication; generally public domain unless a specific third-party notice applies.",
+      "expected_shape": "Native digital technical reference with schema-like tables, appendices, repeated headings, and field definitions.",
+      "selection_note": "Clean digital native-text fixture that is not just prose."
+    },
+    {
+      "path": "v0/forms/irs-f1040-2025.pdf",
+      "category": "forms",
+      "title": "IRS Form 1040, 2025",
+      "direct_url": "https://www.irs.gov/pub/irs-pdf/f1040.pdf",
+      "source_page": "https://www.irs.gov/forms-pubs/about-form-1040",
+      "license_note": "IRS / US federal form; generally public domain.",
+      "expected_shape": "Short fillable form with XFA/JavaScript, boxes, checkboxes, line numbers, and dense field labels.",
+      "selection_note": "Small, stable form fixture for unsupported-form flags and text extraction behavior."
+    },
+    {
+      "path": "v0/hybrid/govinfo-usreports-218-173-watson.pdf",
+      "category": "hybrid",
+      "title": "Watson v. Maryland, 218 U.S. 173",
+      "direct_url": "https://www.govinfo.gov/content/pkg/USREPORTS-218/pdf/USREPORTS-218-173.pdf",
+      "source_page": "https://www.govinfo.gov/app/details/USREPORTS-218/USREPORTS-218-173/context",
+      "license_note": "GovInfo federal judicial publication; US government works are generally public domain with third-party caveats.",
+      "expected_shape": "Searchable scan with native OCR text plus full-page image layers, legal citations, headers, and narrow page geometry.",
+      "selection_note": "Hybrid fixture that should avoid blind OCR while still exposing image-backed pages."
+    },
+    {
+      "path": "v0/large/nasa-systems-engineering-handbook.pdf",
+      "category": "large",
+      "title": "NASA Systems Engineering Handbook",
+      "direct_url": "https://www.nasa.gov/wp-content/uploads/2018/09/nasa_systems_engineering_handbook_0.pdf",
+      "source_page": "https://www.nasa.gov/reference/systems-engineering-handbook/",
+      "license_note": "NASA publication; generally reproducible unless copyrighted material is specifically noted.",
+      "expected_shape": "297-page handbook with native text, diagrams, repeated headers, process tables, and appendices.",
+      "selection_note": "Large enough to stress throughput without the 1,000-plus-page MUTCD fixture."
+    },
+    {
+      "path": "v0/rotated/irs-f1095c-2025-landscape.pdf",
+      "category": "rotated",
+      "title": "IRS Form 1095-C, 2025",
+      "direct_url": "https://www.irs.gov/pub/irs-pdf/f1095c.pdf",
+      "source_page": "https://www.irs.gov/forms-pubs/about-form-1095-c",
+      "license_note": "IRS / US federal form; generally public domain.",
+      "expected_shape": "All-landscape form pages with wide tabular regions and form/XFA metadata.",
+      "selection_note": "Landscape-orientation fixture. Scout did not confirm nonzero /Rotate metadata, so a strict rotated-page fixture should be added later."
+    },
+    {
+      "path": "v0/scanned/uspto-us4399515-scanned.pdf",
+      "category": "scanned",
+      "title": "US4399515, Self-correcting electronically scanned pressure sensor",
+      "direct_url": "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/4399515",
+      "source_page": "https://ppubs.uspto.gov/pubwebapp/static/pages/ppubsbasic.html",
+      "license_note": "Official USPTO patent PDF and public record; verify bulk redistribution terms before committing binaries.",
+      "expected_shape": "Image-only patent pages with empty native text, full-page CCITT imagery, columns, and drawings.",
+      "selection_note": "Small hard OCR-required classifier fixture."
+    },
+    {
+      "path": "v0/tables/omb-fy2027-table-16-1.pdf",
+      "category": "tables",
+      "title": "OMB FY2027 Table 16-1, Federal Budget by Agency and Account",
+      "direct_url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/ap_16-1_fy2027.pdf",
+      "source_page": "https://www.whitehouse.gov/omb/information-resources/budget/analytical-perspectives/",
+      "license_note": "White House / OMB federal publication; generally public domain.",
+      "expected_shape": "Long landscape PDF dominated by repeated budget-account tables, wrapped account labels, numeric columns, and section headers.",
+      "selection_note": "Table-heavy corpus fixture that is much smaller than the full budget appendix."
+    },
+    {
+      "path": "v0/weird_encoding/verapdf-cmap-fail-a.pdf",
+      "category": "weird_encoding",
+      "title": "veraPDF PDF/A CMaps fail fixture",
+      "direct_url": "https://raw.githubusercontent.com/veraPDF/veraPDF-corpus/staging/PDF_A-2b/6.2%20Graphics/6.2.11%20Fonts/6.2.11.3%20Composite%20fonts/6.2.11.3.3%20CMaps/veraPDF%20test%20suite%206-2-11-3-3-t01-fail-a.pdf",
+      "source_page": "https://github.com/veraPDF/veraPDF-corpus",
+      "license_note": "veraPDF corpus is CC BY 4.0 according to its repository README.",
+      "expected_shape": "Small focused CMap/composite-font conformance fixture.",
+      "selection_note": "Tiny weird-encoding regression fixture for fast repeated eval."
+    }
+  ],
+  "reference_only_candidates": [
+    {
+      "title": "MUTCD 11th Edition with Revision 1",
+      "url": "https://mutcd.fhwa.dot.gov/pdfs/11th_Editionr1/mutcd11theditionr1hl.pdf",
+      "reason": "Useful large/rotated/map/sign-table stress case, but too large for the initial seed corpus."
+    },
+    {
+      "title": "USGS San Francisco North US Topo",
+      "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Maps/USTopo/PDF/CA/CA_San_Francisco_North_20211230_TM_geo.pdf",
+      "reason": "Useful geospatial/rotated-label stress case, but roughly 40 MB for a single-page seed."
+    },
+    {
+      "title": "Diodes AP7354 datasheet",
+      "url": "https://www.diodes.com/datasheet/download/AP7354.pdf",
+      "reason": "Already represented by local datasheet fixtures; redistribution license is unclear."
+    }
+  ]
+}

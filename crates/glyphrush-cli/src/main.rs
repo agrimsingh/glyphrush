@@ -2539,7 +2539,7 @@ fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "table_uncertain_flag_and_table_structure_eval",
-            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, embedded pin/function tables, number-first pin-description tables, fragmented symbol/rating tables, bullet/leader spec tables, electrical-characteristics min/typ/max tables, AWINIC parameter/test-condition electrical tables with split frequency ranges, split ppm/degree-C units, ohm values, thermal shutdown rows, and footer exclusion, reflow-profile Sn-Pb/Pb-free assembly tables, classification-temperature package/volume tables, package pin-description tables, part-number ordering tables, header-guided whitespace rows with table-header cues, same-line or wrapped multi-word descriptor cells, two-column descriptor/value rows, trailing descriptor continuations, header-guided trailing blank cells, header-guided section rows, and leading text-table captions outside table grids, aligned whitespace and positioned interior section rows, keeps positioned captions outside table grids, rejects routed description prose without table-header cues, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, fragmented first-column positioned section rows, interior positioned condition/note rows, multi-cell wrapped continuations, and same-column wrapped header rows when table recovery is routed, and exposes structured grids to eval text anchors.",
+            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, embedded pin/function tables, number-first pin-description tables, fragmented symbol/rating tables, bullet/leader spec tables, electrical-characteristics min/typ/max tables, AWINIC parameter/test-condition electrical tables with split frequency ranges, split ppm/degree-C units, ohm values, thermal shutdown rows, and footer exclusion, parameter/symbol/conditions electrical tables with condition continuations and thermal/EN threshold tail rows, reflow-profile Sn-Pb/Pb-free assembly tables, classification-temperature package/volume tables, package pin-description tables, part-number ordering tables, header-guided whitespace rows with table-header cues, same-line or wrapped multi-word descriptor cells, two-column descriptor/value rows, trailing descriptor continuations, header-guided trailing blank cells, header-guided section rows, and leading text-table captions outside table grids, aligned whitespace and positioned interior section rows, keeps positioned captions outside table grids, rejects routed description prose without table-header cues, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, fragmented first-column positioned section rows, interior positioned condition/note rows, multi-cell wrapped continuations, and same-column wrapped header rows when table recovery is routed, and exposes structured grids to eval text anchors.",
         },
         FeatureParityCapability {
             id: "artifact_cache_snapshots",
@@ -12548,7 +12548,13 @@ fn table_line_density(text: &str) -> f32 {
 fn has_explicit_text_table_header(text: &str) -> bool {
     text.lines()
         .map(normalized_text_table_header_line)
-        .any(|line| line == "parameter test condition min typ max unit")
+        .any(|line| {
+            matches!(
+                line.as_str(),
+                "parameter test condition min typ max unit"
+                    | "parameter symbol conditions min typ max unit"
+            )
+        })
 }
 
 fn normalized_text_table_header_line(line: &str) -> String {
@@ -13179,6 +13185,30 @@ mod unit_tests {
             calls.get(),
             0,
             "obvious native-text table headers should avoid expensive vector traversal"
+        );
+    }
+
+    #[test]
+    fn table_signal_routes_parameter_symbol_conditions_headers_without_vector_scan() {
+        let calls = Cell::new(0);
+        let native_text = concat!(
+            "Electrical Characteristics\n",
+            "(VIN=VOUT+1V, CIN=1µF, COUT=1µF)\n",
+            "Parameter Symbol Conditions Min Typ Max Unit\n",
+            "Input Voltage Range VIN 1.75 5.5 V\n",
+            "Quiescent Current IQ IOUT=0A 2 4 µA\n"
+        );
+
+        let density = combined_table_line_density(native_text, || {
+            calls.set(calls.get() + 1);
+            0.0
+        });
+
+        assert!(density >= TABLE_ROUTE_DENSITY_THRESHOLD);
+        assert_eq!(
+            calls.get(),
+            0,
+            "parameter/symbol electrical table headers should avoid expensive vector traversal"
         );
     }
 
