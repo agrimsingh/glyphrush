@@ -53,7 +53,7 @@ const BASELINE_CHECK_REPORT_VERSION: &str = "glyphrush-baseline-check-report-v1"
 const BACKEND_CHECK_REPORT_VERSION: &str = "glyphrush-backend-check-report-v1";
 const OCR_CHECK_REPORT_VERSION: &str = "glyphrush-ocr-check-report-v1";
 const FEATURE_PARITY_REPORT_VERSION: &str = "glyphrush-feature-parity-report-v1";
-const FEATURE_PARITY_RECOMMENDED_GATE: &str = "bench --eval-manifest <manifest> --baseline-preset glyphrush-v0 --require-coverage-preset glyphrush-v0 --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5";
+const FEATURE_PARITY_RECOMMENDED_GATE: &str = "bench --eval-manifest <manifest> --eval-category academic_columns,clean_digital,forms,hybrid,large,rotated,tables,weird_encoding --baseline-preset glyphrush-v0 --require-coverage-preset glyphrush-v0-native-text --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5";
 const FEATURE_PARITY_REQUIRED_SPEED_CLAIMS: [(&str, f64); 2] =
     [("liteparse", 2.0), ("liteparse-no-ocr", 1.5)];
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
@@ -148,6 +148,8 @@ enum BackendChoice {
 enum CoveragePreset {
     #[value(name = "glyphrush-v0")]
     GlyphrushV0,
+    #[value(name = "glyphrush-v0-native-text")]
+    GlyphrushV0NativeText,
 }
 
 const GLYPHRUSH_V0_COVERAGE_CATEGORIES: &[&str] = &[
@@ -162,16 +164,29 @@ const GLYPHRUSH_V0_COVERAGE_CATEGORIES: &[&str] = &[
     "large",
 ];
 
+const GLYPHRUSH_V0_NATIVE_TEXT_COVERAGE_CATEGORIES: &[&str] = &[
+    "clean_digital",
+    "hybrid",
+    "academic_columns",
+    "tables",
+    "forms",
+    "rotated",
+    "weird_encoding",
+    "large",
+];
+
 impl CoveragePreset {
     fn name(self) -> &'static str {
         match self {
             Self::GlyphrushV0 => "glyphrush-v0",
+            Self::GlyphrushV0NativeText => "glyphrush-v0-native-text",
         }
     }
 
     fn categories(self) -> &'static [&'static str] {
         match self {
             Self::GlyphrushV0 => GLYPHRUSH_V0_COVERAGE_CATEGORIES,
+            Self::GlyphrushV0NativeText => GLYPHRUSH_V0_NATIVE_TEXT_COVERAGE_CATEGORIES,
         }
     }
 }
@@ -4350,8 +4365,20 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 })
                 .transpose()?;
             if pdf.is_dir() {
-                let mut output =
-                    bench_corpus(backend, &pdf, bench_config, baseline_quality.as_ref())?;
+                let selected_paths = eval_manifest_path
+                    .as_deref()
+                    .filter(|_| eval_category.is_some())
+                    .map(|manifest| {
+                        selected_eval_manifest_path_keys(manifest, eval_category.as_deref())
+                    })
+                    .transpose()?;
+                let mut output = bench_corpus(
+                    backend,
+                    &pdf,
+                    bench_config,
+                    baseline_quality.as_ref(),
+                    selected_paths.as_ref(),
+                )?;
                 if let Some(manifest) = eval_manifest_path.as_deref() {
                     let quality = {
                         let artifacts_by_path = output
@@ -5163,12 +5190,18 @@ fn bench_corpus<B: PdfBackend + Sync>(
     path: &Path,
     config: BenchRunConfig<'_>,
     baseline_quality: Option<&BaselineQualityInputs>,
+    selected_path_keys: Option<&BTreeSet<PathBuf>>,
 ) -> Result<CorpusBenchOutput> {
     if config.cache_probe && config.cache_dir.is_none() {
         bail!("--cache-probe requires --cache-dir");
     }
 
-    let pdfs = discover_pdfs(path)?;
+    let mut pdfs = discover_pdfs(path)?;
+    if let Some(selected_path_keys) = selected_path_keys
+        && !selected_path_keys.is_empty()
+    {
+        pdfs.retain(|pdf| selected_path_keys.contains(&manifest_path_key(&pdf.path)));
+    }
     let worker_count = document_worker_count(backend, config.jobs, pdfs.len());
     let documents = if worker_count == 1 {
         pdfs.into_iter()
@@ -7163,14 +7196,15 @@ fn load_baseline_quality_expectations(
     let manifest: EvalManifest = serde_json::from_slice(&manifest_bytes)
         .with_context(|| format!("decode eval manifest {}", manifest_path.display()))?;
     let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
-    let category = normalize_manifest_category(category);
+    let category_filter = normalize_manifest_category_filter(category);
     let mut expectations_by_path = BTreeMap::new();
     let mut categories_by_path = BTreeMap::new();
 
     for document in manifest.documents {
-        if let Some(category) = category.as_deref()
-            && eval_manifest_document_category(&document) != category
-        {
+        if !manifest_category_filter_matches(
+            &category_filter,
+            eval_manifest_document_category(&document),
+        ) {
             continue;
         }
         let path_key = manifest_path_key(&resolve_manifest_path(manifest_dir, &document.path));
@@ -7204,6 +7238,30 @@ fn load_baseline_quality_expectations(
         expectations_by_path,
         categories_by_path,
     })
+}
+
+fn selected_eval_manifest_path_keys(
+    manifest_path: &Path,
+    category: Option<&str>,
+) -> Result<BTreeSet<PathBuf>> {
+    let manifest_bytes = fs::read(manifest_path)
+        .with_context(|| format!("read eval manifest {}", manifest_path.display()))?;
+    let manifest: EvalManifest = serde_json::from_slice(&manifest_bytes)
+        .with_context(|| format!("decode eval manifest {}", manifest_path.display()))?;
+    let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
+    let category_filter = normalize_manifest_category_filter(category);
+
+    Ok(manifest
+        .documents
+        .into_iter()
+        .filter(|document| {
+            manifest_category_filter_matches(
+                &category_filter,
+                eval_manifest_document_category(document),
+            )
+        })
+        .map(|document| manifest_path_key(&resolve_manifest_path(manifest_dir, &document.path)))
+        .collect())
 }
 
 fn baseline_required_text_expectations(expectations: &EvalExpectations) -> Vec<String> {
@@ -8355,15 +8413,18 @@ fn eval_manifest<B: PdfBackend + Sync>(
     let mut manifest: EvalManifest = serde_json::from_slice(&manifest_bytes)
         .with_context(|| format!("decode eval manifest {}", manifest_path.display()))?;
     let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
-    let category = normalize_manifest_category(category);
+    let category_filter = normalize_manifest_category_filter(category);
     let required_categories =
-        normalize_required_categories(&manifest.required_categories, category.as_deref());
+        normalize_required_categories(&manifest.required_categories, category);
     let min_category_counts =
-        normalize_min_category_counts(&manifest.min_category_counts, category.as_deref());
-    if let Some(category) = category.as_deref() {
-        manifest
-            .documents
-            .retain(|document| eval_manifest_document_category(document) == category);
+        normalize_min_category_counts(&manifest.min_category_counts, category);
+    if !category_filter.is_empty() {
+        manifest.documents.retain(|document| {
+            manifest_category_filter_matches(
+                &category_filter,
+                eval_manifest_document_category(document),
+            )
+        });
     }
     let worker_count = document_worker_count(backend, jobs, manifest.documents.len());
 
@@ -8466,7 +8527,7 @@ fn eval_manifest_from_artifacts(
     let manifest: EvalManifest = serde_json::from_slice(&manifest_bytes)
         .with_context(|| format!("decode eval manifest {}", manifest_path.display()))?;
     let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
-    let category = normalize_manifest_category(category);
+    let category_filter = normalize_manifest_category_filter(category);
     let mut required_categories = coverage_preset
         .into_iter()
         .flat_map(|preset| preset.categories().iter().copied())
@@ -8474,18 +8535,19 @@ fn eval_manifest_from_artifacts(
         .collect::<Vec<_>>();
     required_categories.extend(normalize_required_categories(
         &manifest.required_categories,
-        category.as_deref(),
+        category,
     ));
     let required_categories = normalize_required_categories(&required_categories, None);
     let min_category_counts =
-        normalize_min_category_counts(&manifest.min_category_counts, category.as_deref());
+        normalize_min_category_counts(&manifest.min_category_counts, category);
 
     let mut selected_document_count = 0usize;
     let mut documents = Vec::new();
     for document in manifest.documents {
-        if let Some(category) = category.as_deref()
-            && eval_manifest_document_category(&document) != category
-        {
+        if !manifest_category_filter_matches(
+            &category_filter,
+            eval_manifest_document_category(&document),
+        ) {
             continue;
         }
         selected_document_count += 1;
@@ -8941,16 +9003,24 @@ fn normalize_manifest_category(category: Option<&str>) -> Option<String> {
         .map(str::to_string)
 }
 
+fn normalize_manifest_category_filter(category: Option<&str>) -> BTreeSet<String> {
+    category
+        .into_iter()
+        .flat_map(|category| category.split(','))
+        .filter_map(|category| normalize_manifest_category(Some(category)))
+        .collect()
+}
+
+fn manifest_category_filter_matches(filter: &BTreeSet<String>, category: &str) -> bool {
+    filter.is_empty() || filter.contains(category)
+}
+
 fn normalize_required_categories(categories: &[String], filter: Option<&str>) -> Vec<String> {
-    let filter = normalize_manifest_category(filter);
+    let filter = normalize_manifest_category_filter(filter);
     let mut categories = categories
         .iter()
         .filter_map(|category| normalize_manifest_category(Some(category)))
-        .filter(|category| {
-            filter
-                .as_deref()
-                .is_none_or(|filter| category.as_str() == filter)
-        })
+        .filter(|category| manifest_category_filter_matches(&filter, category))
         .collect::<Vec<_>>();
     categories.sort();
     categories.dedup();
@@ -8976,7 +9046,7 @@ fn normalize_min_category_counts(
     categories: &BTreeMap<String, usize>,
     filter: Option<&str>,
 ) -> BTreeMap<String, usize> {
-    let filter = normalize_manifest_category(filter);
+    let filter = normalize_manifest_category_filter(filter);
     categories
         .iter()
         .filter_map(|(category, count)| {
@@ -8984,10 +9054,7 @@ fn normalize_min_category_counts(
             if *count == 0 {
                 return None;
             }
-            if filter
-                .as_deref()
-                .is_some_and(|filter| category.as_str() != filter)
-            {
+            if !manifest_category_filter_matches(&filter, &category) {
                 return None;
             }
             Some((category, *count))
