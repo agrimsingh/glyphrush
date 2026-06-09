@@ -2301,10 +2301,21 @@ fn feature_parity_benchmark_evidence(
 
         let claim_passed = claim.claim_passed.unwrap_or(false);
         let quality_backed = claim.quality_backed.unwrap_or(false);
-        let speedup_met = claim
+        let requested_speedup_met = claim
             .required_glyphrush_speedup
             .is_some_and(|actual_required| actual_required >= required_speedup);
-        if !claim_passed || !quality_backed || !speedup_met {
+        let actual_speedup_met = claim
+            .actual_glyphrush_speedup
+            .is_some_and(|actual_speedup| actual_speedup >= required_speedup);
+        let speed_comparable = claim.speed_comparable.unwrap_or(false);
+        let speed_passed = claim.speed_passed.unwrap_or(false);
+        if !claim_passed
+            || !quality_backed
+            || !requested_speedup_met
+            || !actual_speedup_met
+            || !speed_comparable
+            || !speed_passed
+        {
             failed_required_claims.push(claim.clone());
         }
     }
