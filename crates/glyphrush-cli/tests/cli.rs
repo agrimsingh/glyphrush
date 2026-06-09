@@ -296,6 +296,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
             .unwrap()
             .contains("fragmented short section separators")
     );
+    assert!(
+        span_geometry["notes"]
+            .as_str()
+            .unwrap()
+            .contains("narrow academic gutters")
+    );
 
     let cache = capability(capabilities, "artifact_cache_snapshots");
     assert_eq!(cache["glyphrush_status"], "implemented");
@@ -2118,6 +2124,72 @@ fn parse_pdfium_emits_positioned_native_spans_when_span_geometry_requested() {
     assert!(spans[0]["bbox"]["y1"].as_f64().unwrap() < 120.0);
     assert_ne!(spans[0]["bbox"]["x1"], 612.0);
     assert_ne!(spans[0]["bbox"]["y1"], 792.0);
+}
+
+#[cfg(feature = "pdfium")]
+#[test]
+fn parse_pdfium_span_geometry_handles_large_native_text_pages() {
+    let dir = temp_dir("parse-pdfium-large-positioned-spans");
+    let pdf_path = dir.join("large-positioned.pdf");
+    let mut stream = String::new();
+    for row in 0..72 {
+        let y = 740 - row * 8;
+        stream.push_str(&format!(
+            "BT /F1 8 Tf 72 {y} Td (Left column row {row:03} contextual language model filler) Tj ET\n"
+        ));
+        stream.push_str(&format!(
+            "BT /F1 8 Tf 330 {y} Td (Right column row {row:03} masked objective filler) Tj ET\n"
+        ));
+    }
+    fs::write(&pdf_path, minimal_pdf_with_stream(&stream)).unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "pdfium",
+            "parse",
+            pdf_path.to_str().unwrap(),
+            "--format",
+            "json",
+            "--span-geometry",
+        ])
+        .output()
+        .expect("run glyphrush pdfium parse with large span geometry page");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("parse output is json");
+    let page = &json["pages"][0];
+    let spans = page["native_spans"].as_array().unwrap();
+
+    assert!(
+        page["signals"]["native_text_bytes"].as_u64().unwrap() > 4096,
+        "test must exceed the lopdf text-positioning cap: {}",
+        page["signals"]
+    );
+    assert_eq!(page["signals"]["span_geometry_capped"], false);
+    assert!(
+        spans.len() >= 100,
+        "PDFium should expose segment geometry for large native-text pages, got {} spans",
+        spans.len()
+    );
+    assert!(
+        spans[0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("Left column row 000")
+    );
+    assert!(
+        spans[1]["text"]
+            .as_str()
+            .unwrap()
+            .contains("Right column row 000")
+    );
+    assert_ne!(spans[0]["bbox"]["x1"], 612.0);
 }
 
 #[cfg(feature = "pdfium")]

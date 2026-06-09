@@ -2115,7 +2115,38 @@ fn group_spans_for_reading_order_from_refs<'a>(
         return groups;
     }
 
+    if let Some(groups) =
+        group_span_refs_by_vertical_gaps_with_column_splits(span_refs.clone(), dimensions)
+    {
+        return groups;
+    }
+
     group_span_refs_by_vertical_gaps(span_refs)
+}
+
+fn group_span_refs_by_vertical_gaps_with_column_splits<'a>(
+    span_refs: Vec<&'a TextSpan>,
+    dimensions: &PageDimensions,
+) -> Option<Vec<Vec<&'a TextSpan>>> {
+    let vertical_groups = group_span_refs_by_vertical_gaps(span_refs);
+    if vertical_groups.len() < 2 {
+        return None;
+    }
+
+    let mut split_any = false;
+    let mut groups = Vec::new();
+    for group in vertical_groups {
+        if let Some(columns) = split_layout_columns(&group, dimensions) {
+            split_any = true;
+            for column in columns {
+                groups.extend(group_span_refs_by_vertical_gaps(column));
+            }
+        } else {
+            groups.push(group);
+        }
+    }
+
+    split_any.then_some(groups)
 }
 
 fn group_span_refs_by_full_width_bands<'a>(
@@ -2684,7 +2715,11 @@ fn split_layout_columns<'a>(
     }
     columns.push(sorted_spans[start..].to_vec());
 
-    ((2..=5).contains(&columns.len())).then_some(columns)
+    ((2..=5).contains(&columns.len())
+        && columns
+            .iter()
+            .all(|column| layout_column_has_multiple_rows(column)))
+    .then_some(columns)
 }
 
 fn layout_column_min_gap(spans: &[&TextSpan], dimensions: &PageDimensions) -> f32 {
@@ -2700,7 +2735,42 @@ fn layout_column_min_gap(spans: &[&TextSpan], dimensions: &PageDimensions) -> f3
         .copied()
         .unwrap_or(120.0);
 
-    (dimensions.width * 0.08).max(median_width * 0.25).max(36.0)
+    (dimensions.width * 0.02).max(median_width * 0.05).max(12.0)
+}
+
+fn layout_column_has_multiple_rows(spans: &[&TextSpan]) -> bool {
+    if spans.len() < 2 {
+        return false;
+    }
+
+    let Some(min_center) = spans
+        .iter()
+        .map(|span| span_center_y(span))
+        .min_by(f32::total_cmp)
+    else {
+        return false;
+    };
+    let Some(max_center) = spans
+        .iter()
+        .map(|span| span_center_y(span))
+        .max_by(f32::total_cmp)
+    else {
+        return false;
+    };
+    let median_height = median_span_height(spans).unwrap_or(12.0);
+
+    max_center - min_center > (median_height * 0.75).max(4.0)
+}
+
+fn median_span_height(spans: &[&TextSpan]) -> Option<f32> {
+    let mut heights = spans
+        .iter()
+        .map(|span| span.bbox.y1 - span.bbox.y0)
+        .filter(|height| *height > 0.0 && height.is_finite())
+        .collect::<Vec<_>>();
+    heights.sort_by(f32::total_cmp);
+
+    heights.get(heights.len().saturating_sub(1) / 2).copied()
 }
 
 fn group_span_refs_by_vertical_gaps(mut sorted_spans: Vec<&TextSpan>) -> Vec<Vec<&TextSpan>> {

@@ -58,6 +58,8 @@ const FEATURE_PARITY_REQUIRED_SPEED_CLAIMS: [(&str, f64); 2] =
     [("liteparse", 2.0), ("liteparse-no-ocr", 1.5)];
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
+#[cfg(feature = "pdfium")]
+const MAX_PDFIUM_TEXT_SEGMENT_NATIVE_TEXT_BYTES: u32 = 256 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
 const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
 const TABLE_ROUTE_DENSITY_THRESHOLD: f32 = 0.25;
@@ -3046,7 +3048,7 @@ fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "layout_uncertain_flag_reading_order_and_span_bbox_eval",
-            notes: "Glyphrush avoids always-on per-character metadata, preserves full-width bands, fragmented full-width heading rows, fragmented middle cross-column bands, fragmented short section separators, leading, middle, and trailing cross-column bands, conservative short section separators, and clearly separated 2-5 column reading order when span geometry is available, seeds bounded span-bbox manifest samples, and escalates layout work when signals require it.",
+            notes: "Glyphrush avoids always-on per-character metadata, preserves full-width bands, fragmented full-width heading rows, fragmented middle cross-column bands, fragmented short section separators, leading, middle, and trailing cross-column bands, conservative short section separators, narrow academic gutters with trailing centered page numbers, and clearly separated 2-5 column reading order when span geometry is available, seeds bounded span-bbox manifest samples, and escalates layout work when signals require it.",
         },
         FeatureParityCapability {
             id: "ocr",
@@ -11212,7 +11214,7 @@ fn map_pdfium_text_error(error: PdfiumError) -> anyhow::Error {
 
 #[cfg(feature = "pdfium")]
 fn should_extract_pdfium_text_segments(native_text_bytes: u32, rotation_degrees: i16) -> bool {
-    native_text_bytes <= MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES
+    native_text_bytes <= MAX_PDFIUM_TEXT_SEGMENT_NATIVE_TEXT_BYTES
         && rotation_degrees.rem_euclid(360) == 0
 }
 

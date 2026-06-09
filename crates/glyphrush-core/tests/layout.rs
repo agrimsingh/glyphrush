@@ -1104,6 +1104,52 @@ fn positioned_native_spans_preserve_fragmented_middle_cross_column_caption_betwe
 }
 
 #[test]
+fn positioned_native_spans_preserve_narrow_gutter_columns_before_centered_page_number() {
+    let artifact = parse_extracted_pages(
+        "doc-narrow-gutter-columns-footer".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(595.276, 841.89),
+            native_text: concat!(
+                "4172\n",
+                "Left column first line\n",
+                "Left column second line\n",
+                "Left column third line\n",
+                "Right column first line\n",
+                "Right column second line\n",
+                "Right column third line"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("4172", 287.0, 778.0, 310.0, 786.0),
+                span("Left column first line", 72.0, 66.0, 289.0, 76.0),
+                span("Left column second line", 72.0, 80.0, 290.0, 90.0),
+                span("Left column third line", 72.0, 94.0, 288.0, 104.0),
+                span("Right column first line", 306.0, 66.0, 522.0, 76.0),
+                span("Right column second line", 306.0, 80.0, 524.0, 90.0),
+                span("Right column third line", 306.0, 94.0, 520.0, 104.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let blocks = &artifact.pages[0].layout_blocks;
+    assert_eq!(blocks.len(), 3);
+    assert_eq!(
+        blocks[0].text,
+        "Left column first line\nLeft column second line\nLeft column third line"
+    );
+    assert_eq!(
+        blocks[1].text,
+        "Right column first line\nRight column second line\nRight column third line"
+    );
+    assert_eq!(blocks[2].text, "4172");
+}
+
+#[test]
 fn positioned_character_spans_reflow_into_readable_words() {
     let artifact = parse_extracted_pages(
         "doc-positioned-character-spans".to_string(),
