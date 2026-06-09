@@ -8293,6 +8293,86 @@ fn bench_with_eval_manifest_scores_baseline_page_required_text() {
 }
 
 #[test]
+fn bench_with_eval_manifest_scores_baseline_only_required_text() {
+    let dir = temp_dir("bench-eval-baseline-only-required-text");
+    let pdf_path = dir.join("scan.pdf");
+    fs::write(&pdf_path, minimal_pdf_with_stream("0 0 m 10 10 l S")).unwrap();
+    let baseline = write_baseline_script(
+        "baseline-only-required-text",
+        "printf 'OCR recovered serial number ABC123'",
+    );
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "scan.pdf",
+              "category": "scanned",
+              "expect": {
+                "ocr_required_pages": 1,
+                "quality_flag_counts": {
+                  "requires_ocr": 1,
+                  "low_confidence_text": 1,
+                  "broken_encoding": 0,
+                  "layout_uncertain": 0,
+                  "table_uncertain": 0,
+                  "unsupported_feature": 0
+                },
+                "pages": [
+                  {
+                    "index": 0,
+                    "empty_text_output": true,
+                    "required_flags": ["requires_ocr", "low_confidence_text"]
+                  }
+                ],
+                "baseline_required_text": ["OCR recovered serial number ABC123"],
+                "silent_failures": { "max_count": 0 }
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush bench with baseline-only required text");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+
+    assert_eq!(json["quality"]["passed"], true);
+    assert_eq!(json["quality"]["documents"][0]["passed"], true);
+    assert!(json["quality"]["documents"][0]["checks"]["required_text"].is_null());
+    assert_eq!(json["baselines"][0]["quality_status"], "checked");
+    assert_eq!(json["baselines"][0]["quality"]["passed"], true);
+    assert_eq!(
+        json["baselines"][0]["quality"]["required_text"]["expected"],
+        serde_json::json!(["OCR recovered serial number ABC123"])
+    );
+    assert_eq!(
+        json["baselines"][0]["quality"]["required_text"]["missing"],
+        serde_json::json!([])
+    );
+}
+
+#[test]
 fn bench_with_eval_manifest_scores_baseline_reading_order() {
     let dir = temp_dir("bench-eval-baseline-reading-order");
     let pdf_path = dir.join("sample.pdf");

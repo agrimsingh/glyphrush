@@ -13115,6 +13115,10 @@
               "high_image_coverage_without_native_text"
             ]
           }
+        ],
+        "baseline_required_text": [
+          "SELF-CORRECTING ELECTRONICALLY",
+          "SCANNED PRESSURE SENSOR"
         ]
       }
     },

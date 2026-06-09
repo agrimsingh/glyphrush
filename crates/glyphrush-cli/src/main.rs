@@ -2018,6 +2018,8 @@ struct EvalExpectations {
     #[serde(default)]
     required_text: Vec<String>,
     #[serde(default)]
+    baseline_required_text: Vec<String>,
+    #[serde(default)]
     required_warnings: Vec<String>,
     #[serde(default)]
     pages: Vec<EvalPageExpectation>,
@@ -7503,6 +7505,11 @@ fn baseline_required_text_expectations(expectations: &EvalExpectations) -> Vec<S
             if !required_text.contains(text) {
                 required_text.push(text.clone());
             }
+        }
+    }
+    for text in &expectations.baseline_required_text {
+        if !required_text.contains(text) {
+            required_text.push(text.clone());
         }
     }
 
