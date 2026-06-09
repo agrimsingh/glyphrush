@@ -497,6 +497,62 @@ fn positioned_native_spans_preserve_three_column_reading_order() {
 }
 
 #[test]
+fn positioned_native_spans_preserve_five_column_reading_order() {
+    let artifact = parse_extracted_pages(
+        "doc-five-column-layout".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(900.0, 792.0),
+            native_text: concat!(
+                "Column one starts\n",
+                "Column one continues\n",
+                "Column two starts\n",
+                "Column two continues\n",
+                "Column three starts\n",
+                "Column three continues\n",
+                "Column four starts\n",
+                "Column four continues\n",
+                "Column five starts\n",
+                "Column five continues"
+            )
+            .to_string(),
+            native_spans: vec![
+                span("Column one starts", 40.0, 100.0, 120.0, 114.0),
+                span("Column two starts", 220.0, 100.0, 300.0, 114.0),
+                span("Column three starts", 400.0, 100.0, 480.0, 114.0),
+                span("Column four starts", 580.0, 100.0, 660.0, 114.0),
+                span("Column five starts", 760.0, 100.0, 840.0, 114.0),
+                span("Column one continues", 40.0, 118.0, 128.0, 132.0),
+                span("Column two continues", 220.0, 118.0, 308.0, 132.0),
+                span("Column three continues", 400.0, 118.0, 488.0, 132.0),
+                span("Column four continues", 580.0, 118.0, 668.0, 132.0),
+                span("Column five continues", 760.0, 118.0, 848.0, 132.0),
+            ],
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let blocks = &artifact.pages[0].layout_blocks;
+    assert_eq!(blocks.len(), 5);
+    assert_eq!(blocks[0].text, "Column one starts\nColumn one continues");
+    assert_eq!(blocks[1].text, "Column two starts\nColumn two continues");
+    assert_eq!(
+        blocks[2].text,
+        "Column three starts\nColumn three continues"
+    );
+    assert_eq!(blocks[3].text, "Column four starts\nColumn four continues");
+    assert_eq!(blocks[4].text, "Column five starts\nColumn five continues");
+    assert_eq!(blocks[0].bbox.x0, 40.0);
+    assert_eq!(blocks[1].bbox.x0, 220.0);
+    assert_eq!(blocks[2].bbox.x0, 400.0);
+    assert_eq!(blocks[3].bbox.x0, 580.0);
+    assert_eq!(blocks[4].bbox.x0, 760.0);
+}
+
+#[test]
 fn positioned_native_spans_preserve_trailing_cross_column_note_after_two_columns() {
     let artifact = parse_extracted_pages(
         "doc-two-column-trailing-note".to_string(),

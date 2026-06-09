@@ -2665,7 +2665,7 @@ fn split_layout_columns<'a>(
         }
     }
 
-    if split_indexes.is_empty() || split_indexes.len() > 3 {
+    if split_indexes.is_empty() || split_indexes.len() > 4 {
         return None;
     }
 
@@ -2684,7 +2684,7 @@ fn split_layout_columns<'a>(
     }
     columns.push(sorted_spans[start..].to_vec());
 
-    ((2..=4).contains(&columns.len())).then_some(columns)
+    ((2..=5).contains(&columns.len())).then_some(columns)
 }
 
 fn layout_column_min_gap(spans: &[&TextSpan], dimensions: &PageDimensions) -> f32 {

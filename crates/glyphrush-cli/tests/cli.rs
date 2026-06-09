@@ -276,7 +276,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         span_geometry["notes"]
             .as_str()
             .unwrap()
-            .contains("clearly separated 2-4 column reading order")
+            .contains("clearly separated 2-5 column reading order")
     );
     assert!(
         span_geometry["notes"]
