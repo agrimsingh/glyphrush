@@ -27,6 +27,7 @@ no_ocr_speedup="${GLYPHRUSH_BENCH_LITEPARSE_NO_OCR_SPEEDUP:-1.5}"
 baseline_timeout_ms="${GLYPHRUSH_BENCH_BASELINE_TIMEOUT_MS:-}"
 coverage_preset="${GLYPHRUSH_BENCH_COVERAGE_PRESET:-}"
 output="${GLYPHRUSH_BENCH_OUTPUT:-}"
+progress_log="${GLYPHRUSH_BENCH_PROGRESS_LOG:-}"
 pdf_dir="${GLYPHRUSH_BENCH_PDF_DIR:-}"
 preflight_mode="${GLYPHRUSH_BENCH_PREFLIGHT:-}"
 is_v0_manifest=false
@@ -48,6 +49,9 @@ if [[ -z "$baseline_timeout_ms" ]]; then
   else
     baseline_timeout_ms="120000"
   fi
+fi
+if [[ -n "$output" && -z "$progress_log" ]]; then
+  progress_log="${output%.json}.progress.log"
 fi
 if [[ -z "$preflight_mode" ]]; then
   if [[ "$is_v0_manifest" == true ]]; then
@@ -139,6 +143,9 @@ print_command() {
   printf '%q ' "${cmd[@]}"
   if [[ -n "$output" ]]; then
     printf '> %q' "$output"
+    if [[ -n "$progress_log" ]]; then
+      printf ' 2> >(tee %q >&2)' "$progress_log"
+    fi
   fi
   printf '\n'
   if ((${#feature_parity_cmd[@]} > 0)); then
@@ -159,7 +166,12 @@ fi
 
 if [[ -n "$output" ]]; then
   mkdir -p "$(dirname "$output")"
-  "${cmd[@]}" > "$output"
+  if [[ -n "$progress_log" ]]; then
+    mkdir -p "$(dirname "$progress_log")"
+    "${cmd[@]}" > "$output" 2> >(tee "$progress_log" >&2)
+  else
+    "${cmd[@]}" > "$output"
+  fi
 else
   "${cmd[@]}"
 fi

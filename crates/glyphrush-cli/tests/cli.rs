@@ -1065,7 +1065,41 @@ fn liteparse_benchmark_gate_script_dry_run_defaults_v0_manifest_to_v0_pdf_root()
     assert!(!lines[1].contains("--eval-category"));
     assert!(lines[1].contains("--require-coverage-preset glyphrush-v0"));
     assert!(lines[1].contains("--baseline-timeout-ms 900000"));
+    assert!(lines[1].contains("2> >(tee"));
+    assert!(lines[1].contains("/tmp/glyphrush-liteparse-v0-coverage.progress.log"));
     assert!(lines[2].contains("--require-coverage-preset glyphrush-v0"));
+}
+
+#[test]
+fn liteparse_benchmark_gate_script_dry_run_can_override_progress_log() {
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("canonical repo root");
+    let output = Command::new(repo_root.join("scripts/bench-liteparse.sh"))
+        .arg("--dry-run")
+        .env("GLYPHRUSH_BENCH_CATEGORY", "all")
+        .env("GLYPHRUSH_BENCH_MANIFEST", "test/corpus.v0.json")
+        .env("GLYPHRUSH_BENCH_COVERAGE_PRESET", "glyphrush-v0")
+        .env("GLYPHRUSH_BENCH_OUTPUT", "/tmp/glyphrush-liteparse-v0.json")
+        .env(
+            "GLYPHRUSH_BENCH_PROGRESS_LOG",
+            "/tmp/custom-glyphrush-progress.log",
+        )
+        .output()
+        .expect("run bench-liteparse dry run for custom progress log");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let lines = stdout.lines().collect::<Vec<_>>();
+    assert_eq!(lines.len(), 3, "dry-run output:\n{stdout}");
+    assert!(lines[1].contains("> /tmp/glyphrush-liteparse-v0.json"));
+    assert!(lines[1].contains("2> >(tee"));
+    assert!(lines[1].contains("/tmp/custom-glyphrush-progress.log"));
 }
 
 #[test]
