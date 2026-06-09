@@ -6561,6 +6561,11 @@ fn run_external_baseline(
     let target = baseline_description_target(description.as_ref());
     let mut command_process = ProcessCommand::new(&baseline.command);
     command_process.arg(path);
+    eprintln!(
+        "glyphrush: external baseline start baseline={} pdf={}",
+        baseline.name,
+        path.display()
+    );
     let result = command_output_with_timeout(command_process, timeout);
     let command = baseline.command.to_string_lossy().into_owned();
 

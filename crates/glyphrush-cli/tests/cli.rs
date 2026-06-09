@@ -6459,6 +6459,46 @@ fn bench_runs_named_external_baseline_and_reports_metrics() {
 }
 
 #[test]
+fn bench_reports_external_baseline_progress_to_stderr() {
+    let pdf_path = write_test_pdf("bench-baseline-progress", "Hello Baseline Progress");
+    let baseline = write_baseline_script(
+        "baseline-progress",
+        "sleep 0.1\nprintf 'baseline progress output for %s' \"$1\"",
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+        ])
+        .output()
+        .expect("run glyphrush bench with baseline progress");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("glyphrush: external baseline start"),
+        "bench should expose progress before long external baseline runs:\n{stderr}"
+    );
+    assert!(
+        stderr.contains("baseline=mock"),
+        "progress should identify the external baseline:\n{stderr}"
+    );
+    assert!(
+        stderr.contains(pdf_path.to_str().unwrap()),
+        "progress should identify the current PDF:\n{stderr}"
+    );
+}
+
+#[test]
 fn bench_require_speedup_rejects_slow_glyphrush_after_writing_json() {
     let pdf_path = write_test_pdf("bench-require-speedup", "Require speedup");
     let baseline = write_baseline_script("baseline-fast", "printf 'fast baseline'");
