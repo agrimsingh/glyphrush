@@ -3067,7 +3067,7 @@ fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "table_uncertain_flag_and_table_structure_eval",
-            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, embedded pin/function tables, number-first pin-description tables, fragmented symbol/rating tables, bullet/leader spec tables, electrical-characteristics min/typ/max tables, AWINIC parameter/test-condition electrical tables with split frequency ranges, split ppm/degree-C units, ohm values, thermal shutdown rows, and footer exclusion, parameter/symbol/conditions electrical tables with condition continuations and thermal/EN threshold tail rows, reflow-profile Sn-Pb/Pb-free assembly tables, classification-temperature package/volume tables, package pin-description tables, part-number ordering tables, header-guided whitespace rows with table-header cues, same-line or wrapped multi-word descriptor cells, two-column descriptor/value rows, trailing descriptor continuations, header-guided trailing blank cells, header-guided section rows, and prefixed leading delimited/text-table captions outside table grids, aligned whitespace and positioned interior section rows, keeps positioned captions outside table grids, rejects routed description prose without table-header cues, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, fragmented first-column positioned section rows, interior positioned condition/note rows, multi-cell wrapped continuations, and same-column wrapped header rows when table recovery is routed, and exposes structured grids to eval text anchors.",
+            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, embedded pin/function tables, number-first pin-description tables, fragmented symbol/rating tables, bullet/leader spec tables, electrical-characteristics min/typ/max tables, AWINIC parameter/test-condition electrical tables with split frequency ranges, split ppm/degree-C units, ohm values, thermal shutdown rows, and footer exclusion, parameter/symbol/conditions electrical tables with condition continuations and thermal/EN threshold tail rows, reflow-profile Sn-Pb/Pb-free assembly tables, classification-temperature package/volume tables, package pin-description tables, part-number ordering tables, OMB-style budget projection tables, header-guided whitespace rows with table-header cues, same-line or wrapped multi-word descriptor cells, two-column descriptor/value rows, trailing descriptor continuations, header-guided trailing blank cells, header-guided section rows, and prefixed leading delimited/text-table captions outside table grids, aligned whitespace and positioned interior section rows, keeps positioned captions outside table grids, rejects routed description prose without table-header cues, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, fragmented first-column positioned section rows, interior positioned condition/note rows, multi-cell wrapped continuations, and same-column wrapped header rows when table recovery is routed, and exposes structured grids to eval text anchors.",
         },
         FeatureParityCapability {
             id: "artifact_cache_snapshots",
@@ -9407,6 +9407,53 @@ fn insert_json_check(
     );
 }
 
+fn insert_layout_block_counts_check(
+    checks: &mut BTreeMap<String, EvalCheckOutput>,
+    name: String,
+    expected: DebugLayoutSummary,
+    actual: Option<DebugLayoutSummary>,
+) {
+    let passed = actual
+        .map(|actual| layout_summary_matches_expectation(expected, actual))
+        .unwrap_or(false);
+    checks.insert(
+        name,
+        EvalCheckOutput {
+            passed,
+            expected: json!(expected),
+            actual: actual
+                .map(|actual| json!(actual))
+                .unwrap_or(serde_json::Value::Null),
+        },
+    );
+}
+
+fn layout_summary_matches_expectation(
+    expected: DebugLayoutSummary,
+    actual: DebugLayoutSummary,
+) -> bool {
+    expected.block_count == actual.block_count
+        && expected.paragraph_blocks == actual.paragraph_blocks
+        && expected.heading_blocks == actual.heading_blocks
+        && expected.list_blocks == actual.list_blocks
+        && expected.table_blocks == actual.table_blocks
+        && expected.figure_blocks == actual.figure_blocks
+        && expected.header_blocks == actual.header_blocks
+        && expected.footer_blocks == actual.footer_blocks
+        && expected
+            .table_rows
+            .map(|expected| actual.table_rows == Some(expected))
+            .unwrap_or(true)
+        && expected
+            .table_cells
+            .map(|expected| actual.table_cells == Some(expected))
+            .unwrap_or(true)
+        && expected
+            .table_cells_with_bbox
+            .map(|expected| actual.table_cells_with_bbox == Some(expected))
+            .unwrap_or(true)
+}
+
 fn insert_required_text_check(
     checks: &mut BTreeMap<String, EvalCheckOutput>,
     required_text: &[String],
@@ -10461,12 +10508,11 @@ fn insert_page_expectation_checks(
     }
 
     if let Some(expected_layout_block_counts) = expectation.layout_block_counts {
-        insert_json_check(
+        insert_layout_block_counts_check(
             checks,
             format!("{prefix}.layout_block_counts"),
-            json!(expected_layout_block_counts),
-            page.map(|page| json!(layout_summary_from_page(page)))
-                .unwrap_or(serde_json::Value::Null),
+            expected_layout_block_counts,
+            page.map(layout_summary_from_page),
         );
     }
 

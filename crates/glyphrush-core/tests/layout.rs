@@ -4124,6 +4124,108 @@ fn text_table_recovery_preserves_trailing_blank_cells_from_header_columns() {
 }
 
 #[test]
+fn text_table_recovery_extracts_budget_projection_rows() {
+    let artifact = parse_extracted_pages(
+        "doc-budget-projection-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Account and Subfunction Code\n",
+                "Actual 2026 2027 2028\n",
+                "2025 Estimate\n",
+                "TABLE 16-1. FEDERAL BUDGET BY AGENCY AND ACCOUNT, FY2027 PRESIDENT'S BUDGET POLICY\n",
+                "(In millions of dollars)\n",
+                "Legislative Branch\n",
+                "Senate\n",
+                "Federal Funds\n",
+                "Compensation of Members, Senate (001-05-0100):\n",
+                "Appropriations, mandatory 801 BA 25 25 25 25\n",
+                "Outlays, mandatory O 24 28 25 25\n",
+                "Page 2 / 516"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 12,
+                native_text_bytes: 420,
+                glyph_count: 360,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 2);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    assert_eq!(page.layout_blocks[1].kind, LayoutBlockKind::Paragraph);
+    assert_eq!(page.layout_blocks[1].text, "Page 2 / 516");
+
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec![
+                "Account and Subfunction",
+                "Code",
+                "Type",
+                "Actual 2025",
+                "2026 Estimate",
+                "2027",
+                "2028",
+            ],
+            vec![
+                "TABLE 16-1. FEDERAL BUDGET BY AGENCY AND ACCOUNT, FY2027 PRESIDENT'S BUDGET POLICY",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ],
+            vec!["(In millions of dollars)", "", "", "", "", "", ""],
+            vec!["Legislative Branch", "", "", "", "", "", ""],
+            vec!["Senate", "", "", "", "", "", ""],
+            vec!["Federal Funds", "", "", "", "", "", ""],
+            vec![
+                "Compensation of Members, Senate (001-05-0100):",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ],
+            vec![
+                "Appropriations, mandatory",
+                "801",
+                "BA",
+                "25",
+                "25",
+                "25",
+                "25"
+            ],
+            vec!["Outlays, mandatory", "", "O", "24", "28", "25", "25"],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_does_not_treat_wrapped_prose_as_header_guided_table() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-prose".to_string(),

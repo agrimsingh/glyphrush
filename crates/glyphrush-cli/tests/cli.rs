@@ -400,6 +400,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         table_recovery["notes"]
             .as_str()
             .unwrap()
+            .contains("OMB-style budget projection tables")
+    );
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
             .contains("AWINIC parameter/test-condition electrical tables")
     );
 
@@ -15971,6 +15977,66 @@ fn eval_manifest_can_assert_page_layout_block_counts() {
           "header_blocks": 1,
           "footer_blocks": 1
         })
+    );
+}
+
+#[test]
+fn eval_manifest_layout_block_counts_allow_unasserted_table_detail_fields() {
+    let dir = temp_dir("eval-layout-counts-table-details-subset");
+    let pdf_path = dir.join("table.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream(
+            "BT /F1 12 Tf 72 720 Td 24 TL (| Part | Value |) Tj T* (| A | 1 |) Tj ET",
+        ),
+    )
+    .unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "table.pdf",
+              "expect": {
+                "pages": [
+                  {
+                    "index": 0,
+                    "layout_block_counts": {
+                      "block_count": 1,
+                      "table_blocks": 1
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush eval with partial table layout counts");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("eval output is json");
+
+    assert_eq!(json["passed"], true);
+    assert_eq!(
+        json["documents"][0]["checks"]["page_000000.layout_block_counts"]["actual"]["table_rows"],
+        2
     );
 }
 

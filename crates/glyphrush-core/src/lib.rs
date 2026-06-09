@@ -2930,6 +2930,11 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
         return;
     }
 
+    if let Some(split_blocks) = split_budget_projection_table_blocks(lines, run_table_recovery) {
+        blocks.extend(split_blocks);
+        return;
+    }
+
     if let Some(split_blocks) = split_leading_text_table_caption_blocks(lines, run_table_recovery) {
         blocks.extend(split_blocks);
         return;
@@ -3304,6 +3309,36 @@ fn split_leading_text_table_caption_blocks(
     Some(blocks)
 }
 
+fn split_budget_projection_table_blocks(
+    lines: &[String],
+    run_table_recovery: bool,
+) -> Option<Vec<String>> {
+    if !run_table_recovery || lines.len() < 5 {
+        return None;
+    }
+
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let header_index = (0..refs.len())
+        .find(|index| budget_projection_table_header_len(&refs[*index..]).is_some())?;
+    let (_, consumed_table_lines) = budget_projection_table_rows_prefix(&refs[header_index..])?;
+    let table_end = header_index + consumed_table_lines;
+
+    let mut blocks = Vec::new();
+    if header_index > 0 {
+        blocks.push(reflow_text_block(
+            &lines[..header_index],
+            run_table_recovery,
+        ));
+    }
+
+    blocks.push(lines[header_index..table_end].join("\n"));
+    if table_end < lines.len() {
+        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
+    }
+
+    Some(blocks)
+}
+
 fn table_lines_follow_caption(lines: &[&str]) -> bool {
     is_table_lines_str(lines)
         || aligned_whitespace_table_rows(lines).is_some()
@@ -3563,6 +3598,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = budget_projection_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     if let Some(rows) = aligned_whitespace_table_rows(&lines) {
         return layout_table_from_text_rows(rows);
     }
@@ -3701,6 +3740,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
     }
 
     if part_number_ordering_table_rows(lines).is_some() {
+        return true;
+    }
+
+    if budget_projection_table_rows(lines).is_some() {
         return true;
     }
 
@@ -6083,6 +6126,201 @@ fn looks_like_identification_code(token: &str) -> bool {
         && token.chars().all(|ch| ch.is_ascii_alphanumeric())
         && token.chars().any(|ch| ch.is_ascii_digit())
         && token.chars().any(|ch| ch.is_ascii_alphabetic())
+}
+
+fn budget_projection_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    let (rows, consumed) = budget_projection_table_rows_prefix(lines)?;
+    (consumed == lines.len()).then_some(rows)
+}
+
+fn budget_projection_table_rows_prefix(lines: &[&str]) -> Option<(Vec<Vec<String>>, usize)> {
+    let header_len = budget_projection_table_header_len(lines)?;
+    let header = budget_projection_table_header_cells(&lines[..header_len])?;
+    let value_count = header.len().checked_sub(3)?;
+
+    let mut rows = vec![header.clone()];
+    let mut consumed = header_len;
+    let mut data_row_count = 0;
+
+    for line in lines.iter().skip(header_len) {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            consumed += 1;
+            continue;
+        }
+        if looks_like_budget_projection_footer(trimmed) {
+            break;
+        }
+
+        if let Some(row) = budget_projection_data_row(trimmed, value_count) {
+            rows.push(row);
+            data_row_count += 1;
+            consumed += 1;
+            continue;
+        }
+
+        if looks_like_budget_projection_section_line(trimmed) {
+            rows.push(budget_projection_section_row(trimmed, header.len()));
+            consumed += 1;
+            continue;
+        }
+
+        if data_row_count >= 2 {
+            break;
+        }
+        return None;
+    }
+
+    (data_row_count >= 2).then_some((rows, consumed))
+}
+
+fn budget_projection_table_header_len(lines: &[&str]) -> Option<usize> {
+    if lines.len() < 3 {
+        return None;
+    }
+
+    budget_projection_table_header_cells(&lines[..3]).map(|_| 3)
+}
+
+fn budget_projection_table_header_cells(lines: &[&str]) -> Option<Vec<String>> {
+    let [account_line, years_line, estimate_line] = lines else {
+        return None;
+    };
+
+    if normalize_pin_table_header(account_line) != "account and subfunction code" {
+        return None;
+    }
+
+    let year_tokens = years_line.split_whitespace().collect::<Vec<_>>();
+    let [actual_label, years @ ..] = year_tokens.as_slice() else {
+        return None;
+    };
+    if !actual_label.eq_ignore_ascii_case("actual")
+        || years.len() < 2
+        || !years.iter().all(|year| is_budget_projection_year(year))
+    {
+        return None;
+    }
+
+    let estimate_tokens = estimate_line.split_whitespace().collect::<Vec<_>>();
+    let [actual_year, estimate_label] = estimate_tokens.as_slice() else {
+        return None;
+    };
+    if !is_budget_projection_year(actual_year) || !estimate_label.eq_ignore_ascii_case("estimate") {
+        return None;
+    }
+
+    let mut cells = vec![
+        "Account and Subfunction".to_string(),
+        "Code".to_string(),
+        "Type".to_string(),
+        format!("Actual {actual_year}"),
+        format!("{} Estimate", years[0]),
+    ];
+    cells.extend(years.iter().skip(1).map(|year| (*year).to_string()));
+    Some(cells)
+}
+
+fn budget_projection_data_row(line: &str, value_count: usize) -> Option<Vec<String>> {
+    if value_count < 2 {
+        return None;
+    }
+
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    if tokens.len() < value_count + 2 {
+        return None;
+    }
+
+    let values_start = tokens.len().checked_sub(value_count)?;
+    let values = &tokens[values_start..];
+    if !values.iter().all(|value| is_budget_projection_value(value)) {
+        return None;
+    }
+
+    let type_index = values_start.checked_sub(1)?;
+    let budget_type = tokens[type_index];
+    if !is_budget_projection_type(budget_type) {
+        return None;
+    }
+
+    let mut descriptor_end = type_index;
+    let code = if type_index > 0 && is_budget_projection_code(tokens[type_index - 1]) {
+        descriptor_end -= 1;
+        tokens[type_index - 1].to_string()
+    } else {
+        String::new()
+    };
+
+    let descriptor = tokens[..descriptor_end].join(" ");
+    if !looks_like_budget_projection_descriptor(&descriptor) {
+        return None;
+    }
+
+    let mut row = Vec::with_capacity(value_count + 3);
+    row.push(descriptor);
+    row.push(code);
+    row.push(budget_type.to_string());
+    row.extend(values.iter().map(|value| (*value).to_string()));
+    Some(row)
+}
+
+fn budget_projection_section_row(line: &str, column_count: usize) -> Vec<String> {
+    let mut row = vec![String::new(); column_count];
+    if let Some(first) = row.first_mut() {
+        *first = line.to_string();
+    }
+    row
+}
+
+fn is_budget_projection_year(token: &str) -> bool {
+    token.len() == 4 && token.chars().all(|ch| ch.is_ascii_digit())
+}
+
+fn is_budget_projection_value(token: &str) -> bool {
+    let trimmed = token.trim();
+    if trimmed.is_empty() {
+        return false;
+    }
+    if matches!(trimmed, "---" | "-") {
+        return true;
+    }
+
+    let numeric = trimmed.strip_prefix('-').unwrap_or(trimmed);
+    numeric
+        .chars()
+        .all(|ch| ch.is_ascii_digit() || matches!(ch, ',' | '.'))
+        && numeric.chars().any(|ch| ch.is_ascii_digit())
+}
+
+fn is_budget_projection_type(token: &str) -> bool {
+    matches!(token, "BA" | "O" | "BA/O")
+}
+
+fn is_budget_projection_code(token: &str) -> bool {
+    token.len() == 3 && token.chars().all(|ch| ch.is_ascii_digit())
+}
+
+fn looks_like_budget_projection_descriptor(descriptor: &str) -> bool {
+    let trimmed = descriptor.trim();
+    !trimmed.is_empty()
+        && trimmed.chars().any(char::is_alphabetic)
+        && trimmed.chars().count() <= 160
+}
+
+fn looks_like_budget_projection_section_line(line: &str) -> bool {
+    let trimmed = line.trim();
+    !trimmed.is_empty()
+        && trimmed.chars().any(char::is_alphabetic)
+        && trimmed.chars().count() <= 180
+        && !trimmed.contains('|')
+        && !trimmed.contains('\t')
+}
+
+fn looks_like_budget_projection_footer(line: &str) -> bool {
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    matches!(tokens.as_slice(), ["Page", page, "/", total]
+        if page.chars().all(|ch| ch.is_ascii_digit())
+            && total.chars().all(|ch| ch.is_ascii_digit()))
 }
 
 fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
