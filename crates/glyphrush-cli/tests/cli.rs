@@ -1140,6 +1140,48 @@ fn liteparse_benchmark_gate_script_dry_run_can_skip_preflight_for_long_v0_runs()
 }
 
 #[test]
+fn liteparse_benchmark_gate_script_dry_run_can_probe_one_stalled_v0_pdf() {
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("canonical repo root");
+    let output = Command::new(repo_root.join("scripts/bench-liteparse.sh"))
+        .arg("--dry-run")
+        .env("GLYPHRUSH_BENCH_CATEGORY", "all")
+        .env("GLYPHRUSH_BENCH_MANIFEST", "test/corpus.v0.json")
+        .env(
+            "GLYPHRUSH_BENCH_PROBE_PDF",
+            "test/v0/academic_columns/acl-bert-naacl-2019.pdf",
+        )
+        .env("GLYPHRUSH_BENCH_OUTPUT", "/tmp/glyphrush-v0-probe.json")
+        .output()
+        .expect("run bench-liteparse probe dry run");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let lines = stdout.lines().collect::<Vec<_>>();
+    assert_eq!(lines.len(), 1, "probe dry-run output:\n{stdout}");
+    assert!(lines[0].contains("baseline-check"));
+    assert!(lines[0].contains("--pdf test/v0/academic_columns/acl-bert-naacl-2019.pdf"));
+    assert!(lines[0].contains("--baseline-preset glyphrush-v0"));
+    assert!(lines[0].contains("--baseline-timeout-ms 60000"));
+    assert!(lines[0].contains("--strict"));
+    assert!(lines[0].contains("> /tmp/glyphrush-v0-probe.json"));
+    assert!(
+        !lines[0].contains("feature-parity"),
+        "probe output should not ask feature-parity to read a baseline-check report:\n{stdout}"
+    );
+    assert!(
+        !lines[0].contains("bench test/v0"),
+        "probe output should avoid the full v0 benchmark command:\n{stdout}"
+    );
+}
+
+#[test]
 fn verify_script_dry_run_exposes_opt_in_pdfium_speed_path_gate() {
     let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
