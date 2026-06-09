@@ -1046,12 +1046,16 @@ fn liteparse_benchmark_gate_script_dry_run_defaults_v0_manifest_to_v0_pdf_root()
     let lines = stdout.lines().collect::<Vec<_>>();
     assert_eq!(lines.len(), 3, "dry-run output:\n{stdout}");
     assert!(
-        lines[0].contains("--pdf test/v0"),
-        "baseline preflight should not include unrelated root test PDFs:\n{stdout}"
+        lines[0].contains("baseline-check"),
+        "v0 gate should still preflight baseline wrapper availability:\n{stdout}"
     );
     assert!(
-        lines[0].contains("--baseline-timeout-ms 900000"),
-        "v0 corpus preflight needs a larger default timeout than the datasheet seed:\n{stdout}"
+        !lines[0].contains("--pdf"),
+        "v0 gate should not duplicate full baseline parsing before the benchmark:\n{stdout}"
+    );
+    assert!(
+        !lines[0].contains("--baseline-timeout-ms"),
+        "describe-only v0 preflight should not need the large corpus baseline timeout:\n{stdout}"
     );
     assert!(
         lines[1].contains("bench test/v0"),
@@ -1062,6 +1066,43 @@ fn liteparse_benchmark_gate_script_dry_run_defaults_v0_manifest_to_v0_pdf_root()
     assert!(lines[1].contains("--require-coverage-preset glyphrush-v0"));
     assert!(lines[1].contains("--baseline-timeout-ms 900000"));
     assert!(lines[2].contains("--require-coverage-preset glyphrush-v0"));
+}
+
+#[test]
+fn liteparse_benchmark_gate_script_dry_run_can_skip_preflight_for_long_v0_runs() {
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("canonical repo root");
+    let output = Command::new(repo_root.join("scripts/bench-liteparse.sh"))
+        .arg("--dry-run")
+        .env("GLYPHRUSH_BENCH_PREFLIGHT", "none")
+        .env("GLYPHRUSH_BENCH_CATEGORY", "all")
+        .env("GLYPHRUSH_BENCH_MANIFEST", "test/corpus.v0.json")
+        .env("GLYPHRUSH_BENCH_COVERAGE_PRESET", "glyphrush-v0")
+        .env(
+            "GLYPHRUSH_BENCH_OUTPUT",
+            "/tmp/glyphrush-liteparse-v0-coverage.json",
+        )
+        .output()
+        .expect("run bench-liteparse dry run with preflight disabled");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let lines = stdout.lines().collect::<Vec<_>>();
+    assert_eq!(lines.len(), 2, "dry-run output:\n{stdout}");
+    assert!(
+        !lines[0].contains("baseline-check"),
+        "preflight=none should start with the real benchmark command:\n{stdout}"
+    );
+    assert!(lines[0].contains("bench test/v0"));
+    assert!(lines[0].contains("--baseline-timeout-ms 900000"));
+    assert!(lines[1].contains("feature-parity"));
+    assert!(lines[1].contains("--require-coverage-preset glyphrush-v0"));
 }
 
 #[test]

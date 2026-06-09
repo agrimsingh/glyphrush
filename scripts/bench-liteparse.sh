@@ -28,6 +28,7 @@ baseline_timeout_ms="${GLYPHRUSH_BENCH_BASELINE_TIMEOUT_MS:-}"
 coverage_preset="${GLYPHRUSH_BENCH_COVERAGE_PRESET:-}"
 output="${GLYPHRUSH_BENCH_OUTPUT:-}"
 pdf_dir="${GLYPHRUSH_BENCH_PDF_DIR:-}"
+preflight_mode="${GLYPHRUSH_BENCH_PREFLIGHT:-}"
 is_v0_manifest=false
 case "$manifest" in
   test/corpus.v0.json | */test/corpus.v0.json)
@@ -48,18 +49,47 @@ if [[ -z "$baseline_timeout_ms" ]]; then
     baseline_timeout_ms="120000"
   fi
 fi
+if [[ -z "$preflight_mode" ]]; then
+  if [[ "$is_v0_manifest" == true ]]; then
+    preflight_mode="describe"
+  else
+    preflight_mode="smoke"
+  fi
+fi
 
-preflight_cmd=(
-  cargo run -q --release -p glyphrush-cli
-  --features "$features"
-  --
-  --backend "$backend"
-  baseline-check
-  --pdf "$pdf_dir"
-  --baseline-preset glyphrush-v0
-  --baseline-timeout-ms "$baseline_timeout_ms"
-  --strict
-)
+preflight_cmd=()
+case "$preflight_mode" in
+  smoke)
+    preflight_cmd=(
+      cargo run -q --release -p glyphrush-cli
+      --features "$features"
+      --
+      --backend "$backend"
+      baseline-check
+      --pdf "$pdf_dir"
+      --baseline-preset glyphrush-v0
+      --baseline-timeout-ms "$baseline_timeout_ms"
+      --strict
+    )
+    ;;
+  describe)
+    preflight_cmd=(
+      cargo run -q --release -p glyphrush-cli
+      --features "$features"
+      --
+      --backend "$backend"
+      baseline-check
+      --baseline-preset glyphrush-v0
+      --strict
+    )
+    ;;
+  none)
+    ;;
+  *)
+    echo "invalid GLYPHRUSH_BENCH_PREFLIGHT: $preflight_mode (expected smoke, describe, or none)" >&2
+    exit 2
+    ;;
+esac
 
 cmd=(
   cargo run -q --release -p glyphrush-cli
@@ -102,8 +132,10 @@ if [[ -n "$output" ]]; then
 fi
 
 print_command() {
-  printf '%q ' "${preflight_cmd[@]}"
-  printf '\n'
+  if ((${#preflight_cmd[@]} > 0)); then
+    printf '%q ' "${preflight_cmd[@]}"
+    printf '\n'
+  fi
   printf '%q ' "${cmd[@]}"
   if [[ -n "$output" ]]; then
     printf '> %q' "$output"
@@ -121,7 +153,9 @@ if [[ "$dry_run" == true ]]; then
 fi
 
 cd "$repo_root"
-"${preflight_cmd[@]}"
+if ((${#preflight_cmd[@]} > 0)); then
+  "${preflight_cmd[@]}"
+fi
 
 if [[ -n "$output" ]]; then
   mkdir -p "$(dirname "$output")"
