@@ -45,6 +45,9 @@ export function evalManifest(manifest, options = {}) {
   if (options.category !== undefined) {
     command.push("--category", options.category);
   }
+  if (options.categoryPreset !== undefined) {
+    command.push("--category-preset", options.categoryPreset);
+  }
   appendCommonOptions(command, options);
   return JSON.parse(run(command, options.env));
 }
@@ -75,6 +78,9 @@ export function bench(pdf, options = {}) {
   }
   if (options.evalCategory !== undefined) {
     command.push("--eval-category", options.evalCategory);
+  }
+  if (options.evalCategoryPreset !== undefined) {
+    command.push("--eval-category-preset", options.evalCategoryPreset);
   }
   if (options.baselinePreset !== undefined) {
     command.push("--baseline-preset", options.baselinePreset);

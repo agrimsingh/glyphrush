@@ -145,13 +145,18 @@ artifact = glyphrush.parse(
 text = glyphrush.parse_text("test/example.pdf", binary="target/debug/glyphrush")
 markdown = glyphrush.parse_markdown("test/example.pdf", binary="target/debug/glyphrush")
 triage = glyphrush.inspect_pages("test/example.pdf", binary="target/debug/glyphrush")
-quality = glyphrush.eval_manifest("test/corpus.json", binary="target/debug/glyphrush")
+quality = glyphrush.eval_manifest(
+    "test/corpus.json",
+    binary="target/debug/glyphrush",
+    category_preset="glyphrush-v0-native-text",
+)
 speed = glyphrush.bench(
     "test/",
     binary="target/debug/glyphrush",
     eval_manifest="test/corpus.json",
+    eval_category_preset="glyphrush-v0-native-text",
     baseline_preset="glyphrush-v0",
-    require_coverage_preset="glyphrush-v0",
+    require_coverage_preset="glyphrush-v0-native-text",
     require_speedup_claim=["liteparse=2.0", "liteparse-no-ocr=1.5"],
 )
 generated = glyphrush.manifest("test/", binary="target/debug/glyphrush", category="datasheet")
@@ -170,12 +175,16 @@ const artifact = parse("test/example.pdf", { binary: "target/debug/glyphrush" })
 const text = parseText("test/example.pdf", { binary: "target/debug/glyphrush" });
 const markdown = parseMarkdown("test/example.pdf", { binary: "target/debug/glyphrush" });
 const triage = inspectPages("test/example.pdf", { binary: "target/debug/glyphrush" });
-const quality = evalManifest("test/corpus.json", { binary: "target/debug/glyphrush" });
+const quality = evalManifest("test/corpus.json", {
+  binary: "target/debug/glyphrush",
+  categoryPreset: "glyphrush-v0-native-text",
+});
 const speed = bench("test/", {
   binary: "target/debug/glyphrush",
   evalManifest: "test/corpus.json",
+  evalCategoryPreset: "glyphrush-v0-native-text",
   baselinePreset: "glyphrush-v0",
-  requireCoveragePreset: "glyphrush-v0",
+  requireCoveragePreset: "glyphrush-v0-native-text",
   requireSpeedupClaim: ["liteparse=2.0", "liteparse-no-ocr=1.5"],
 });
 const generated = manifest("test/", { binary: "target/debug/glyphrush", category: "datasheet" });
@@ -234,7 +243,7 @@ Electrical-characteristics datasheet tables with `Symbol / Parameter / Test Cond
 
 Native span geometry is currently conservative and opt-in. Add `--span-geometry` to `parse`, `bench`, `debug-page`, or `eval` when you want bounded/simple `lopdf` text-positioning streams or PDFium text segments to produce multiple boxed spans, plus a measured `bbox_overlap_ratio` layout-risk signal. The `lopdf` path approximates boxes with simple text-matrix and content-matrix transforms plus text-state parameters preserved across text objects, `TJ`/`Tc`/`Tw`/`Tz` spacing, `Ts` text rise, `TL` leading, and `'`/`"` text-showing shortcut adjustments applied. The PDFium path uses PDFium's merged text-segment rectangles and converts them into Glyphrush page-local coordinates. The default hot path emits page-wide native spans. Large streams, large native text, or unsupported geometry such as rotation fall back to the page-wide native span and are flagged and warned with `unsupported_feature` plus `span_geometry_capped` instead of silently pretending requested bbox detail was produced. Decoded spans that do not match the backend's native text output still fall back to the page-wide native span instead of taxing the hot path or risking bad geometry.
 
-The Python and Node wrappers expose `parse`, text output, `inspect --pages` triage, `debug-page` diagnostics, `ocr-check`, `backend-check`, `baseline-check`, `feature-parity`, `eval` quality reports, `bench` speed reports, and `manifest` corpus generation while remaining dependency-free shims over the native binary. They do not implement independent PDF parsing, OCR, layout, quality scoring, benchmarking, manifest generation, or cache logic; wrapper calls pass backend, cache, jobs, span-geometry, category/category-from-path coverage, baseline, speed-claim, and OCR adapter options through to the CLI and decode the same JSON artifacts. WASM remains a planned binding target and must wrap the same core artifact model rather than becoming a separate parser.
+The Python and Node wrappers expose `parse`, text output, `inspect --pages` triage, `debug-page` diagnostics, `ocr-check`, `backend-check`, `baseline-check`, `feature-parity`, `eval` quality reports, `bench` speed reports, and `manifest` corpus generation while remaining dependency-free shims over the native binary. They do not implement independent PDF parsing, OCR, layout, quality scoring, benchmarking, manifest generation, or cache logic; wrapper calls pass backend, cache, jobs, span-geometry, category/category-preset/category-from-path coverage, baseline, speed-claim, and OCR adapter options through to the CLI and decode the same JSON artifacts. WASM remains a planned binding target and must wrap the same core artifact model rather than becoming a separate parser.
 
 `eval <manifest.json>` turns local PDFs into repeatable gates. Manifest paths are resolved relative to the manifest file and can assert document-level counts, required text substrings against the derived layout-aware eval text, and page-level artifact ID, page fingerprint, route, required text, flag, reason, and layout-block-count expectations. Empty manifests and category filters that select no documents are not accepted as quality passes: `eval` emits a `document_count` failure sample and exits nonzero when no documents are selected. Add optional root-level document `category` values such as `clean_digital`, `scanned`, `hybrid`, `academic_columns`, `tables`, `forms`, `rotated`, `weird_encoding`, or `large` to track benchmark corpus coverage; eval reports include top-level `category_counts`, `category_summaries`, and per-document categories, with missing or blank categories counted as `uncategorized`. Add manifest-level `required_categories` when a corpus must cover specific benchmark classes before its speed/quality results are accepted, and `min_category_counts` when a class needs more than one fixture; missing or under-counted categories produce a top-level `category_coverage` failure. Use `eval --category <name>` for one normalized category or `eval --category a,b,c` for a category set, including `uncategorized`, when a mixed manifest needs class-specific quality checks. `category_summaries` reports document/page counts, passed/failed document counts, failed checks, and category-level quality pass/fail state so benchmark regressions can be tied to a corpus class. Use `eval --jobs <N>` to evaluate manifest documents concurrently while preserving manifest document order in the report and emitting the effective `worker_count`. Use `eval --cache-dir <dir>` for repeated quality gates; top-level `report_version`, `run_metadata`, `run_configuration`, `corpus_fingerprint`, `cache_hits`, and `cache_misses` summarize the eval report schema, parser/backend provenance, output-affecting options, evaluated source set, and warm/cold artifact reuse while each document still reports `artifact_cache_status`. `run_configuration` records `span_geometry`, OCR adapter mode booleans, `ocr_command_input`, and `ocr_timeout_ms`. Eval reports also include aggregate and per-document diagnostics for page count, fallback/OCR counts, image artifact counts, empty-text pages, route counts, route-reason counts, quality-flag counts, layout block counts when asserted, fallback-action counts, and warning counts, even when the manifest does not explicitly assert those checks.
 

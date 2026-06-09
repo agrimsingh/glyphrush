@@ -128,6 +128,7 @@ def eval_manifest(
     binary: str | os.PathLike[str] | None = None,
     backend: str | None = None,
     category: str | None = None,
+    category_preset: str | None = None,
     span_geometry: bool = False,
     ocr_sidecar: str | os.PathLike[str] | None = None,
     ocr_command: str | os.PathLike[str] | None = None,
@@ -142,6 +143,8 @@ def eval_manifest(
     command.extend(["eval", _path(manifest)])
     if category is not None:
         command.extend(["--category", category])
+    if category_preset is not None:
+        command.extend(["--category-preset", category_preset])
     _append_common_options(
         command,
         span_geometry=span_geometry,
@@ -209,6 +212,7 @@ def bench(
     backend: str | None = None,
     eval_manifest: str | os.PathLike[str] | None = None,
     eval_category: str | None = None,
+    eval_category_preset: str | None = None,
     require_quality: bool = False,
     require_baselines: bool = False,
     require_baseline_quality: bool = False,
@@ -235,6 +239,8 @@ def bench(
         command.extend(["--eval-manifest", _path(eval_manifest)])
     if eval_category is not None:
         command.extend(["--eval-category", eval_category])
+    if eval_category_preset is not None:
+        command.extend(["--eval-category-preset", eval_category_preset])
     if baseline_preset is not None:
         command.extend(["--baseline-preset", baseline_preset])
     if require_quality:

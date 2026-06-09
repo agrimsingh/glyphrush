@@ -160,6 +160,29 @@ class GlyphrushClientTests(unittest.TestCase):
             ],
         )
 
+    def test_eval_manifest_delegates_category_preset_to_native_quality_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            manifest = root / "corpus.json"
+            manifest.write_text('{"documents":[]}')
+
+            report = glyphrush.eval_manifest(
+                manifest,
+                binary=fake,
+                category_preset="glyphrush-v0-native-text",
+            )
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "eval",
+                str(manifest),
+                "--category-preset",
+                "glyphrush-v0-native-text",
+            ],
+        )
+
     def test_manifest_delegates_to_native_corpus_generator_and_decodes_json(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -263,6 +286,34 @@ class GlyphrushClientTests(unittest.TestCase):
                 str(root / "cache"),
                 "--jobs",
                 "2",
+            ],
+        )
+
+    def test_bench_delegates_eval_category_preset_to_native_quality_backed_speed_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = write_fake_glyphrush(root)
+            pdf = root / "sample.pdf"
+            pdf.write_bytes(b"%PDF-1.4 fake")
+            manifest = root / "corpus.json"
+            manifest.write_text('{"documents":[]}')
+
+            report = glyphrush.bench(
+                pdf,
+                binary=fake,
+                eval_manifest=manifest,
+                eval_category_preset="glyphrush-v0-native-text",
+            )
+
+        self.assertEqual(
+            report["argv"],
+            [
+                "bench",
+                str(pdf),
+                "--eval-manifest",
+                str(manifest),
+                "--eval-category-preset",
+                "glyphrush-v0-native-text",
             ],
         )
 

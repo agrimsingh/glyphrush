@@ -156,6 +156,27 @@ test("evalManifest delegates to native quality gate and decodes JSON", async () 
   });
 });
 
+test("evalManifest delegates category presets to native quality gate", async () => {
+  await withTempDir(async (root) => {
+    const { evalManifest } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+    const manifest = path.join(root, "corpus.json");
+    await writeFile(manifest, '{"documents":[]}');
+
+    const report = evalManifest(manifest, {
+      binary: fake,
+      categoryPreset: "glyphrush-v0-native-text",
+    });
+
+    assert.deepEqual(report.argv, [
+      "eval",
+      manifest,
+      "--category-preset",
+      "glyphrush-v0-native-text",
+    ]);
+  });
+});
+
 test("manifest delegates to native corpus generator and decodes JSON", async () => {
   await withTempDir(async (root) => {
     const { mkdir } = await import("node:fs/promises");
@@ -255,6 +276,32 @@ test("bench delegates to native quality-backed speed gate and decodes JSON", asy
       path.join(root, "cache"),
       "--jobs",
       "2",
+    ]);
+  });
+});
+
+test("bench delegates eval category presets to native quality-backed speed gate", async () => {
+  await withTempDir(async (root) => {
+    const { bench } = await import("../src/index.mjs");
+    const fake = await writeFakeGlyphrush(root);
+    const pdf = path.join(root, "sample.pdf");
+    const manifest = path.join(root, "corpus.json");
+    await writeFile(pdf, "%PDF-1.4 fake");
+    await writeFile(manifest, '{"documents":[]}');
+
+    const report = bench(pdf, {
+      binary: fake,
+      evalManifest: manifest,
+      evalCategoryPreset: "glyphrush-v0-native-text",
+    });
+
+    assert.deepEqual(report.argv, [
+      "bench",
+      pdf,
+      "--eval-manifest",
+      manifest,
+      "--eval-category-preset",
+      "glyphrush-v0-native-text",
     ]);
   });
 });
