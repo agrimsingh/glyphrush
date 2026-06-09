@@ -12917,6 +12917,69 @@ fn eval_manifest_required_text_uses_layout_reflowed_text() {
 }
 
 #[test]
+fn eval_manifest_required_text_matches_across_layout_line_breaks() {
+    let dir = temp_dir("eval-required-text-normalized-linebreaks");
+    let pdf_path = dir.join("wrapped.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream(
+            "BT /F1 12 Tf 72 720 Td 24 TL (Alpha Beta) Tj T* (Gamma Delta) Tj ET",
+        ),
+    )
+    .unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "wrapped.pdf",
+              "expect": {
+                "required_text": ["Alpha Beta Gamma Delta"],
+                "pages": [
+                  {
+                    "index": 0,
+                    "required_text": ["Alpha Beta Gamma Delta"]
+                  }
+                ]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+            "--span-geometry",
+        ])
+        .output()
+        .expect("run glyphrush eval with line-wrapped required text");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("eval output is json");
+
+    assert_eq!(json["passed"], true);
+    assert_eq!(
+        json["documents"][0]["checks"]["required_text"]["actual"]["missing"],
+        Value::Array(vec![])
+    );
+    assert_eq!(
+        json["documents"][0]["checks"]["page_000000.required_text"]["actual"]["missing"],
+        Value::Array(vec![])
+    );
+}
+
+#[test]
 fn eval_manifest_page_required_text_is_page_local() {
     let dir = temp_dir("eval-page-required-text");
     let pdf_path = dir.join("two-pages.pdf");

@@ -184,7 +184,7 @@ Supported v0 expectations:
 - `route_reason_counts`: exact document-level classifier reason counts.
 - `quality_flag_counts`: exact document-level page counts by quality flag.
 - `required_warnings`: exact warning strings that must appear in artifact diagnostics.
-- `required_text`: substrings that must appear in derived eval quality text, using layout-block order when available, serializing structured table grids as pipe-delimited rows with blank cells preserved, and appending distinct OCR text.
+- `required_text`: substrings that must appear in derived eval quality text, using layout-block order when available, exact substring matching first, whitespace-normalized fallback matching for layout-only line breaks, structured table grids serialized as pipe-delimited rows with blank cells preserved, and distinct OCR text appended.
 - `baseline_required_text`: substrings that must appear only in text-baseline stdout; these are not checked against Glyphrush artifact output.
 - `text_recall`: expected text plus optional minimum normalized word and character recall thresholds.
 - `reading_order`: expected text snippet sequence plus optional minimum pairwise order score.

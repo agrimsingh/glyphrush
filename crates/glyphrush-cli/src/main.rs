@@ -9464,7 +9464,7 @@ fn insert_required_text_check(
     let document_text = document_text(artifact);
     let missing = required_text
         .iter()
-        .filter(|text| !document_text.contains(text.as_str()))
+        .filter(|text| !required_text_anchor_matches(&document_text, text))
         .cloned()
         .collect::<Vec<_>>();
 
@@ -10329,6 +10329,16 @@ fn document_text(artifact: &DocumentArtifact) -> String {
         .join("\n")
 }
 
+fn required_text_anchor_matches(actual: &str, expected: &str) -> bool {
+    actual.contains(expected)
+        || normalize_required_text_anchor(actual)
+            .contains(&normalize_required_text_anchor(expected))
+}
+
+fn normalize_required_text_anchor(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 fn quality_text_from_page(page: &PageArtifact) -> String {
     let mut parts = if page.layout_blocks.is_empty() {
         page.native_spans
@@ -10523,7 +10533,7 @@ fn insert_page_expectation_checks(
         let missing = expectation
             .required_text
             .iter()
-            .filter(|text| !page_text.contains(text.as_str()))
+            .filter(|text| !required_text_anchor_matches(&page_text, text))
             .cloned()
             .collect::<Vec<_>>();
         checks.insert(
