@@ -7,5 +7,5 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-/test/*.pdf
-/test/*.PDF
+/test/**/*.pdf
+/test/**/*.PDF

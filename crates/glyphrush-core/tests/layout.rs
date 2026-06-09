@@ -2875,6 +2875,15 @@ fn text_table_recovery_extracts_awinic_parameter_test_condition_tables() {
                 "IOUT=30mA, f=1kHz\n",
                 "VOUT(SET)=1.8V\n",
                 "90 dB\n",
+                "VN Output Voltage Noise\n",
+                "IOUT=30mA\n",
+                "BW=10Hz to\n",
+                "100kHz\n",
+                "VOUT(SET)=1.8V 33\n",
+                "Vrms\n",
+                "VOUT(SET)=3.3V 46\n",
+                "ICL Output Current Limit VOUT=90%*VOUT(SET) 300 mA\n",
+                "ISC Short Current Limit VOUT<10%*VOUT(SET) 120 mA\n",
                 "VTC\n",
                 "Output Voltage\n",
                 "Temperature\n",
@@ -2882,6 +2891,23 @@ fn text_table_recovery_extracts_awinic_parameter_test_condition_tables() {
                 "-40°C ≤TA≤85°C ±40\n",
                 "ppm/°\n",
                 "C\n",
+                "RDISC\n",
+                "Auto Discharge\n",
+                "Resistance\n",
+                "VIN=4V, VCE<0.4V, VOUT=2.8V 130 Ω\n",
+                "ICE\n",
+                "CE Pull Down\n",
+                "Current\n",
+                "140 nA\n",
+                "TSDH\n",
+                "Thermal Shutdown\n",
+                "Threshold\n",
+                "Temperature Rising 150 °C\n",
+                "TSDL\n",
+                "Thermal Shutdown\n",
+                "Reset Threshold\n",
+                "Temperature Falling 130 °C\n",
+                "awinic Confidential\n",
                 "Typical Characteristics\n"
             )
             .to_string(),
@@ -2906,6 +2932,7 @@ fn text_table_recovery_extracts_awinic_parameter_test_condition_tables() {
         .find(|block| block.kind == LayoutBlockKind::Table)
         .expect("AWINIC electrical characteristics table block");
     assert!(!table_block.text.contains("Electrical Characteristics"));
+    assert!(!table_block.text.contains("awinic Confidential"));
     assert!(!table_block.text.contains("Typical Characteristics"));
 
     let table = table_block.table.as_ref().expect("table payload");
@@ -2977,12 +3004,69 @@ fn text_table_recovery_extracts_awinic_parameter_test_condition_tables() {
                 "dB"
             ],
             vec![
+                "VN Output Voltage Noise",
+                "IOUT=30mA BW=10Hz to 100kHz VOUT(SET)=1.8V",
+                "",
+                "33",
+                "",
+                "Vrms"
+            ],
+            vec![
+                "",
+                "IOUT=30mA BW=10Hz to 100kHz VOUT(SET)=3.3V",
+                "",
+                "46",
+                "",
+                "Vrms"
+            ],
+            vec![
+                "ICL Output Current Limit",
+                "VOUT=90%*VOUT(SET)",
+                "",
+                "300",
+                "",
+                "mA"
+            ],
+            vec![
+                "ISC Short Current Limit",
+                "VOUT<10%*VOUT(SET)",
+                "",
+                "120",
+                "",
+                "mA"
+            ],
+            vec![
                 "VTC Output Voltage Temperature Coefficient",
                 "-40°C ≤TA≤85°C",
                 "",
                 "±40",
                 "",
-                "ppm/°"
+                "ppm/°C"
+            ],
+            vec![
+                "RDISC Auto Discharge Resistance",
+                "VIN=4V, VCE<0.4V, VOUT=2.8V",
+                "",
+                "130",
+                "",
+                "Ω"
+            ],
+            vec!["ICE CE Pull Down Current", "", "", "140", "", "nA"],
+            vec![
+                "TSDH Thermal Shutdown Threshold",
+                "Temperature Rising",
+                "",
+                "150",
+                "",
+                "°C"
+            ],
+            vec![
+                "TSDL Thermal Shutdown Reset Threshold",
+                "Temperature Falling",
+                "",
+                "130",
+                "",
+                "°C"
             ],
         ]
     );

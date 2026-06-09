@@ -4369,8 +4369,12 @@ fn looks_like_electrical_unit_token(token: &str) -> bool {
             | "%"
             | "%/v"
             | "%/a"
+            | "°c"
+            | "℃"
             | "oc"
             | "c"
+            | "ω"
+            | "Ω"
             | "ohm"
             | "kohm"
             | "mohm"
@@ -4425,10 +4429,26 @@ fn parameter_test_condition_table_rows_prefix(lines: &[&str]) -> Option<(Vec<Vec
 
         if let Some(unit) = electrical_unit_only_line(trimmed) {
             if pending_unit_rows.is_empty() {
+                if append_parameter_test_condition_unit_continuation(
+                    &mut rows,
+                    &mut last_unit,
+                    &unit,
+                ) {
+                    consumed = offset + 1;
+                    continue;
+                }
                 break;
             }
             apply_parameter_test_condition_unit(&mut rows, &mut pending_unit_rows, &unit);
             last_unit = unit;
+            consumed = offset + 1;
+            continue;
+        }
+
+        if !pending_condition.is_empty()
+            && looks_like_parameter_test_condition_continuation(&pending_condition, trimmed)
+        {
+            pending_condition = combine_electrical_conditions(&pending_condition, trimmed);
             consumed = offset + 1;
             continue;
         }
@@ -4623,6 +4643,21 @@ fn parameter_test_condition_starts_at(tokens: &[&str], index: usize, token: &str
         || normalized.contains('>')
         || (normalized_lower.contains("°c") && next.contains("ta"))
         || (normalized_lower.contains("℃") && next.contains("ta"))
+        || (normalized_lower == "temperature" && matches!(next.as_str(), "rising" | "falling"))
+}
+
+fn looks_like_parameter_test_condition_continuation(previous: &str, line: &str) -> bool {
+    let previous = previous.trim().to_ascii_lowercase();
+    if !previous.ends_with(" to") && !previous.ends_with(" to ") {
+        return false;
+    }
+
+    let token = line.trim();
+    !token.is_empty()
+        && token.split_whitespace().count() == 1
+        && token.chars().all(|ch| {
+            ch.is_ascii_alphanumeric() || matches!(ch, '.' | '/' | '-' | 'µ' | '\u{f06d}')
+        })
 }
 
 fn combine_parameter_label_parts(parts: &[String], suffix: &str) -> String {
@@ -4674,12 +4709,34 @@ fn apply_parameter_test_condition_unit(
     }
 }
 
+fn append_parameter_test_condition_unit_continuation(
+    rows: &mut [Vec<String>],
+    last_unit: &mut String,
+    unit: &str,
+) -> bool {
+    if unit != "C" || last_unit != "ppm/°" {
+        return false;
+    }
+
+    let Some(unit_cell) = rows.last_mut().and_then(|row| row.get_mut(5)) else {
+        return false;
+    };
+    if unit_cell != "ppm/°" {
+        return false;
+    }
+
+    unit_cell.push('C');
+    last_unit.push('C');
+    true
+}
+
 fn looks_like_parameter_test_condition_table_terminator(line: &str) -> bool {
     let normalized = line.trim().to_ascii_lowercase();
     looks_like_electrical_characteristics_table_terminator(line)
         || normalized.contains("typical characteristics")
         || normalized.contains("recommended components list")
         || normalized.contains("functional block diagram")
+        || normalized.contains("awinic confidential")
 }
 
 fn reflow_profile_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {

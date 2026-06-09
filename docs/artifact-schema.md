@@ -79,7 +79,7 @@ Bullet/leader datasheet rows with repeated separator runs are normalized into tw
 
 Electrical-characteristics tables with multi-line `Symbol / Parameter / Test Conditions / Min. / Typ. / Max. / Unit` headers normalize into seven-column table payloads, including blank symbol cells, rows whose units arrive on a following line, and PDFium extraction order where a condition line precedes its symbol/parameter label.
 
-AWINIC-style electrical tables with `Parameter / Test Condition / Min. / Typ. / Max. / Unit` headers normalize into six-column table payloads, including wrapped labels, inherited test conditions, symbol-font micro units, and unit-only continuation lines.
+AWINIC-style electrical tables with `Parameter / Test Condition / Min. / Typ. / Max. / Unit` headers normalize into six-column table payloads, including wrapped labels, inherited test conditions, split frequency-range conditions, symbol-font micro units, split `ppm/° C` units, ohm rows, thermal shutdown temperature rows, and unit-only continuation lines while excluding page footers.
 
 Reflow-profile datasheet tables with `Profile Feature`, `Sn-Pb Eutectic Assembly`, and `Pb-Free Assembly` columns normalize into structured rows when table recovery is routed, including PDFium value groups that arrive below their feature labels.
 
