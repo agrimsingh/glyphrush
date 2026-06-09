@@ -3290,7 +3290,8 @@ fn split_leading_text_table_caption(
     }
 
     let table_lines = lines[1..].iter().map(String::as_str).collect::<Vec<_>>();
-    if aligned_whitespace_table_rows(&table_lines).is_some()
+    if is_table_lines_str(&table_lines)
+        || aligned_whitespace_table_rows(&table_lines).is_some()
         || header_guided_whitespace_table_rows(&table_lines).is_some()
     {
         return Some((caption.to_string(), lines[1..].to_vec()));
