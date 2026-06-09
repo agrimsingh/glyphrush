@@ -844,7 +844,9 @@ fn feature_parity_preserves_speed_claim_quality_diagnostics_from_saved_bench_rep
               "glyphrush_quality_passed": true,
               "baseline_quality_checked": false,
               "baseline_quality_passed": false,
+              "glyphrush_quality_backed": true,
               "quality_backed": false,
+              "quality_blocker": "baseline_quality_not_checked",
               "claim_passed": false,
               "status": "quality_not_checked"
             }
@@ -880,7 +882,73 @@ fn feature_parity_preserves_speed_claim_quality_diagnostics_from_saved_bench_rep
     assert_eq!(claim["glyphrush_quality_passed"], true);
     assert_eq!(claim["baseline_quality_checked"], false);
     assert_eq!(claim["baseline_quality_passed"], false);
+    assert_eq!(claim["glyphrush_quality_backed"], true);
     assert_eq!(claim["quality_backed"], false);
+    assert_eq!(claim["quality_blocker"], "baseline_quality_not_checked");
+    assert_eq!(claim["claim_passed"], false);
+    assert_eq!(claim["status"], "quality_not_checked");
+}
+
+#[test]
+fn feature_parity_derives_speed_claim_quality_diagnostics_from_legacy_bench_report() {
+    let dir = temp_dir("feature-parity-legacy-bench-claim-quality-diagnostics");
+    let report_path = dir.join("bench.json");
+    fs::write(
+        &report_path,
+        r#"{
+          "report_version": "glyphrush-bench-report-v1",
+          "backend": "pdfium",
+          "quality_status": "checked",
+          "speedup_claims": [
+            {
+              "baseline": "liteparse",
+              "required_glyphrush_speedup": 2.0,
+              "actual_glyphrush_speedup": 80.0,
+              "speed_comparable": true,
+              "speed_passed": true,
+              "glyphrush_quality_checked": true,
+              "glyphrush_quality_passed": true,
+              "baseline_quality_checked": false,
+              "baseline_quality_passed": false,
+              "quality_backed": false,
+              "claim_passed": false,
+              "status": "quality_not_checked"
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "feature-parity",
+            "--bench-report",
+            report_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush feature-parity with legacy benchmark claim diagnostics");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
+    let claim = &json["benchmark_evidence"]["claims"][0];
+
+    assert_eq!(claim["baseline"], "liteparse");
+    assert_eq!(claim["speed_passed"], true);
+    assert_eq!(claim["glyphrush_quality_checked"], true);
+    assert_eq!(claim["glyphrush_quality_passed"], true);
+    assert_eq!(claim["baseline_quality_checked"], false);
+    assert_eq!(claim["baseline_quality_passed"], false);
+    assert_eq!(claim["glyphrush_quality_backed"], true);
+    assert_eq!(claim["quality_backed"], false);
+    assert_eq!(claim["quality_blocker"], "baseline_quality_not_checked");
     assert_eq!(claim["claim_passed"], false);
     assert_eq!(claim["status"], "quality_not_checked");
 }
@@ -10122,6 +10190,86 @@ fn bench_directory_require_speedup_claim_accepts_quality_backed_speedup() {
     assert_eq!(claim["quality_backed"], true);
     assert_eq!(claim["claim_passed"], true);
     assert_eq!(claim["status"], "passed");
+}
+
+#[test]
+fn bench_directory_speedup_claim_identifies_baseline_quality_failure_blocker() {
+    let dir = temp_dir("bench-dir-speedup-claim-baseline-quality-blocker");
+    fs::write(dir.join("b.pdf"), minimal_pdf("Second Claim Quality")).unwrap();
+    fs::write(dir.join("a.pdf"), minimal_pdf("First Claim Quality")).unwrap();
+    let baseline = write_baseline_script(
+        "baseline-dir-claim-quality-failed",
+        "case \"$1\" in *a.pdf) printf 'First Claim Quality';; *) printf 'wrong baseline output';; esac",
+    );
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "a.pdf",
+              "expect": {
+                "required_text": ["First Claim Quality"]
+              }
+            },
+            {
+              "path": "b.pdf",
+              "expect": {
+                "required_text": ["Second Claim Quality"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            dir.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+            "--require-speedup-claim",
+            "mock=0.000001",
+        ])
+        .output()
+        .expect("run glyphrush directory bench requiring speedup claim");
+
+    assert!(
+        !output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+    let claim = &json["speedup_claims"][0];
+
+    assert_eq!(json["quality_status"], "checked");
+    assert_eq!(json["quality"]["quality_passed"], true);
+    assert_eq!(json["baselines"][0]["quality_status"], "checked");
+    assert_eq!(json["baselines"][0]["quality_failed_documents"], 1);
+    assert_eq!(claim["baseline"], "mock");
+    assert_eq!(claim["speed_comparable"], true);
+    assert_eq!(claim["speed_passed"], true);
+    assert_eq!(claim["glyphrush_quality_checked"], true);
+    assert_eq!(claim["glyphrush_quality_passed"], true);
+    assert_eq!(claim["baseline_quality_checked"], true);
+    assert_eq!(claim["baseline_quality_passed"], false);
+    assert_eq!(claim["glyphrush_quality_backed"], true);
+    assert_eq!(claim["quality_backed"], false);
+    assert_eq!(claim["quality_blocker"], "baseline_quality_failed");
+    assert_eq!(claim["claim_passed"], false);
+    assert_eq!(claim["status"], "quality_failed");
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("bench speedup claim required"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 #[test]

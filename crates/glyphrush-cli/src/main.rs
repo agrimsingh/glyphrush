@@ -663,7 +663,9 @@ struct FeatureParityBenchmarkClaimEvidence {
     glyphrush_quality_passed: Option<bool>,
     baseline_quality_checked: Option<bool>,
     baseline_quality_passed: Option<bool>,
+    glyphrush_quality_backed: Option<bool>,
     quality_backed: Option<bool>,
+    quality_blocker: Option<String>,
     claim_passed: Option<bool>,
     status: Option<String>,
 }
@@ -1122,7 +1124,10 @@ struct BenchmarkSpeedupClaim {
     glyphrush_quality_passed: bool,
     baseline_quality_checked: bool,
     baseline_quality_passed: bool,
+    glyphrush_quality_backed: bool,
     quality_backed: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    quality_blocker: Option<BenchmarkSpeedupClaimQualityBlocker>,
     claim_passed: bool,
     status: BenchmarkSpeedupClaimStatus,
 }
@@ -1136,6 +1141,15 @@ enum BenchmarkSpeedupClaimStatus {
     SpeedupFailed,
     QualityNotChecked,
     QualityFailed,
+}
+
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum BenchmarkSpeedupClaimQualityBlocker {
+    GlyphrushQualityNotChecked,
+    GlyphrushQualityFailed,
+    BaselineQualityNotChecked,
+    BaselineQualityFailed,
 }
 
 struct BenchmarkSpeedupClaimInput<'a> {
@@ -2502,6 +2516,44 @@ fn feature_parity_benchmark_quality_categories(
 }
 
 fn feature_parity_benchmark_claim_evidence(value: &Value) -> FeatureParityBenchmarkClaimEvidence {
+    let glyphrush_quality_checked = value
+        .get("glyphrush_quality_checked")
+        .and_then(Value::as_bool);
+    let glyphrush_quality_passed = value
+        .get("glyphrush_quality_passed")
+        .and_then(Value::as_bool);
+    let baseline_quality_checked = value
+        .get("baseline_quality_checked")
+        .and_then(Value::as_bool);
+    let baseline_quality_passed = value
+        .get("baseline_quality_passed")
+        .and_then(Value::as_bool);
+    let glyphrush_quality_backed = value
+        .get("glyphrush_quality_backed")
+        .and_then(Value::as_bool)
+        .or_else(|| Some(glyphrush_quality_checked? && glyphrush_quality_passed?));
+    let quality_blocker = value
+        .get("quality_blocker")
+        .and_then(Value::as_str)
+        .map(str::to_string)
+        .or_else(|| {
+            if glyphrush_quality_checked == Some(false) {
+                Some("glyphrush_quality_not_checked".to_string())
+            } else if glyphrush_quality_checked == Some(true)
+                && glyphrush_quality_passed == Some(false)
+            {
+                Some("glyphrush_quality_failed".to_string())
+            } else if baseline_quality_checked == Some(false) {
+                Some("baseline_quality_not_checked".to_string())
+            } else if baseline_quality_checked == Some(true)
+                && baseline_quality_passed == Some(false)
+            {
+                Some("baseline_quality_failed".to_string())
+            } else {
+                None
+            }
+        });
+
     FeatureParityBenchmarkClaimEvidence {
         baseline: value
             .get("baseline")
@@ -2516,19 +2568,13 @@ fn feature_parity_benchmark_claim_evidence(value: &Value) -> FeatureParityBenchm
             .and_then(Value::as_f64),
         speed_comparable: value.get("speed_comparable").and_then(Value::as_bool),
         speed_passed: value.get("speed_passed").and_then(Value::as_bool),
-        glyphrush_quality_checked: value
-            .get("glyphrush_quality_checked")
-            .and_then(Value::as_bool),
-        glyphrush_quality_passed: value
-            .get("glyphrush_quality_passed")
-            .and_then(Value::as_bool),
-        baseline_quality_checked: value
-            .get("baseline_quality_checked")
-            .and_then(Value::as_bool),
-        baseline_quality_passed: value
-            .get("baseline_quality_passed")
-            .and_then(Value::as_bool),
+        glyphrush_quality_checked,
+        glyphrush_quality_passed,
+        baseline_quality_checked,
+        baseline_quality_passed,
+        glyphrush_quality_backed,
         quality_backed: value.get("quality_backed").and_then(Value::as_bool),
+        quality_blocker,
         claim_passed: value.get("claim_passed").and_then(Value::as_bool),
         status: value
             .get("status")
@@ -6083,9 +6129,22 @@ fn corpus_speedup_claims(
 }
 
 fn speedup_claim(input: BenchmarkSpeedupClaimInput<'_>) -> BenchmarkSpeedupClaim {
+    let glyphrush_quality_backed =
+        input.glyphrush_quality_checked && input.glyphrush_quality_passed;
     let quality_checked = input.glyphrush_quality_checked && input.baseline_quality_checked;
     let quality_backed =
-        quality_checked && input.glyphrush_quality_passed && input.baseline_quality_passed;
+        glyphrush_quality_backed && input.baseline_quality_checked && input.baseline_quality_passed;
+    let quality_blocker = if !input.glyphrush_quality_checked {
+        Some(BenchmarkSpeedupClaimQualityBlocker::GlyphrushQualityNotChecked)
+    } else if !input.glyphrush_quality_passed {
+        Some(BenchmarkSpeedupClaimQualityBlocker::GlyphrushQualityFailed)
+    } else if !input.baseline_quality_checked {
+        Some(BenchmarkSpeedupClaimQualityBlocker::BaselineQualityNotChecked)
+    } else if !input.baseline_quality_passed {
+        Some(BenchmarkSpeedupClaimQualityBlocker::BaselineQualityFailed)
+    } else {
+        None
+    };
     let status = if !input.baseline_was_run {
         BenchmarkSpeedupClaimStatus::BaselineNotRun
     } else if !input.speed_comparable {
@@ -6110,7 +6169,9 @@ fn speedup_claim(input: BenchmarkSpeedupClaimInput<'_>) -> BenchmarkSpeedupClaim
         glyphrush_quality_passed: input.glyphrush_quality_passed,
         baseline_quality_checked: input.baseline_quality_checked,
         baseline_quality_passed: input.baseline_quality_passed,
+        glyphrush_quality_backed,
         quality_backed,
+        quality_blocker,
         claim_passed: matches!(status, BenchmarkSpeedupClaimStatus::Passed),
         status,
     }
