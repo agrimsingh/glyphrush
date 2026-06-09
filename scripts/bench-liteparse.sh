@@ -33,7 +33,7 @@ preflight_mode="${GLYPHRUSH_BENCH_PREFLIGHT:-}"
 probe_pdf="${GLYPHRUSH_BENCH_PROBE_PDF:-}"
 probe_baseline="${GLYPHRUSH_BENCH_PROBE_BASELINE:-}"
 probe_timeout_ms="${GLYPHRUSH_BENCH_PROBE_TIMEOUT_MS:-60000}"
-native_text_categories="academic_columns,clean_digital,forms,hybrid,large,rotated,tables,weird_encoding"
+category_preset=""
 is_v0_manifest=false
 case "$manifest" in
   test/corpus.v0.json | */test/corpus.v0.json)
@@ -42,7 +42,8 @@ case "$manifest" in
 esac
 case "$category" in
   native-text | native_text)
-    category="$native_text_categories"
+    category="all"
+    category_preset="glyphrush-v0-native-text"
     if [[ -z "$coverage_preset" ]]; then
       coverage_preset="glyphrush-v0-native-text"
     fi
@@ -163,6 +164,9 @@ cmd=(
 
 if [[ "$category" != "all" ]]; then
   cmd+=(--eval-category "$category")
+fi
+if [[ -n "$category_preset" ]]; then
+  cmd+=(--eval-category-preset "$category_preset")
 fi
 
 if [[ -n "$coverage_preset" ]]; then

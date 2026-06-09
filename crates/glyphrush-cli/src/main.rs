@@ -53,7 +53,7 @@ const BASELINE_CHECK_REPORT_VERSION: &str = "glyphrush-baseline-check-report-v1"
 const BACKEND_CHECK_REPORT_VERSION: &str = "glyphrush-backend-check-report-v1";
 const OCR_CHECK_REPORT_VERSION: &str = "glyphrush-ocr-check-report-v1";
 const FEATURE_PARITY_REPORT_VERSION: &str = "glyphrush-feature-parity-report-v1";
-const FEATURE_PARITY_RECOMMENDED_GATE: &str = "bench --eval-manifest <manifest> --eval-category academic_columns,clean_digital,forms,hybrid,large,rotated,tables,weird_encoding --baseline-preset glyphrush-v0 --require-coverage-preset glyphrush-v0-native-text --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5";
+const FEATURE_PARITY_RECOMMENDED_GATE: &str = "bench --eval-manifest <manifest> --eval-category-preset glyphrush-v0-native-text --baseline-preset glyphrush-v0 --require-coverage-preset glyphrush-v0-native-text --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5";
 const FEATURE_PARITY_REQUIRED_SPEED_CLAIMS: [(&str, f64); 2] =
     [("liteparse", 2.0), ("liteparse-no-ocr", 1.5)];
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
@@ -281,6 +281,8 @@ enum Commands {
         eval_manifest: Option<PathBuf>,
         #[arg(long)]
         eval_category: Option<String>,
+        #[arg(long, value_enum, conflicts_with = "eval_category")]
+        eval_category_preset: Option<CoveragePreset>,
         #[arg(long)]
         require_quality: bool,
         #[arg(long)]
@@ -398,6 +400,8 @@ enum Commands {
         manifest: PathBuf,
         #[arg(long)]
         category: Option<String>,
+        #[arg(long, value_enum, conflicts_with = "category")]
+        category_preset: Option<CoveragePreset>,
         #[arg(long)]
         ocr_sidecar: Option<PathBuf>,
         #[arg(long)]
@@ -4314,6 +4318,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             cache_dir,
             eval_manifest: eval_manifest_path,
             eval_category,
+            eval_category_preset,
             require_quality,
             require_baselines,
             require_baseline_quality,
@@ -4341,6 +4346,8 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             )?;
             let requested_baseline_presets = baseline_preset_names(baseline_preset);
             let baseline_specs = baseline_specs_with_preset(&baseline, baseline_preset);
+            let eval_category_filter =
+                manifest_category_filter_argument(eval_category.as_deref(), eval_category_preset);
             let bench_config = BenchRunConfig {
                 ocr,
                 cache_dir: cache_dir.as_deref(),
@@ -4361,15 +4368,15 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             let baseline_quality = eval_manifest_path
                 .as_deref()
                 .map(|manifest| {
-                    load_baseline_quality_expectations(manifest, eval_category.as_deref())
+                    load_baseline_quality_expectations(manifest, eval_category_filter.as_deref())
                 })
                 .transpose()?;
             if pdf.is_dir() {
                 let selected_paths = eval_manifest_path
                     .as_deref()
-                    .filter(|_| eval_category.is_some())
+                    .filter(|_| eval_category_filter.is_some())
                     .map(|manifest| {
-                        selected_eval_manifest_path_keys(manifest, eval_category.as_deref())
+                        selected_eval_manifest_path_keys(manifest, eval_category_filter.as_deref())
                     })
                     .transpose()?;
                 let mut output = bench_corpus(
@@ -4392,7 +4399,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                             benchmark_run_metadata(backend),
                             run_configuration,
                             manifest,
-                            eval_category.as_deref(),
+                            eval_category_filter.as_deref(),
                             require_coverage_preset,
                             &artifacts_by_path,
                             EvalArtifactSelection::ExactManifest,
@@ -4470,7 +4477,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                             benchmark_run_metadata(backend),
                             run_configuration,
                             manifest,
-                            eval_category.as_deref(),
+                            eval_category_filter.as_deref(),
                             require_coverage_preset,
                             &artifacts_by_path,
                             EvalArtifactSelection::MatchingArtifacts,
@@ -4736,6 +4743,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
         Commands::Eval {
             manifest,
             category,
+            category_preset,
             ocr_sidecar,
             ocr_command,
             ocr_http_url,
@@ -4752,10 +4760,12 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 ocr_command_input,
                 ocr_timeout_ms,
             )?;
+            let category_filter =
+                manifest_category_filter_argument(category.as_deref(), category_preset);
             let output = eval_manifest(
                 backend,
                 &manifest,
-                category.as_deref(),
+                category_filter.as_deref(),
                 ocr,
                 cache_dir.as_deref(),
                 ExtractionOptions {
@@ -9001,6 +9011,15 @@ fn normalize_manifest_category(category: Option<&str>) -> Option<String> {
         .map(str::trim)
         .filter(|category| !category.is_empty())
         .map(str::to_string)
+}
+
+fn manifest_category_filter_argument(
+    category: Option<&str>,
+    preset: Option<CoveragePreset>,
+) -> Option<String> {
+    preset
+        .map(|preset| preset.categories().join(","))
+        .or_else(|| category.map(str::to_string))
 }
 
 fn normalize_manifest_category_filter(category: Option<&str>) -> BTreeSet<String> {

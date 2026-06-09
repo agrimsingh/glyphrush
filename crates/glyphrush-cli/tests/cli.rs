@@ -219,7 +219,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     );
     assert_eq!(
         json["recommended_gate"],
-        "bench --eval-manifest <manifest> --eval-category academic_columns,clean_digital,forms,hybrid,large,rotated,tables,weird_encoding --baseline-preset glyphrush-v0 --require-coverage-preset glyphrush-v0-native-text --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5"
+        "bench --eval-manifest <manifest> --eval-category-preset glyphrush-v0-native-text --baseline-preset glyphrush-v0 --require-coverage-preset glyphrush-v0-native-text --require-speedup-claim liteparse=2.0 --require-speedup-claim liteparse-no-ocr=1.5"
     );
     assert_eq!(json["readiness"]["native_text_speed_race_ready"], true);
     assert_eq!(json["readiness"]["native_text_speed_claim_ready"], false);
@@ -1408,15 +1408,12 @@ fn liteparse_benchmark_gate_script_dry_run_can_use_native_text_v0_categories() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let normalized_stdout = stdout.replace("\\,", ",");
     let lines = stdout.lines().collect::<Vec<_>>();
-    let normalized_lines = normalized_stdout.lines().collect::<Vec<_>>();
     assert_eq!(lines.len(), 3, "dry-run output:\n{stdout}");
     assert!(lines[1].contains("bench test/v0"));
     assert!(lines[1].contains("--eval-manifest test/corpus.v0.json"));
-    assert!(normalized_lines[1].contains(
-        "--eval-category academic_columns,clean_digital,forms,hybrid,large,rotated,tables,weird_encoding"
-    ));
+    assert!(lines[1].contains("--eval-category-preset glyphrush-v0-native-text"));
+    assert!(!lines[1].contains("--eval-category academic_columns"));
     assert!(!lines[1].contains("--eval-category scanned"));
     assert!(lines[1].contains("--require-coverage-preset glyphrush-v0-native-text"));
     assert!(lines[2].contains("--require-coverage-preset glyphrush-v0-native-text"));
@@ -8909,6 +8906,89 @@ fn bench_directory_with_eval_category_filters_multiple_quality_categories() {
 }
 
 #[test]
+fn bench_directory_with_eval_category_preset_filters_native_text_surface() {
+    let dir = temp_dir("bench-dir-eval-category-preset-native-text");
+    fs::write(dir.join("clean.pdf"), minimal_pdf("Clean Preset Bench")).unwrap();
+    fs::write(dir.join("table.pdf"), minimal_pdf("Table Preset Bench")).unwrap();
+    fs::write(dir.join("scan.pdf"), minimal_pdf("Scan Preset Bench")).unwrap();
+    let baseline = write_baseline_script(
+        "bench-dir-category-preset-baseline",
+        "case \"$1\" in *clean.pdf) printf 'Clean Preset Bench';; *table.pdf) printf 'Table Preset Bench';; *) printf 'Wrong Scanned Preset Bench';; esac",
+    );
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "clean.pdf",
+              "category": "clean_digital",
+              "expect": {
+                "required_text": ["Clean Preset Bench"]
+              }
+            },
+            {
+              "path": "table.pdf",
+              "category": "tables",
+              "expect": {
+                "required_text": ["Table Preset Bench"]
+              }
+            },
+            {
+              "path": "scan.pdf",
+              "category": "scanned",
+              "expect": {
+                "required_text": ["missing scanned preset bench text"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            dir.to_str().unwrap(),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+            "--eval-category-preset",
+            "glyphrush-v0-native-text",
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--require-baseline-quality",
+        ])
+        .output()
+        .expect("run glyphrush bench with eval category preset");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+
+    assert_eq!(json["document_count"], 2);
+    assert_eq!(json["quality"]["document_count"], 2);
+    assert_eq!(json["quality"]["documents"][0]["path"], "clean.pdf");
+    assert_eq!(json["quality"]["documents"][1]["path"], "table.pdf");
+    assert_eq!(
+        json["quality"]["category_counts"],
+        serde_json::json!({
+            "clean_digital": 1,
+            "tables": 1
+        })
+    );
+    assert_eq!(json["baselines"][0]["quality_status"], "checked");
+    assert_eq!(json["baselines"][0]["quality_documents"], 2);
+    assert_eq!(json["baselines"][0]["quality_failed_documents"], 0);
+    assert!(json["category_summaries"]["scanned"].is_null());
+}
+
+#[test]
 fn bench_directory_with_eval_category_rejects_empty_selection_after_writing_json() {
     let dir = temp_dir("bench-dir-eval-empty-category");
     fs::write(dir.join("clean.pdf"), minimal_pdf("Clean Bench Empty")).unwrap();
@@ -12603,6 +12683,68 @@ fn eval_manifest_category_filter_accepts_comma_separated_category_set() {
             "tables": 1
         })
     );
+    assert_eq!(json["quality_passed"], true);
+    assert_eq!(json["failed_checks"], 0);
+}
+
+#[test]
+fn eval_manifest_category_preset_filters_native_text_surface() {
+    let dir = temp_dir("eval-category-preset-native-text");
+    fs::write(dir.join("clean.pdf"), minimal_pdf("Clean Preset Eval")).unwrap();
+    fs::write(dir.join("table.pdf"), minimal_pdf("Table Preset Eval")).unwrap();
+    fs::write(dir.join("scan.pdf"), minimal_pdf("Scan Preset Eval")).unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "clean.pdf",
+              "category": "clean_digital",
+              "expect": {
+                "page_count": 1,
+                "required_text": ["Clean Preset Eval"]
+              }
+            },
+            {
+              "path": "table.pdf",
+              "category": "tables",
+              "expect": {
+                "page_count": 1,
+                "required_text": ["Table Preset Eval"]
+              }
+            },
+            {
+              "path": "scan.pdf",
+              "category": "scanned",
+              "expect": {
+                "page_count": 1,
+                "required_text": ["missing scanned preset eval text"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let json = run_json([
+        "eval",
+        manifest_path.to_str().unwrap(),
+        "--category-preset",
+        "glyphrush-v0-native-text",
+    ]);
+
+    assert_eq!(json["document_count"], 2);
+    assert_eq!(json["documents"][0]["path"], "clean.pdf");
+    assert_eq!(json["documents"][1]["path"], "table.pdf");
+    assert_eq!(
+        json["category_counts"],
+        serde_json::json!({
+            "clean_digital": 1,
+            "tables": 1
+        })
+    );
+    assert!(json["category_counts"]["scanned"].is_null());
     assert_eq!(json["quality_passed"], true);
     assert_eq!(json["failed_checks"], 0);
 }
