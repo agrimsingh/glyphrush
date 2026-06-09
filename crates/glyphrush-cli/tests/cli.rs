@@ -824,6 +824,68 @@ fn feature_parity_speed_evidence_rejects_claim_when_actual_speedup_misses_thresh
 }
 
 #[test]
+fn feature_parity_preserves_speed_claim_quality_diagnostics_from_saved_bench_report() {
+    let dir = temp_dir("feature-parity-bench-claim-quality-diagnostics");
+    let report_path = dir.join("bench.json");
+    fs::write(
+        &report_path,
+        r#"{
+          "report_version": "glyphrush-bench-report-v1",
+          "backend": "pdfium",
+          "quality_status": "checked",
+          "speedup_claims": [
+            {
+              "baseline": "liteparse",
+              "required_glyphrush_speedup": 2.0,
+              "actual_glyphrush_speedup": 80.0,
+              "speed_comparable": true,
+              "speed_passed": true,
+              "glyphrush_quality_checked": true,
+              "glyphrush_quality_passed": true,
+              "baseline_quality_checked": false,
+              "baseline_quality_passed": false,
+              "quality_backed": false,
+              "claim_passed": false,
+              "status": "quality_not_checked"
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "feature-parity",
+            "--bench-report",
+            report_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush feature-parity with benchmark claim diagnostics");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
+    let claim = &json["benchmark_evidence"]["claims"][0];
+
+    assert_eq!(claim["baseline"], "liteparse");
+    assert_eq!(claim["speed_passed"], true);
+    assert_eq!(claim["glyphrush_quality_checked"], true);
+    assert_eq!(claim["glyphrush_quality_passed"], true);
+    assert_eq!(claim["baseline_quality_checked"], false);
+    assert_eq!(claim["baseline_quality_passed"], false);
+    assert_eq!(claim["quality_backed"], false);
+    assert_eq!(claim["claim_passed"], false);
+    assert_eq!(claim["status"], "quality_not_checked");
+}
+
+#[test]
 fn feature_parity_reports_invalid_saved_benchmark_before_failing_speed_evidence_gate() {
     let dir = temp_dir("feature-parity-invalid-bench-report");
     let report_path = dir.join("bench.json");

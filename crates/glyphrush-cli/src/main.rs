@@ -659,6 +659,10 @@ struct FeatureParityBenchmarkClaimEvidence {
     actual_glyphrush_speedup: Option<f64>,
     speed_comparable: Option<bool>,
     speed_passed: Option<bool>,
+    glyphrush_quality_checked: Option<bool>,
+    glyphrush_quality_passed: Option<bool>,
+    baseline_quality_checked: Option<bool>,
+    baseline_quality_passed: Option<bool>,
     quality_backed: Option<bool>,
     claim_passed: Option<bool>,
     status: Option<String>,
@@ -2512,6 +2516,18 @@ fn feature_parity_benchmark_claim_evidence(value: &Value) -> FeatureParityBenchm
             .and_then(Value::as_f64),
         speed_comparable: value.get("speed_comparable").and_then(Value::as_bool),
         speed_passed: value.get("speed_passed").and_then(Value::as_bool),
+        glyphrush_quality_checked: value
+            .get("glyphrush_quality_checked")
+            .and_then(Value::as_bool),
+        glyphrush_quality_passed: value
+            .get("glyphrush_quality_passed")
+            .and_then(Value::as_bool),
+        baseline_quality_checked: value
+            .get("baseline_quality_checked")
+            .and_then(Value::as_bool),
+        baseline_quality_passed: value
+            .get("baseline_quality_passed")
+            .and_then(Value::as_bool),
         quality_backed: value.get("quality_backed").and_then(Value::as_bool),
         claim_passed: value.get("claim_passed").and_then(Value::as_bool),
         status: value
