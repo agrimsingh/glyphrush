@@ -31,6 +31,7 @@ progress_log="${GLYPHRUSH_BENCH_PROGRESS_LOG:-}"
 pdf_dir="${GLYPHRUSH_BENCH_PDF_DIR:-}"
 preflight_mode="${GLYPHRUSH_BENCH_PREFLIGHT:-}"
 probe_pdf="${GLYPHRUSH_BENCH_PROBE_PDF:-}"
+probe_baseline="${GLYPHRUSH_BENCH_PROBE_BASELINE:-}"
 probe_timeout_ms="${GLYPHRUSH_BENCH_PROBE_TIMEOUT_MS:-60000}"
 is_v0_manifest=false
 case "$manifest" in
@@ -101,6 +102,27 @@ esac
 
 probe_cmd=()
 if [[ -n "$probe_pdf" ]]; then
+  probe_baseline_args=(--baseline-preset glyphrush-v0)
+  if [[ -n "$probe_baseline" ]]; then
+    case "$probe_baseline" in
+      liteparse)
+        probe_baseline_args=(--baseline "liteparse=tools/baselines/liteparse-text.sh")
+        ;;
+      liteparse-no-ocr)
+        probe_baseline_args=(--baseline "liteparse-no-ocr=tools/baselines/liteparse-no-ocr-text.sh")
+        ;;
+      pymupdf)
+        probe_baseline_args=(--baseline "pymupdf=tools/baselines/pymupdf-text.sh")
+        ;;
+      pdfplumber)
+        probe_baseline_args=(--baseline "pdfplumber=tools/baselines/pdfplumber-text.sh")
+        ;;
+      *)
+        echo "invalid GLYPHRUSH_BENCH_PROBE_BASELINE: $probe_baseline (expected liteparse, liteparse-no-ocr, pymupdf, or pdfplumber)" >&2
+        exit 2
+        ;;
+    esac
+  fi
   probe_cmd=(
     cargo run -q --release -p glyphrush-cli
     --features "$features"
@@ -108,7 +130,7 @@ if [[ -n "$probe_pdf" ]]; then
     --backend "$backend"
     baseline-check
     --pdf "$probe_pdf"
-    --baseline-preset glyphrush-v0
+    "${probe_baseline_args[@]}"
     --baseline-timeout-ms "$baseline_timeout_ms"
     --strict
   )
