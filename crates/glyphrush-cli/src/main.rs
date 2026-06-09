@@ -635,6 +635,8 @@ struct FeatureParityBenchmarkEvidence {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     baseline_quality_unchecked_categories:
         Vec<FeatureParityBenchmarkBaselineQualityUncheckedCategoryEvidence>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    baseline_quality_failures: Vec<FeatureParityBenchmarkBaselineQualityFailureEvidence>,
     required_claim_count: usize,
     claim_count: usize,
     quality_backed_claim_count: usize,
@@ -696,6 +698,28 @@ impl FeatureParityBenchmarkBaselineQualityUncheckedCategoryEvidence {
             _ => {}
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct FeatureParityBenchmarkBaselineQualityFailureEvidence {
+    baseline: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    target: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    quality_status: Option<String>,
+    quality_failed_documents: u64,
+    quality_failed_checks: u64,
+    failed_categories: Vec<FeatureParityBenchmarkBaselineQualityFailedCategoryEvidence>,
+    failure_samples: Vec<Value>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct FeatureParityBenchmarkBaselineQualityFailedCategoryEvidence {
+    category: String,
+    document_count: u64,
+    page_count: u64,
+    failed_documents: u64,
+    failed_checks: u64,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -2490,6 +2514,7 @@ fn feature_parity_benchmark_evidence(
     );
     let baseline_quality_unchecked_categories =
         feature_parity_benchmark_baseline_quality_unchecked_categories(&report);
+    let baseline_quality_failures = feature_parity_benchmark_baseline_quality_failures(&report);
 
     FeatureParityBenchmarkEvidence {
         report_path: path.display().to_string(),
@@ -2510,6 +2535,7 @@ fn feature_parity_benchmark_evidence(
         quality_categories,
         coverage_requirement,
         baseline_quality_unchecked_categories,
+        baseline_quality_failures,
         required_claim_count: FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len(),
         claim_count: claims.len(),
         quality_backed_claim_count,
@@ -2551,6 +2577,7 @@ fn feature_parity_invalid_benchmark_evidence(
         quality_categories,
         coverage_requirement,
         baseline_quality_unchecked_categories: Vec::new(),
+        baseline_quality_failures: Vec::new(),
         required_claim_count: FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len(),
         claim_count: 0,
         quality_backed_claim_count: 0,
@@ -2750,6 +2777,114 @@ fn feature_parity_benchmark_baseline_quality_unchecked_categories(
     }
 
     summaries.into_values().collect()
+}
+
+fn feature_parity_benchmark_baseline_quality_failures(
+    report: &Value,
+) -> Vec<FeatureParityBenchmarkBaselineQualityFailureEvidence> {
+    let Some(baselines) = report.get("baselines").and_then(Value::as_array) else {
+        return Vec::new();
+    };
+
+    let mut failures = baselines
+        .iter()
+        .filter_map(|baseline| {
+            let baseline_name = baseline.get("name")?.as_str()?.to_string();
+            let mut failed_categories = baseline
+                .get("quality_category_summaries")
+                .and_then(Value::as_object)
+                .map(|summaries| {
+                    summaries
+                        .iter()
+                        .filter_map(|(category, summary)| {
+                            let failed_documents = summary
+                                .get("failed_documents")
+                                .and_then(Value::as_u64)
+                                .unwrap_or_default();
+                            let failed_checks = summary
+                                .get("failed_checks")
+                                .and_then(Value::as_u64)
+                                .unwrap_or_default();
+                            let quality_failed = summary
+                                .get("quality_failed")
+                                .and_then(Value::as_bool)
+                                .unwrap_or(false);
+                            if failed_documents == 0 && failed_checks == 0 && !quality_failed {
+                                return None;
+                            }
+
+                            Some(
+                                FeatureParityBenchmarkBaselineQualityFailedCategoryEvidence {
+                                    category: category.clone(),
+                                    document_count: summary
+                                        .get("document_count")
+                                        .and_then(Value::as_u64)
+                                        .unwrap_or_default(),
+                                    page_count: summary
+                                        .get("page_count")
+                                        .and_then(Value::as_u64)
+                                        .unwrap_or_default(),
+                                    failed_documents,
+                                    failed_checks,
+                                },
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            failed_categories.sort_by(|left, right| left.category.cmp(&right.category));
+
+            let failure_samples = baseline
+                .get("quality_failure_samples")
+                .and_then(Value::as_array)
+                .map(|samples| samples.iter().take(8).cloned().collect::<Vec<_>>())
+                .unwrap_or_default();
+            let quality_failed_documents = baseline
+                .get("quality_failed_documents")
+                .and_then(Value::as_u64)
+                .unwrap_or_else(|| {
+                    failed_categories
+                        .iter()
+                        .map(|category| category.failed_documents)
+                        .sum()
+                });
+            let quality_failed_checks = baseline
+                .get("quality_failed_checks")
+                .and_then(Value::as_u64)
+                .unwrap_or_else(|| {
+                    failed_categories
+                        .iter()
+                        .map(|category| category.failed_checks)
+                        .sum()
+                });
+
+            if quality_failed_documents == 0
+                && quality_failed_checks == 0
+                && failed_categories.is_empty()
+                && failure_samples.is_empty()
+            {
+                return None;
+            }
+
+            Some(FeatureParityBenchmarkBaselineQualityFailureEvidence {
+                baseline: baseline_name,
+                target: baseline
+                    .get("target")
+                    .and_then(Value::as_str)
+                    .map(str::to_string),
+                quality_status: baseline
+                    .get("quality_status")
+                    .and_then(Value::as_str)
+                    .map(str::to_string),
+                quality_failed_documents,
+                quality_failed_checks,
+                failed_categories,
+                failure_samples,
+            })
+        })
+        .collect::<Vec<_>>();
+    failures.sort_by(|left, right| left.baseline.cmp(&right.baseline));
+    failures
 }
 
 fn feature_parity_paths_match(quality_path: Option<&str>, document_path: &str) -> bool {

@@ -890,6 +890,156 @@ fn feature_parity_preserves_speed_claim_quality_diagnostics_from_saved_bench_rep
 }
 
 #[test]
+fn feature_parity_surfaces_baseline_quality_failures_from_saved_bench_report() {
+    let dir = temp_dir("feature-parity-bench-baseline-quality-failures");
+    let report_path = dir.join("bench.json");
+    fs::write(
+        &report_path,
+        r#"{
+          "report_version": "glyphrush-bench-report-v1",
+          "backend": "pdfium",
+          "quality_status": "checked",
+          "speedup_claims": [
+            {
+              "baseline": "liteparse",
+              "required_glyphrush_speedup": 2.0,
+              "actual_glyphrush_speedup": 64.0,
+              "speed_comparable": true,
+              "speed_passed": true,
+              "glyphrush_quality_checked": true,
+              "glyphrush_quality_passed": true,
+              "baseline_quality_checked": true,
+              "baseline_quality_passed": false,
+              "glyphrush_quality_backed": true,
+              "quality_backed": false,
+              "quality_blocker": "baseline_quality_failed",
+              "claim_passed": false,
+              "status": "quality_failed"
+            }
+          ],
+          "baselines": [
+            {
+              "name": "liteparse",
+              "target": "run-llama/liteparse",
+              "quality_status": "checked",
+              "quality_failed_documents": 2,
+              "quality_failed_checks": 3,
+              "quality_category_summaries": {
+                "clean_digital": {
+                  "document_count": 1,
+                  "page_count": 4,
+                  "failed_documents": 0,
+                  "failed_checks": 0,
+                  "quality_passed": true,
+                  "quality_failed": false
+                },
+                "forms": {
+                  "document_count": 1,
+                  "page_count": 2,
+                  "failed_documents": 1,
+                  "failed_checks": 1,
+                  "quality_passed": false,
+                  "quality_failed": true
+                },
+                "large": {
+                  "document_count": 1,
+                  "page_count": 297,
+                  "failed_documents": 1,
+                  "failed_checks": 2,
+                  "quality_passed": false,
+                  "quality_failed": true
+                }
+              },
+              "quality_failure_samples": [
+                {
+                  "path": "forms/irs-f1040-2025.pdf",
+                  "failed_checks": 1,
+                  "failed_check_types": ["required_text"]
+                },
+                {
+                  "path": "large/nasa-systems-engineering-handbook.pdf",
+                  "failed_checks": 2,
+                  "failed_check_types": ["required_text", "reading_order"]
+                }
+              ]
+            },
+            {
+              "name": "pymupdf",
+              "target": "PyMuPDF",
+              "quality_status": "checked",
+              "quality_failed_documents": 0,
+              "quality_failed_checks": 0,
+              "quality_category_summaries": {},
+              "quality_failure_samples": []
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "feature-parity",
+            "--bench-report",
+            report_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush feature-parity with baseline quality failures");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
+
+    assert_eq!(
+        json["benchmark_evidence"]["baseline_quality_failures"],
+        serde_json::json!([
+            {
+                "baseline": "liteparse",
+                "target": "run-llama/liteparse",
+                "quality_status": "checked",
+                "quality_failed_documents": 2,
+                "quality_failed_checks": 3,
+                "failed_categories": [
+                    {
+                        "category": "forms",
+                        "document_count": 1,
+                        "page_count": 2,
+                        "failed_documents": 1,
+                        "failed_checks": 1
+                    },
+                    {
+                        "category": "large",
+                        "document_count": 1,
+                        "page_count": 297,
+                        "failed_documents": 1,
+                        "failed_checks": 2
+                    }
+                ],
+                "failure_samples": [
+                    {
+                        "path": "forms/irs-f1040-2025.pdf",
+                        "failed_checks": 1,
+                        "failed_check_types": ["required_text"]
+                    },
+                    {
+                        "path": "large/nasa-systems-engineering-handbook.pdf",
+                        "failed_checks": 2,
+                        "failed_check_types": ["required_text", "reading_order"]
+                    }
+                ]
+            }
+        ])
+    );
+}
+
+#[test]
 fn feature_parity_derives_speed_claim_quality_diagnostics_from_legacy_bench_report() {
     let dir = temp_dir("feature-parity-legacy-bench-claim-quality-diagnostics");
     let report_path = dir.join("bench.json");
