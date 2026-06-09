@@ -750,6 +750,7 @@ fn feature_parity_marks_native_text_speed_advantage_ready_when_baseline_quality_
             "feature-parity",
             "--bench-report",
             report_path.to_str().unwrap(),
+            "--require-speed-advantage",
             "--require-coverage-preset",
             "glyphrush-v0-native-text",
         ])
@@ -774,6 +775,102 @@ fn feature_parity_marks_native_text_speed_advantage_ready_when_baseline_quality_
     assert_eq!(
         json["readiness"]["native_text_speed_advantage_blockers"],
         serde_json::json!([])
+    );
+}
+
+#[test]
+fn feature_parity_speed_advantage_gate_fails_when_baseline_quality_is_unchecked() {
+    let dir = temp_dir("feature-parity-bench-speed-advantage-unchecked");
+    let report_path = dir.join("bench.json");
+    fs::write(
+        &report_path,
+        r#"{
+          "report_version": "glyphrush-bench-report-v1",
+          "backend": "pdfium",
+          "quality_status": "checked",
+          "quality": {
+            "category_summaries": {
+              "clean_digital": { "document_count": 1, "page_count": 2, "failed_checks": 0, "quality_passed": true },
+              "hybrid": { "document_count": 1, "page_count": 3, "failed_checks": 0, "quality_passed": true },
+              "academic_columns": { "document_count": 1, "page_count": 8, "failed_checks": 0, "quality_passed": true },
+              "tables": { "document_count": 1, "page_count": 2, "failed_checks": 0, "quality_passed": true },
+              "forms": { "document_count": 1, "page_count": 1, "failed_checks": 0, "quality_passed": true },
+              "rotated": { "document_count": 1, "page_count": 1, "failed_checks": 0, "quality_passed": true },
+              "weird_encoding": { "document_count": 1, "page_count": 1, "failed_checks": 0, "quality_passed": true },
+              "large": { "document_count": 1, "page_count": 50, "failed_checks": 0, "quality_passed": true }
+            }
+          },
+          "speedup_claims": [
+            {
+              "baseline": "liteparse",
+              "required_glyphrush_speedup": 2.0,
+              "actual_glyphrush_speedup": 64.0,
+              "speed_comparable": true,
+              "speed_passed": true,
+              "glyphrush_quality_checked": true,
+              "glyphrush_quality_passed": true,
+              "baseline_quality_checked": false,
+              "baseline_quality_passed": false,
+              "glyphrush_quality_backed": true,
+              "quality_backed": false,
+              "quality_blocker": "baseline_quality_not_checked",
+              "claim_passed": false,
+              "status": "quality_not_checked"
+            },
+            {
+              "baseline": "liteparse-no-ocr",
+              "required_glyphrush_speedup": 1.5,
+              "actual_glyphrush_speedup": 4.5,
+              "speed_comparable": true,
+              "speed_passed": true,
+              "glyphrush_quality_checked": true,
+              "glyphrush_quality_passed": true,
+              "baseline_quality_checked": false,
+              "baseline_quality_passed": false,
+              "glyphrush_quality_backed": true,
+              "quality_backed": false,
+              "quality_blocker": "baseline_quality_not_checked",
+              "claim_passed": false,
+              "status": "quality_not_checked"
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "feature-parity",
+            "--bench-report",
+            report_path.to_str().unwrap(),
+            "--require-speed-advantage",
+            "--require-coverage-preset",
+            "glyphrush-v0-native-text",
+        ])
+        .output()
+        .expect("run glyphrush feature-parity with unchecked native-text speed advantage evidence");
+
+    assert!(
+        !output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity failure output is json");
+
+    assert_eq!(
+        json["readiness"]["native_text_speed_advantage_ready"],
+        false
+    );
+    assert_eq!(
+        json["readiness"]["native_text_speed_advantage_blockers"],
+        serde_json::json!(["baseline_quality_not_checked"])
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("native-text speed advantage evidence")
     );
 }
 

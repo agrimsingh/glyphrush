@@ -325,6 +325,8 @@ enum Commands {
         bench_report: Option<PathBuf>,
         #[arg(long)]
         require_speed_evidence: bool,
+        #[arg(long)]
+        require_speed_advantage: bool,
         #[arg(long, value_enum)]
         require_coverage_preset: Option<CoveragePreset>,
     },
@@ -4782,6 +4784,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
         Commands::FeatureParity {
             bench_report,
             require_speed_evidence,
+            require_speed_advantage,
             require_coverage_preset,
         } => {
             let output =
@@ -4791,6 +4794,8 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                     .benchmark_evidence
                     .as_ref()
                     .is_some_and(|evidence| evidence.evidence_passed);
+            let speed_advantage_failed =
+                require_speed_advantage && !output.readiness.native_text_speed_advantage_ready;
             let coverage_evidence_failed = require_coverage_preset.is_some()
                 && !output
                     .benchmark_evidence
@@ -4800,6 +4805,11 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
             if speed_evidence_failed {
                 bail!(
                     "feature-parity speed evidence did not satisfy quality-backed LiteParse claims"
+                );
+            }
+            if speed_advantage_failed {
+                bail!(
+                    "feature-parity speed evidence did not satisfy native-text speed advantage evidence"
                 );
             }
             if coverage_evidence_failed {
