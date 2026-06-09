@@ -340,7 +340,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         table_recovery["notes"]
             .as_str()
             .unwrap()
-            .contains("leading delimited/text-table captions outside table grids")
+            .contains("prefixed leading delimited/text-table captions outside table grids")
     );
     assert!(
         table_recovery["notes"]

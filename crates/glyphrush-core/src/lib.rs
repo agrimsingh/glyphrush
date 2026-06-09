@@ -2930,11 +2930,8 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
         return;
     }
 
-    if let Some((caption, table_lines)) =
-        split_leading_text_table_caption(lines, run_table_recovery)
-    {
-        blocks.push(caption);
-        blocks.push(reflow_text_block(&table_lines, run_table_recovery));
+    if let Some(split_blocks) = split_leading_text_table_caption_blocks(lines, run_table_recovery) {
+        blocks.extend(split_blocks);
         return;
     }
 
@@ -3276,28 +3273,48 @@ fn split_package_pin_description_table_blocks(
     Some(blocks)
 }
 
-fn split_leading_text_table_caption(
+fn split_leading_text_table_caption_blocks(
     lines: &[String],
     run_table_recovery: bool,
-) -> Option<(String, Vec<String>)> {
+) -> Option<Vec<String>> {
     if !run_table_recovery || lines.len() < 3 {
         return None;
     }
 
-    let caption = lines.first()?.trim();
-    if !looks_like_leading_text_table_caption(caption) {
-        return None;
-    }
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let caption_index = (0..refs.len() - 2).find(|index| {
+        looks_like_leading_text_table_caption(refs[*index])
+            && !prefix_looks_like_table_context(&refs[..*index])
+            && table_lines_follow_caption(&refs[*index + 1..])
+    })?;
 
-    let table_lines = lines[1..].iter().map(String::as_str).collect::<Vec<_>>();
-    if is_table_lines_str(&table_lines)
-        || aligned_whitespace_table_rows(&table_lines).is_some()
-        || header_guided_whitespace_table_rows(&table_lines).is_some()
-    {
-        return Some((caption.to_string(), lines[1..].to_vec()));
+    let mut blocks = Vec::new();
+    if caption_index > 0 {
+        blocks.push(reflow_text_block(
+            &lines[..caption_index],
+            run_table_recovery,
+        ));
     }
+    blocks.push(lines[caption_index].trim().to_string());
+    blocks.push(reflow_text_block(
+        &lines[caption_index + 1..],
+        run_table_recovery,
+    ));
 
-    None
+    Some(blocks)
+}
+
+fn table_lines_follow_caption(lines: &[&str]) -> bool {
+    is_table_lines_str(lines)
+        || aligned_whitespace_table_rows(lines).is_some()
+        || header_guided_whitespace_table_rows(lines).is_some()
+}
+
+fn prefix_looks_like_table_context(lines: &[&str]) -> bool {
+    lines
+        .iter()
+        .any(|line| line.contains('|') || line.contains('\t') || has_wide_space_gap(line))
+        || is_whitespace_table_lines_str(lines)
 }
 
 fn looks_like_leading_text_table_caption(line: &str) -> bool {
