@@ -499,7 +499,7 @@
       },
       "expect_by_backend": {
         "pdfium": {
-          "fallback_pages": 9,
+          "fallback_pages": 10,
           "image_artifact_count": 40,
           "pages": [
             {
@@ -514,11 +514,27 @@
                 "header_blocks": 0,
                 "footer_blocks": 0
               }
+            },
+            {
+              "index": 5,
+              "layout_block_counts": {
+                "block_count": 4,
+                "paragraph_blocks": 3,
+                "heading_blocks": 0,
+                "list_blocks": 0,
+                "table_blocks": 1,
+                "table_rows": 18,
+                "table_cells": 108,
+                "table_cells_with_bbox": 0,
+                "figure_blocks": 0,
+                "header_blocks": 0,
+                "footer_blocks": 0
+              }
             }
           ],
           "route_counts": {
-            "native_fast_path": 8,
-            "needs_fallback": 5,
+            "native_fast_path": 7,
+            "needs_fallback": 6,
             "ocr_fallback": 0,
             "unsupported": 4
           },
@@ -527,17 +543,17 @@
             "low_confidence_text": 0,
             "broken_encoding": 0,
             "layout_uncertain": 0,
-            "table_uncertain": 8,
+            "table_uncertain": 9,
             "unsupported_feature": 4
           },
           "route_reason_counts": {
             "annotation_or_form": 4,
-            "table_line_density": 8
+            "table_line_density": 9
           },
           "quality_flag_classification": [
             {
               "flag": "table_uncertain",
-              "expected_pages": [0, 1, 2, 6, 7, 12, 13, 14],
+              "expected_pages": [0, 1, 2, 5, 6, 7, 12, 13, 14],
               "min_precision": 1.0,
               "min_recall": 1.0
             },
@@ -546,6 +562,26 @@
               "expected_pages": [0, 1, 3, 13],
               "min_precision": 1.0,
               "min_recall": 1.0
+            }
+          ],
+          "table_structure": [
+            {
+              "page": 5,
+              "expected_rows": [
+                ["Parameter", "Test Condition", "Min.", "Typ.", "Max.", "Unit"],
+                ["VIN Input Voltage Range", "", "1.4", "", "5.5", "V"],
+                ["VOUT_ACC Output Voltage Accuracy", "TA=25°C", "-1.3", "", "1.3", "%"],
+                ["", "-40°C ≤TA≤85°C", "-2", "", "2", "%"],
+                ["LOADReg Load Regulation", "1mA≤IOUT≤300mA", "", "1", "40", "mV"],
+                ["LINEReg Line Regulation", "VOUT(SET)+0.5V≤VIN ≤5.5V", "", "1", "5", "mV"],
+                ["Vdropout Dropout Voltage", "IOUT=300mA VOUT(SET)=1.8V", "", "310", "", "mV"],
+                ["", "IOUT=300mA VOUT(SET)=3.3V", "", "158", "", "mV"],
+                ["ISD Shutdown Current", "VCE<0.4V", "", "0.1", "1", "A"],
+                ["IQ Quiescent Current", "IOUT=0mA", "", "50", "80", "A"]
+              ],
+              "min_row_recall": 1.0,
+              "min_cell_recall": 1.0,
+              "min_cell_f1": 1.0
             }
           ]
         }

@@ -396,6 +396,12 @@ fn feature_parity_reports_liteparse_capability_gaps() {
             .unwrap()
             .contains("package pin-description tables")
     );
+    assert!(
+        table_recovery["notes"]
+            .as_str()
+            .unwrap()
+            .contains("AWINIC parameter/test-condition electrical tables")
+    );
 
     let ocr = capability(capabilities, "ocr");
     assert_eq!(ocr["liteparse"], "tesseract_or_http_ocr");
@@ -3239,24 +3245,64 @@ fn seed_datasheet_manifest_rejects_pdfium_description_prose_table_false_positive
         .find(|document| document["path"] == "LDO_AW37030D180DNR.pdf")
         .expect("AW37030D180 datasheet expectation exists");
 
-    assert_eq!(
-        document["expect_by_backend"]["pdfium"]["pages"],
-        serde_json::json!([
-          {
-            "index": 0,
-            "layout_block_counts": {
-              "block_count": 6,
-              "paragraph_blocks": 6,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            }
+    let pages = document["expect_by_backend"]["pdfium"]["pages"]
+        .as_array()
+        .expect("pdfium page expectations");
+    assert!(pages.iter().any(|page| page
+        == &serde_json::json!(
+        {
+          "index": 0,
+          "layout_block_counts": {
+            "block_count": 6,
+            "paragraph_blocks": 6,
+            "heading_blocks": 0,
+            "list_blocks": 0,
+            "table_blocks": 0,
+            "figure_blocks": 0,
+            "header_blocks": 0,
+            "footer_blocks": 0
           }
-        ])
-    );
+        }
+              )));
+}
+
+#[test]
+fn seed_datasheet_manifest_tracks_pdfium_awinic_electrical_table() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = workspace_root.join("test/corpus.datasheets.json");
+    let json: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read seed datasheet manifest"))
+            .expect("seed datasheet manifest is json");
+    let documents = json["documents"].as_array().unwrap();
+    let document = documents
+        .iter()
+        .find(|document| document["path"] == "LDO_AW37030D180DNR.pdf")
+        .expect("AW37030D180 datasheet expectation exists");
+    let table_structure = document["expect_by_backend"]["pdfium"]["table_structure"]
+        .as_array()
+        .expect("pdfium table structure expectations");
+
+    assert!(table_structure.iter().any(|expectation| expectation
+        == &serde_json::json!(
+        {
+          "page": 5,
+          "expected_rows": [
+            ["Parameter", "Test Condition", "Min.", "Typ.", "Max.", "Unit"],
+            ["VIN Input Voltage Range", "", "1.4", "", "5.5", "V"],
+            ["VOUT_ACC Output Voltage Accuracy", "TA=25°C", "-1.3", "", "1.3", "%"],
+            ["", "-40°C ≤TA≤85°C", "-2", "", "2", "%"],
+            ["LOADReg Load Regulation", "1mA≤IOUT≤300mA", "", "1", "40", "mV"],
+            ["LINEReg Line Regulation", "VOUT(SET)+0.5V≤VIN ≤5.5V", "", "1", "5", "mV"],
+            ["Vdropout Dropout Voltage", "IOUT=300mA VOUT(SET)=1.8V", "", "310", "", "mV"],
+            ["", "IOUT=300mA VOUT(SET)=3.3V", "", "158", "", "mV"],
+            ["ISD Shutdown Current", "VCE<0.4V", "", "0.1", "1", "A"],
+            ["IQ Quiescent Current", "IOUT=0mA", "", "50", "80", "A"]
+          ],
+          "min_row_recall": 1.0,
+          "min_cell_recall": 1.0,
+          "min_cell_f1": 1.0
+        }
+              )));
 }
 
 #[test]

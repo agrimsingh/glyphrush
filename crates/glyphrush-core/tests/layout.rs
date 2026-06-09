@@ -2844,6 +2844,151 @@ fn text_table_recovery_extracts_electrical_characteristics_tables() {
 }
 
 #[test]
+fn text_table_recovery_extracts_awinic_parameter_test_condition_tables() {
+    let artifact = parse_extracted_pages(
+        "doc-awinic-electrical-characteristics-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Electrical Characteristics\n",
+                "VIN=VOUT(SET)+1V, VCE>1V, IOUT=1mA, CIN=COUT=1µF, TA=25°C\n",
+                "PARAMETER TEST CONDITION MIN TYP MAX UNIT\n",
+                "VIN Input Voltage Range 1.4 5.5 V\n",
+                "VOUT_ACC\n",
+                "Output Voltage\n",
+                "Accuracy\n",
+                "TA=25°C -1.3 1.3\n",
+                "%\n",
+                "-40°C ≤TA≤85°C -2 2\n",
+                "LOADReg Load Regulation 1mA≤IOUT≤300mA 1 40 mV\n",
+                "LINEReg Line Regulation VOUT(SET)+0.5V≤VIN ≤5.5V 1 5 mV\n",
+                "Vdropout Dropout Voltage IOUT=300mA\n",
+                "VOUT(SET)=1.8V 310\n",
+                "mV\n",
+                "VOUT(SET)=3.3V 158\n",
+                "ISD Shutdown Current VCE<0.4V 0.1 1 A\n",
+                "IQ Quiescent Current IOUT=0mA 50 80 A\n",
+                "PSRR\n",
+                "Power Supply Ripple\n",
+                "Rejection\n",
+                "IOUT=30mA, f=1kHz\n",
+                "VOUT(SET)=1.8V\n",
+                "90 dB\n",
+                "VTC\n",
+                "Output Voltage\n",
+                "Temperature\n",
+                "Coefficient\n",
+                "-40°C ≤TA≤85°C ±40\n",
+                "ppm/°\n",
+                "C\n",
+                "Typical Characteristics\n"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.50,
+                native_span_count: 44,
+                native_text_bytes: 940,
+                glyph_count: 720,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_block = page
+        .layout_blocks
+        .iter()
+        .find(|block| block.kind == LayoutBlockKind::Table)
+        .expect("AWINIC electrical characteristics table block");
+    assert!(!table_block.text.contains("Electrical Characteristics"));
+    assert!(!table_block.text.contains("Typical Characteristics"));
+
+    let table = table_block.table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec![
+                "Parameter",
+                "Test Condition",
+                "Min.",
+                "Typ.",
+                "Max.",
+                "Unit"
+            ],
+            vec!["VIN Input Voltage Range", "", "1.4", "", "5.5", "V"],
+            vec![
+                "VOUT_ACC Output Voltage Accuracy",
+                "TA=25°C",
+                "-1.3",
+                "",
+                "1.3",
+                "%"
+            ],
+            vec!["", "-40°C ≤TA≤85°C", "-2", "", "2", "%"],
+            vec![
+                "LOADReg Load Regulation",
+                "1mA≤IOUT≤300mA",
+                "",
+                "1",
+                "40",
+                "mV"
+            ],
+            vec![
+                "LINEReg Line Regulation",
+                "VOUT(SET)+0.5V≤VIN ≤5.5V",
+                "",
+                "1",
+                "5",
+                "mV"
+            ],
+            vec![
+                "Vdropout Dropout Voltage",
+                "IOUT=300mA VOUT(SET)=1.8V",
+                "",
+                "310",
+                "",
+                "mV"
+            ],
+            vec!["", "IOUT=300mA VOUT(SET)=3.3V", "", "158", "", "mV"],
+            vec!["ISD Shutdown Current", "VCE<0.4V", "", "0.1", "1", "A"],
+            vec!["IQ Quiescent Current", "IOUT=0mA", "", "50", "80", "A"],
+            vec![
+                "PSRR Power Supply Ripple Rejection",
+                "IOUT=30mA, f=1kHz VOUT(SET)=1.8V",
+                "",
+                "90",
+                "",
+                "dB"
+            ],
+            vec![
+                "VTC Output Voltage Temperature Coefficient",
+                "-40°C ≤TA≤85°C",
+                "",
+                "±40",
+                "",
+                "ppm/°"
+            ],
+        ]
+    );
+}
+
+#[test]
 fn text_table_recovery_extracts_reflow_profile_tables() {
     let artifact = parse_extracted_pages(
         "doc-reflow-profile-table".to_string(),
