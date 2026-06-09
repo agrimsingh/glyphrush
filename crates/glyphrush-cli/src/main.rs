@@ -613,6 +613,9 @@ struct FeatureParityBenchmarkEvidence {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     quality_categories: Vec<FeatureParityBenchmarkCategoryEvidence>,
     coverage_requirement: FeatureParityBenchmarkCoverageRequirement,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    baseline_quality_unchecked_categories:
+        Vec<FeatureParityBenchmarkBaselineQualityUncheckedCategoryEvidence>,
     required_claim_count: usize,
     claim_count: usize,
     quality_backed_claim_count: usize,
@@ -650,6 +653,30 @@ struct FeatureParityBenchmarkCoverageRequirement {
     present_categories: Vec<String>,
     missing_categories: Vec<String>,
     passed: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct FeatureParityBenchmarkBaselineQualityUncheckedCategoryEvidence {
+    baseline: String,
+    category: String,
+    document_count: u64,
+    page_count: u64,
+    not_checked_no_expectations_documents: u64,
+    not_checked_timed_out_documents: u64,
+    not_checked_execution_failed_documents: u64,
+}
+
+impl FeatureParityBenchmarkBaselineQualityUncheckedCategoryEvidence {
+    fn add_document(&mut self, page_count: u64, quality_status: &str) {
+        self.document_count += 1;
+        self.page_count += page_count;
+        match quality_status {
+            "not_checked_no_expectations" => self.not_checked_no_expectations_documents += 1,
+            "not_checked_timed_out" => self.not_checked_timed_out_documents += 1,
+            "not_checked_execution_failed" => self.not_checked_execution_failed_documents += 1,
+            _ => {}
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -2442,6 +2469,8 @@ fn feature_parity_benchmark_evidence(
         coverage_preset.is_some(),
         &quality_categories,
     );
+    let baseline_quality_unchecked_categories =
+        feature_parity_benchmark_baseline_quality_unchecked_categories(&report);
 
     FeatureParityBenchmarkEvidence {
         report_path: path.display().to_string(),
@@ -2461,6 +2490,7 @@ fn feature_parity_benchmark_evidence(
         report_error: None,
         quality_categories,
         coverage_requirement,
+        baseline_quality_unchecked_categories,
         required_claim_count: FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len(),
         claim_count: claims.len(),
         quality_backed_claim_count,
@@ -2501,6 +2531,7 @@ fn feature_parity_invalid_benchmark_evidence(
         }),
         quality_categories,
         coverage_requirement,
+        baseline_quality_unchecked_categories: Vec::new(),
         required_claim_count: FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len(),
         claim_count: 0,
         quality_backed_claim_count: 0,
@@ -2572,6 +2603,143 @@ fn feature_parity_benchmark_quality_categories(
         .collect::<Vec<_>>();
     categories.sort_by(|left, right| left.category.cmp(&right.category));
     categories
+}
+
+#[derive(Clone, Debug)]
+struct FeatureParityBenchmarkQualityDocument {
+    path: Option<String>,
+    category: String,
+    page_count: u64,
+}
+
+fn feature_parity_benchmark_baseline_quality_unchecked_categories(
+    report: &Value,
+) -> Vec<FeatureParityBenchmarkBaselineQualityUncheckedCategoryEvidence> {
+    let quality_documents = report
+        .get("quality")
+        .and_then(|quality| quality.get("documents"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let quality_by_fingerprint = quality_documents
+        .iter()
+        .filter_map(|document| {
+            let fingerprint = document.get("document_fingerprint")?.as_str()?;
+            Some((
+                fingerprint.to_string(),
+                FeatureParityBenchmarkQualityDocument {
+                    path: document
+                        .get("path")
+                        .and_then(Value::as_str)
+                        .map(str::to_string),
+                    category: document
+                        .get("category")
+                        .and_then(Value::as_str)
+                        .unwrap_or("uncategorized")
+                        .to_string(),
+                    page_count: document
+                        .get("page_count")
+                        .and_then(Value::as_u64)
+                        .unwrap_or_default(),
+                },
+            ))
+        })
+        .collect::<BTreeMap<_, _>>();
+    let quality_by_path = quality_documents
+        .iter()
+        .filter_map(|document| {
+            let path = document.get("path")?.as_str()?;
+            Some(FeatureParityBenchmarkQualityDocument {
+                path: Some(path.to_string()),
+                category: document
+                    .get("category")
+                    .and_then(Value::as_str)
+                    .unwrap_or("uncategorized")
+                    .to_string(),
+                page_count: document
+                    .get("page_count")
+                    .and_then(Value::as_u64)
+                    .unwrap_or_default(),
+            })
+        })
+        .collect::<Vec<_>>();
+    let mut summaries = BTreeMap::<
+        (String, String),
+        FeatureParityBenchmarkBaselineQualityUncheckedCategoryEvidence,
+    >::new();
+
+    let Some(documents) = report.get("documents").and_then(Value::as_array) else {
+        return Vec::new();
+    };
+    for document in documents {
+        let fingerprint = document.get("document_fingerprint").and_then(Value::as_str);
+        let path = document.get("path").and_then(Value::as_str);
+        let quality_document = fingerprint
+            .and_then(|fingerprint| quality_by_fingerprint.get(fingerprint))
+            .or_else(|| {
+                path.and_then(|path| {
+                    quality_by_path
+                        .iter()
+                        .find(|quality| feature_parity_paths_match(quality.path.as_deref(), path))
+                })
+            });
+        let category = quality_document
+            .map(|quality| quality.category.as_str())
+            .or_else(|| document.get("category").and_then(Value::as_str))
+            .unwrap_or("uncategorized");
+        let page_count = quality_document
+            .map(|quality| quality.page_count)
+            .or_else(|| document.get("page_count").and_then(Value::as_u64))
+            .unwrap_or_default();
+        let Some(baselines) = document.get("baselines").and_then(Value::as_array) else {
+            continue;
+        };
+
+        for baseline in baselines {
+            if baseline
+                .get("quality")
+                .is_some_and(|quality| !quality.is_null())
+            {
+                continue;
+            }
+            let Some(quality_status) = baseline.get("quality_status").and_then(Value::as_str)
+            else {
+                continue;
+            };
+            if !quality_status.starts_with("not_checked_") {
+                continue;
+            }
+            let Some(baseline_name) = baseline.get("name").and_then(Value::as_str) else {
+                continue;
+            };
+            let key = (baseline_name.to_string(), category.to_string());
+            summaries
+                .entry(key.clone())
+                .or_insert_with(
+                    || FeatureParityBenchmarkBaselineQualityUncheckedCategoryEvidence {
+                        baseline: key.0,
+                        category: key.1,
+                        document_count: 0,
+                        page_count: 0,
+                        not_checked_no_expectations_documents: 0,
+                        not_checked_timed_out_documents: 0,
+                        not_checked_execution_failed_documents: 0,
+                    },
+                )
+                .add_document(page_count, quality_status);
+        }
+    }
+
+    summaries.into_values().collect()
+}
+
+fn feature_parity_paths_match(quality_path: Option<&str>, document_path: &str) -> bool {
+    let Some(quality_path) = quality_path else {
+        return false;
+    };
+    quality_path == document_path
+        || quality_path.ends_with(&format!("/{document_path}"))
+        || document_path.ends_with(&format!("/{quality_path}"))
 }
 
 fn feature_parity_benchmark_claim_evidence(value: &Value) -> FeatureParityBenchmarkClaimEvidence {

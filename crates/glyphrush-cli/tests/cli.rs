@@ -954,6 +954,113 @@ fn feature_parity_derives_speed_claim_quality_diagnostics_from_legacy_bench_repo
 }
 
 #[test]
+fn feature_parity_derives_unchecked_baseline_quality_categories_from_legacy_bench_report() {
+    let dir = temp_dir("feature-parity-legacy-unchecked-baseline-quality-categories");
+    let report_path = dir.join("bench.json");
+    fs::write(
+        &report_path,
+        r#"{
+          "report_version": "glyphrush-bench-report-v1",
+          "backend": "pdfium",
+          "quality_status": "checked",
+          "quality": {
+            "documents": [
+              {
+                "path": "v0/clean_digital/clean.pdf",
+                "category": "clean_digital",
+                "document_fingerprint": "clean-fingerprint",
+                "page_count": 2
+              },
+              {
+                "path": "v0/scanned/scan.pdf",
+                "category": "scanned",
+                "document_fingerprint": "scan-fingerprint",
+                "page_count": 6
+              }
+            ]
+          },
+          "documents": [
+            {
+              "path": "clean_digital/clean.pdf",
+              "document_fingerprint": "clean-fingerprint",
+              "page_count": 2,
+              "baselines": [
+                {
+                  "name": "liteparse",
+                  "quality_status": "checked",
+                  "quality": {"passed": true}
+                }
+              ]
+            },
+            {
+              "path": "scanned/scan.pdf",
+              "document_fingerprint": "scan-fingerprint",
+              "page_count": 6,
+              "baselines": [
+                {
+                  "name": "liteparse",
+                  "quality_status": "not_checked_no_expectations",
+                  "quality": null
+                },
+                {
+                  "name": "liteparse-no-ocr",
+                  "quality_status": "not_checked_timed_out",
+                  "quality": null
+                }
+              ]
+            }
+          ],
+          "speedup_claims": []
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "feature-parity",
+            "--bench-report",
+            report_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush feature-parity with legacy unchecked baseline quality categories");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
+
+    assert_eq!(
+        json["benchmark_evidence"]["baseline_quality_unchecked_categories"],
+        serde_json::json!([
+            {
+                "baseline": "liteparse",
+                "category": "scanned",
+                "document_count": 1,
+                "page_count": 6,
+                "not_checked_no_expectations_documents": 1,
+                "not_checked_timed_out_documents": 0,
+                "not_checked_execution_failed_documents": 0
+            },
+            {
+                "baseline": "liteparse-no-ocr",
+                "category": "scanned",
+                "document_count": 1,
+                "page_count": 6,
+                "not_checked_no_expectations_documents": 0,
+                "not_checked_timed_out_documents": 1,
+                "not_checked_execution_failed_documents": 0
+            }
+        ])
+    );
+}
+
+#[test]
 fn feature_parity_reports_invalid_saved_benchmark_before_failing_speed_evidence_gate() {
     let dir = temp_dir("feature-parity-invalid-bench-report");
     let report_path = dir.join("bench.json");
