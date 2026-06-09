@@ -9738,6 +9738,102 @@ fn bench_directory_with_eval_manifest_aggregates_baseline_quality_by_category() 
 }
 
 #[test]
+fn bench_directory_reports_unchecked_baseline_quality_by_category() {
+    let dir = temp_dir("bench-dir-baseline-quality-unchecked-category");
+    fs::write(dir.join("a.pdf"), minimal_pdf("Clean Baseline Checked")).unwrap();
+    fs::write(dir.join("b.pdf"), minimal_pdf("Scanned Baseline Unchecked")).unwrap();
+    let baseline = write_baseline_script(
+        "baseline-dir-quality-unchecked-category",
+        "case \"$1\" in *a.pdf) printf 'Clean Baseline Checked';; *) printf 'Scanned Baseline Unchecked';; esac",
+    );
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "a.pdf",
+              "category": "clean_digital",
+              "expect": {
+                "required_text": ["Clean Baseline Checked"]
+              }
+            },
+            {
+              "path": "b.pdf",
+              "category": "scanned",
+              "expect": {
+                "page_count": 1
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            dir.to_str().unwrap(),
+            "--baseline",
+            &format!("mock={}", baseline.display()),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush bench directory with unchecked baseline quality category");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("bench directory output is json");
+    let baseline_summary = &json["baselines"][0];
+
+    assert_eq!(json["quality"]["passed"], true);
+    assert_eq!(baseline_summary["quality_status"], "partially_checked");
+    assert_eq!(baseline_summary["quality_documents"], 1);
+    assert_eq!(baseline_summary["quality_unchecked_documents"], 1);
+    assert_eq!(
+        baseline_summary["quality_category_summaries"]["clean_digital"],
+        serde_json::json!({
+            "document_count": 1,
+            "page_count": 1,
+            "passed_documents": 1,
+            "failed_documents": 0,
+            "failed_checks": 0,
+            "quality_pass_rate": 1.0,
+            "quality_passed": true,
+            "quality_failed": false
+        })
+    );
+    assert_eq!(
+        baseline_summary["quality_unchecked_category_summaries"]["scanned"],
+        serde_json::json!({
+            "document_count": 1,
+            "page_count": 1,
+            "not_checked_no_expectations_documents": 1,
+            "not_checked_timed_out_documents": 0,
+            "not_checked_execution_failed_documents": 0
+        })
+    );
+    assert_eq!(
+        baseline_summary["quality_unchecked_samples"],
+        serde_json::json!([
+            {
+                "path": "b.pdf",
+                "category": "scanned",
+                "quality_status": "not_checked_no_expectations"
+            }
+        ])
+    );
+}
+
+#[test]
 fn bench_eval_category_filters_baseline_quality_expectations() {
     let dir = temp_dir("bench-dir-baseline-quality-category-filter");
     fs::write(dir.join("a.pdf"), minimal_pdf("Clean Filtered Baseline")).unwrap();

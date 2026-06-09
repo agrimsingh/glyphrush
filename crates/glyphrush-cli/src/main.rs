@@ -1551,6 +1551,25 @@ struct BaselineComparisonOutput {
 }
 
 #[derive(Clone, Debug)]
+struct BaselineQualityInputs {
+    expectations_by_path: BTreeMap<PathBuf, BaselineQualityExpectations>,
+    categories_by_path: BTreeMap<PathBuf, String>,
+}
+
+impl BaselineQualityInputs {
+    fn expectation_for_path(&self, path: &Path) -> Option<&BaselineQualityExpectations> {
+        self.expectations_by_path.get(&manifest_path_key(path))
+    }
+
+    fn category_for_path(&self, path: &Path) -> String {
+        self.categories_by_path
+            .get(&manifest_path_key(path))
+            .cloned()
+            .unwrap_or_else(|| "uncategorized".to_string())
+    }
+}
+
+#[derive(Clone, Debug)]
 struct BaselineQualityExpectations {
     category: Option<String>,
     required_text: Vec<String>,
@@ -1658,9 +1677,14 @@ struct CorpusBaselineBenchOutput {
     quality_reading_order_failed_documents: usize,
     quality_table_structure_failed_documents: usize,
     quality_category_summaries: BTreeMap<String, CorpusBaselineQualityCategorySummary>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    quality_unchecked_category_summaries:
+        BTreeMap<String, CorpusBaselineQualityUncheckedCategorySummary>,
     quality_pass_rate: f64,
     failure_samples: Vec<CorpusBaselineFailureSample>,
     quality_failure_samples: Vec<CorpusBaselineQualityFailureSample>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    quality_unchecked_samples: Vec<CorpusBaselineQualityUncheckedSample>,
     wall_us: u128,
     pages_per_sec: f64,
     successful_pages_per_sec: f64,
@@ -1694,6 +1718,13 @@ struct CorpusBaselineQualityFailureSample {
     failed_check_types: Vec<&'static str>,
 }
 
+#[derive(Debug, Serialize)]
+struct CorpusBaselineQualityUncheckedSample {
+    path: String,
+    category: String,
+    quality_status: BaselineQualityStatus,
+}
+
 #[derive(Clone, Debug, Default, Serialize)]
 struct CorpusBaselineQualityCategorySummary {
     document_count: usize,
@@ -1719,6 +1750,34 @@ impl CorpusBaselineQualityCategorySummary {
         self.quality_pass_rate = self.passed_documents as f64 / self.document_count as f64;
         self.quality_passed = self.failed_checks == 0;
         self.quality_failed = !self.quality_passed;
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+struct CorpusBaselineQualityUncheckedCategorySummary {
+    document_count: usize,
+    page_count: usize,
+    not_checked_no_expectations_documents: usize,
+    not_checked_timed_out_documents: usize,
+    not_checked_execution_failed_documents: usize,
+}
+
+impl CorpusBaselineQualityUncheckedCategorySummary {
+    fn add_document(&mut self, page_count: usize, status: BaselineQualityStatus) {
+        self.document_count += 1;
+        self.page_count += page_count;
+        match status {
+            BaselineQualityStatus::Checked => {}
+            BaselineQualityStatus::NotCheckedNoExpectations => {
+                self.not_checked_no_expectations_documents += 1;
+            }
+            BaselineQualityStatus::NotCheckedTimedOut => {
+                self.not_checked_timed_out_documents += 1;
+            }
+            BaselineQualityStatus::NotCheckedExecutionFailed => {
+                self.not_checked_execution_failed_documents += 1;
+            }
+        }
     }
 }
 
@@ -4206,7 +4265,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                     bench_config,
                     baseline_quality
                         .as_ref()
-                        .and_then(|quality| quality.get(&manifest_path_key(&pdf))),
+                        .and_then(|quality| quality.expectation_for_path(&pdf)),
                 )?;
                 if let Some(manifest) = eval_manifest_path.as_deref() {
                     let quality = {
@@ -4935,7 +4994,7 @@ fn bench_corpus<B: PdfBackend + Sync>(
     backend: &B,
     path: &Path,
     config: BenchRunConfig<'_>,
-    baseline_quality: Option<&BTreeMap<PathBuf, BaselineQualityExpectations>>,
+    baseline_quality: Option<&BaselineQualityInputs>,
 ) -> Result<CorpusBenchOutput> {
     if config.cache_probe && config.cache_dir.is_none() {
         bail!("--cache-probe requires --cache-dir");
@@ -5063,7 +5122,8 @@ fn bench_corpus<B: PdfBackend + Sync>(
         .iter()
         .filter(|document| document.cache_status == CacheStatus::Miss)
         .count() as u32;
-    let baseline_outputs = aggregate_corpus_baselines(&documents, config.baselines, page_count);
+    let baseline_outputs =
+        aggregate_corpus_baselines(&documents, config.baselines, page_count, baseline_quality);
     let cache_probe_output = aggregate_corpus_cache_probe(&documents, page_count);
     let corpus_fingerprint = corpus_fingerprint(documents.iter().map(|document| {
         (
@@ -5145,7 +5205,7 @@ fn bench_corpus_parallel<B: PdfBackend + Sync>(
     backend: &B,
     pdfs: Vec<DiscoveredPdf>,
     config: BenchRunConfig<'_>,
-    baseline_quality: Option<&BTreeMap<PathBuf, BaselineQualityExpectations>>,
+    baseline_quality: Option<&BaselineQualityInputs>,
     worker_count: usize,
 ) -> Result<Vec<CorpusBenchDocument>> {
     let indexed_pdfs = pdfs.into_iter().enumerate().collect::<Vec<_>>();
@@ -5189,13 +5249,13 @@ fn bench_corpus_document<B: PdfBackend>(
     backend: &B,
     pdf: DiscoveredPdf,
     config: BenchRunConfig<'_>,
-    baseline_quality: Option<&BTreeMap<PathBuf, BaselineQualityExpectations>>,
+    baseline_quality: Option<&BaselineQualityInputs>,
 ) -> Result<CorpusBenchDocument> {
     let bench = bench_pdf(
         backend,
         &pdf.path,
         config,
-        baseline_quality.and_then(|quality| quality.get(&manifest_path_key(&pdf.path))),
+        baseline_quality.and_then(|quality| quality.expectation_for_path(&pdf.path)),
     )?;
     Ok(CorpusBenchDocument {
         source_path: pdf.path,
@@ -6929,7 +6989,7 @@ fn kill_timed_out_child(child: &mut std::process::Child) {
 fn load_baseline_quality_expectations(
     manifest_path: &Path,
     category: Option<&str>,
-) -> Result<BTreeMap<PathBuf, BaselineQualityExpectations>> {
+) -> Result<BaselineQualityInputs> {
     let manifest_bytes = fs::read(manifest_path)
         .with_context(|| format!("read eval manifest {}", manifest_path.display()))?;
     let manifest: EvalManifest = serde_json::from_slice(&manifest_bytes)
@@ -6937,6 +6997,7 @@ fn load_baseline_quality_expectations(
     let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
     let category = normalize_manifest_category(category);
     let mut expectations_by_path = BTreeMap::new();
+    let mut categories_by_path = BTreeMap::new();
 
     for document in manifest.documents {
         if let Some(category) = category.as_deref()
@@ -6944,6 +7005,10 @@ fn load_baseline_quality_expectations(
         {
             continue;
         }
+        let path_key = manifest_path_key(&resolve_manifest_path(manifest_dir, &document.path));
+        let document_category = normalize_manifest_category(document.category.as_deref())
+            .unwrap_or_else(|| "uncategorized".to_string());
+        categories_by_path.insert(path_key.clone(), document_category);
         let expectations = base_eval_expectations(&document)?;
         let required_text = baseline_required_text_expectations(&expectations);
         if required_text.is_empty()
@@ -6956,7 +7021,7 @@ fn load_baseline_quality_expectations(
 
         let category = normalize_manifest_category(document.category.as_deref());
         expectations_by_path.insert(
-            manifest_path_key(&resolve_manifest_path(manifest_dir, &document.path)),
+            path_key,
             BaselineQualityExpectations {
                 category,
                 required_text,
@@ -6967,7 +7032,10 @@ fn load_baseline_quality_expectations(
         );
     }
 
-    Ok(expectations_by_path)
+    Ok(BaselineQualityInputs {
+        expectations_by_path,
+        categories_by_path,
+    })
 }
 
 fn baseline_required_text_expectations(expectations: &EvalExpectations) -> Vec<String> {
@@ -7696,6 +7764,7 @@ fn aggregate_corpus_baselines(
     documents: &[CorpusBenchDocument],
     baselines: &[BaselineSpec],
     page_count: usize,
+    baseline_quality: Option<&BaselineQualityInputs>,
 ) -> Vec<CorpusBaselineBenchOutput> {
     baselines
         .iter()
@@ -7819,6 +7888,20 @@ fn aggregate_corpus_baselines(
                         .add_document(document.page_count, quality);
                     summaries
                 });
+            let quality_unchecked_category_summaries = runs
+                .iter()
+                .filter(|(_, run)| run.quality.is_none())
+                .fold(BTreeMap::new(), |mut summaries, (document, run)| {
+                    let category = baseline_quality_category_for_document(
+                        baseline_quality,
+                        document.source_path.as_path(),
+                    );
+                    summaries
+                        .entry(category)
+                        .or_insert_with(CorpusBaselineQualityUncheckedCategorySummary::default)
+                        .add_document(document.page_count, run.quality_status);
+                    summaries
+                });
             let failure_samples = runs
                 .iter()
                 .filter(|(_, run)| !run.success)
@@ -7842,6 +7925,19 @@ fn aggregate_corpus_baselines(
                     })
                 })
                 .take(3)
+                .collect();
+            let quality_unchecked_samples = runs
+                .iter()
+                .filter(|(_, run)| run.quality.is_none())
+                .take(3)
+                .map(|(document, run)| CorpusBaselineQualityUncheckedSample {
+                    path: document.path.clone(),
+                    category: baseline_quality_category_for_document(
+                        baseline_quality,
+                        document.source_path.as_path(),
+                    ),
+                    quality_status: run.quality_status,
+                })
                 .collect();
             let description = runs.iter().find_map(|(_, run)| run.description.clone());
             let target = baseline_description_target(description.as_ref());
@@ -7881,9 +7977,11 @@ fn aggregate_corpus_baselines(
                 quality_reading_order_failed_documents,
                 quality_table_structure_failed_documents,
                 quality_category_summaries,
+                quality_unchecked_category_summaries,
                 quality_pass_rate,
                 failure_samples,
                 quality_failure_samples,
+                quality_unchecked_samples,
                 wall_us,
                 pages_per_sec: pages_per_sec(page_count, wall_us),
                 successful_pages_per_sec: pages_per_sec(successful_pages, wall_us),
@@ -7968,6 +8066,15 @@ fn baseline_quality_failed_check_types(quality: &BaselineQualityOutput) -> Vec<&
 
 fn baseline_quality_category(quality: &BaselineQualityOutput) -> &str {
     quality.category.as_deref().unwrap_or("uncategorized")
+}
+
+fn baseline_quality_category_for_document(
+    baseline_quality: Option<&BaselineQualityInputs>,
+    path: &Path,
+) -> String {
+    baseline_quality
+        .map(|quality| quality.category_for_path(path))
+        .unwrap_or_else(|| "uncategorized".to_string())
 }
 
 fn benchmark_category_summaries(
