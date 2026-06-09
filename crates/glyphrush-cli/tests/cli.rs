@@ -1050,12 +1050,17 @@ fn liteparse_benchmark_gate_script_dry_run_defaults_v0_manifest_to_v0_pdf_root()
         "baseline preflight should not include unrelated root test PDFs:\n{stdout}"
     );
     assert!(
+        lines[0].contains("--baseline-timeout-ms 900000"),
+        "v0 corpus preflight needs a larger default timeout than the datasheet seed:\n{stdout}"
+    );
+    assert!(
         lines[1].contains("bench test/v0"),
         "benchmark should run only the v0 corpus root:\n{stdout}"
     );
     assert!(lines[1].contains("--eval-manifest test/corpus.v0.json"));
     assert!(!lines[1].contains("--eval-category"));
     assert!(lines[1].contains("--require-coverage-preset glyphrush-v0"));
+    assert!(lines[1].contains("--baseline-timeout-ms 900000"));
     assert!(lines[2].contains("--require-coverage-preset glyphrush-v0"));
 }
 

@@ -24,19 +24,29 @@ backend="${GLYPHRUSH_BENCH_BACKEND:-pdfium}"
 features="${GLYPHRUSH_BENCH_FEATURES:-pdfium}"
 speedup="${GLYPHRUSH_BENCH_LITEPARSE_SPEEDUP:-2.0}"
 no_ocr_speedup="${GLYPHRUSH_BENCH_LITEPARSE_NO_OCR_SPEEDUP:-1.5}"
-baseline_timeout_ms="${GLYPHRUSH_BENCH_BASELINE_TIMEOUT_MS:-120000}"
+baseline_timeout_ms="${GLYPHRUSH_BENCH_BASELINE_TIMEOUT_MS:-}"
 coverage_preset="${GLYPHRUSH_BENCH_COVERAGE_PRESET:-}"
 output="${GLYPHRUSH_BENCH_OUTPUT:-}"
 pdf_dir="${GLYPHRUSH_BENCH_PDF_DIR:-}"
+is_v0_manifest=false
+case "$manifest" in
+  test/corpus.v0.json | */test/corpus.v0.json)
+    is_v0_manifest=true
+    ;;
+esac
 if [[ -z "$pdf_dir" ]]; then
-  case "$manifest" in
-    test/corpus.v0.json | */test/corpus.v0.json)
-      pdf_dir="test/v0"
-      ;;
-    *)
-      pdf_dir="test/"
-      ;;
-  esac
+  if [[ "$is_v0_manifest" == true ]]; then
+    pdf_dir="test/v0"
+  else
+    pdf_dir="test/"
+  fi
+fi
+if [[ -z "$baseline_timeout_ms" ]]; then
+  if [[ "$is_v0_manifest" == true ]]; then
+    baseline_timeout_ms="900000"
+  else
+    baseline_timeout_ms="120000"
+  fi
 fi
 
 preflight_cmd=(
