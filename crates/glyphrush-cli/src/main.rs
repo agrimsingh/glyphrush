@@ -607,6 +607,9 @@ struct FeatureParityBenchmarkEvidence {
     report_version: Option<String>,
     backend: Option<String>,
     quality_status: Option<String>,
+    report_valid: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    report_error: Option<FeatureParityBenchmarkReportError>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     quality_categories: Vec<FeatureParityBenchmarkCategoryEvidence>,
     coverage_requirement: FeatureParityBenchmarkCoverageRequirement,
@@ -618,6 +621,12 @@ struct FeatureParityBenchmarkEvidence {
     missing_required_claims: Vec<String>,
     failed_required_claims: Vec<FeatureParityBenchmarkClaimEvidence>,
     claims: Vec<FeatureParityBenchmarkClaimEvidence>,
+}
+
+#[derive(Debug, Serialize)]
+struct FeatureParityBenchmarkReportError {
+    kind: &'static str,
+    message: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -2249,9 +2258,8 @@ fn feature_parity_output<B: PdfBackend>(
     let capabilities =
         liteparse_feature_parity_capabilities(backend.supports_page_render_for_ocr());
     let summary = feature_parity_summary(&capabilities);
-    let benchmark_evidence = bench_report
-        .map(|path| feature_parity_benchmark_evidence(path, coverage_preset))
-        .transpose()?;
+    let benchmark_evidence =
+        bench_report.map(|path| feature_parity_benchmark_evidence(path, coverage_preset));
     let readiness = feature_parity_readiness(&capabilities, &summary, benchmark_evidence.as_ref());
 
     Ok(FeatureParityOutput {
@@ -2272,11 +2280,29 @@ fn feature_parity_output<B: PdfBackend>(
 fn feature_parity_benchmark_evidence(
     path: &Path,
     coverage_preset: Option<CoveragePreset>,
-) -> Result<FeatureParityBenchmarkEvidence> {
-    let report: Value = serde_json::from_slice(
-        &fs::read(path).with_context(|| format!("read benchmark report {}", path.display()))?,
-    )
-    .with_context(|| format!("decode benchmark report {}", path.display()))?;
+) -> FeatureParityBenchmarkEvidence {
+    let report_bytes = match fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            return feature_parity_invalid_benchmark_evidence(
+                path,
+                coverage_preset,
+                "read_error",
+                error.to_string(),
+            );
+        }
+    };
+    let report: Value = match serde_json::from_slice(&report_bytes) {
+        Ok(report) => report,
+        Err(error) => {
+            return feature_parity_invalid_benchmark_evidence(
+                path,
+                coverage_preset,
+                "decode_error",
+                error.to_string(),
+            );
+        }
+    };
     let claims = report
         .get("speedup_claims")
         .and_then(Value::as_array)
@@ -2340,7 +2366,7 @@ fn feature_parity_benchmark_evidence(
         &quality_categories,
     );
 
-    Ok(FeatureParityBenchmarkEvidence {
+    FeatureParityBenchmarkEvidence {
         report_path: path.display().to_string(),
         report_version: report
             .get("report_version")
@@ -2354,6 +2380,8 @@ fn feature_parity_benchmark_evidence(
             .get("quality_status")
             .and_then(Value::as_str)
             .map(str::to_string),
+        report_valid: true,
+        report_error: None,
         quality_categories,
         coverage_requirement,
         required_claim_count: FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len(),
@@ -2364,7 +2392,47 @@ fn feature_parity_benchmark_evidence(
         missing_required_claims,
         failed_required_claims,
         claims,
-    })
+    }
+}
+
+fn feature_parity_invalid_benchmark_evidence(
+    path: &Path,
+    coverage_preset: Option<CoveragePreset>,
+    error_kind: &'static str,
+    error_message: String,
+) -> FeatureParityBenchmarkEvidence {
+    let quality_categories = Vec::new();
+    let coverage_requirement = feature_parity_benchmark_coverage_requirement(
+        coverage_preset.unwrap_or(CoveragePreset::GlyphrushV0),
+        coverage_preset.is_some(),
+        &quality_categories,
+    );
+    let missing_required_claims = FEATURE_PARITY_REQUIRED_SPEED_CLAIMS
+        .iter()
+        .map(|(baseline, _)| (*baseline).to_string())
+        .collect::<Vec<_>>();
+
+    FeatureParityBenchmarkEvidence {
+        report_path: path.display().to_string(),
+        report_version: None,
+        backend: None,
+        quality_status: None,
+        report_valid: false,
+        report_error: Some(FeatureParityBenchmarkReportError {
+            kind: error_kind,
+            message: error_message,
+        }),
+        quality_categories,
+        coverage_requirement,
+        required_claim_count: FEATURE_PARITY_REQUIRED_SPEED_CLAIMS.len(),
+        claim_count: 0,
+        quality_backed_claim_count: 0,
+        claim_passed_count: 0,
+        evidence_passed: false,
+        missing_required_claims,
+        failed_required_claims: Vec::new(),
+        claims: Vec::new(),
+    }
 }
 
 fn feature_parity_benchmark_coverage_requirement(
@@ -2697,7 +2765,9 @@ fn feature_parity_speed_claim_readiness(
         return (false, blockers);
     };
 
-    if !benchmark_evidence.evidence_passed {
+    if !benchmark_evidence.report_valid {
+        blockers.push("invalid_benchmark_report".to_string());
+    } else if !benchmark_evidence.evidence_passed {
         blockers.push("missing_quality_backed_liteparse_claims".to_string());
     }
 

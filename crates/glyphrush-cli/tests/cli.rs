@@ -824,6 +824,54 @@ fn feature_parity_speed_evidence_rejects_claim_when_actual_speedup_misses_thresh
 }
 
 #[test]
+fn feature_parity_reports_invalid_saved_benchmark_before_failing_speed_evidence_gate() {
+    let dir = temp_dir("feature-parity-invalid-bench-report");
+    let report_path = dir.join("bench.json");
+    fs::write(&report_path, "").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "feature-parity",
+            "--bench-report",
+            report_path.to_str().unwrap(),
+            "--require-speed-evidence",
+        ])
+        .output()
+        .expect("run glyphrush feature-parity with invalid benchmark report");
+
+    assert!(
+        !output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity failure output is json");
+
+    assert_eq!(json["benchmark_evidence"]["report_valid"], false);
+    assert_eq!(
+        json["benchmark_evidence"]["report_error"]["kind"],
+        "decode_error"
+    );
+    assert_eq!(
+        json["benchmark_evidence"]["report_error"]["message"],
+        "EOF while parsing a value at line 1 column 0"
+    );
+    assert_eq!(json["benchmark_evidence"]["evidence_passed"], false);
+    assert_eq!(
+        json["readiness"]["native_text_speed_claim_blockers"],
+        serde_json::json!(["invalid_benchmark_report", "missing_coverage_preset"])
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("quality-backed LiteParse claims"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn feature_parity_coverage_preset_gate_fails_when_benchmark_categories_are_missing() {
     let dir = temp_dir("feature-parity-coverage-preset-missing");
     let report_path = dir.join("bench.json");
