@@ -1020,6 +1020,46 @@ fn liteparse_benchmark_gate_script_dry_run_can_use_all_manifest_categories() {
 }
 
 #[test]
+fn liteparse_benchmark_gate_script_dry_run_defaults_v0_manifest_to_v0_pdf_root() {
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("canonical repo root");
+    let output = Command::new(repo_root.join("scripts/bench-liteparse.sh"))
+        .arg("--dry-run")
+        .env("GLYPHRUSH_BENCH_CATEGORY", "all")
+        .env("GLYPHRUSH_BENCH_MANIFEST", "test/corpus.v0.json")
+        .env("GLYPHRUSH_BENCH_COVERAGE_PRESET", "glyphrush-v0")
+        .env(
+            "GLYPHRUSH_BENCH_OUTPUT",
+            "/tmp/glyphrush-liteparse-v0-coverage.json",
+        )
+        .output()
+        .expect("run bench-liteparse dry run for v0 manifest");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let lines = stdout.lines().collect::<Vec<_>>();
+    assert_eq!(lines.len(), 3, "dry-run output:\n{stdout}");
+    assert!(
+        lines[0].contains("--pdf test/v0"),
+        "baseline preflight should not include unrelated root test PDFs:\n{stdout}"
+    );
+    assert!(
+        lines[1].contains("bench test/v0"),
+        "benchmark should run only the v0 corpus root:\n{stdout}"
+    );
+    assert!(lines[1].contains("--eval-manifest test/corpus.v0.json"));
+    assert!(!lines[1].contains("--eval-category"));
+    assert!(lines[1].contains("--require-coverage-preset glyphrush-v0"));
+    assert!(lines[2].contains("--require-coverage-preset glyphrush-v0"));
+}
+
+#[test]
 fn verify_script_dry_run_exposes_opt_in_pdfium_speed_path_gate() {
     let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")

@@ -17,7 +17,6 @@ while (($# > 0)); do
   esac
 done
 
-pdf_dir="${GLYPHRUSH_BENCH_PDF_DIR:-test/}"
 manifest="${GLYPHRUSH_BENCH_MANIFEST:-test/corpus.datasheets.json}"
 category="${GLYPHRUSH_BENCH_CATEGORY:-datasheet}"
 jobs="${GLYPHRUSH_BENCH_JOBS:-4}"
@@ -28,6 +27,17 @@ no_ocr_speedup="${GLYPHRUSH_BENCH_LITEPARSE_NO_OCR_SPEEDUP:-1.5}"
 baseline_timeout_ms="${GLYPHRUSH_BENCH_BASELINE_TIMEOUT_MS:-120000}"
 coverage_preset="${GLYPHRUSH_BENCH_COVERAGE_PRESET:-}"
 output="${GLYPHRUSH_BENCH_OUTPUT:-}"
+pdf_dir="${GLYPHRUSH_BENCH_PDF_DIR:-}"
+if [[ -z "$pdf_dir" ]]; then
+  case "$manifest" in
+    test/corpus.v0.json | */test/corpus.v0.json)
+      pdf_dir="test/v0"
+      ;;
+    *)
+      pdf_dir="test/"
+      ;;
+  esac
+fi
 
 preflight_cmd=(
   cargo run -q --release -p glyphrush-cli
