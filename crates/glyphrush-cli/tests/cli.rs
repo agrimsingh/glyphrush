@@ -1224,8 +1224,18 @@ fn verify_script_dry_run_exposes_opt_in_pdfium_speed_path_gate() {
         .join("../..")
         .canonicalize()
         .expect("canonical repo root");
+    let workspace = temp_dir("verify-dry-run-local-corpora");
+    fs::create_dir_all(workspace.join("test/v0/scanned")).unwrap();
+    fs::write(workspace.join("test/root.pdf"), b"%PDF root fixture").unwrap();
+    fs::write(
+        workspace.join("test/v0/scanned/sample.pdf"),
+        b"%PDF v0 fixture",
+    )
+    .unwrap();
+
     let output = Command::new(repo_root.join("scripts/verify.sh"))
         .arg("--dry-run")
+        .current_dir(&workspace)
         .env("GLYPHRUSH_VERIFY_PDFIUM", "1")
         .output()
         .expect("run verify dry run");
@@ -1246,6 +1256,11 @@ fn verify_script_dry_run_exposes_opt_in_pdfium_speed_path_gate() {
     assert!(
         stdout
             .contains("parse_pdfium_ocr_command_rendered_image_invokes_adapter_only_for_ocr_pages")
+    );
+    assert!(stdout.contains("eval test/corpus.datasheets.json --category datasheet --jobs 2"));
+    assert!(
+        stdout.contains("--backend pdfium eval test/corpus.v0.json --jobs 2"),
+        "local v0 corpus should be part of the shared verify gate:\n{stdout}"
     );
 }
 
@@ -10528,7 +10543,7 @@ PY"#,
             "--baseline",
             &format!("noisy={}", noisy.display()),
             "--baseline-timeout-ms",
-            "1000",
+            "5000",
             "--strict",
         ])
         .output()

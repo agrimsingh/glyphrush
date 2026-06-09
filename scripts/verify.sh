@@ -41,3 +41,20 @@ if ((${#local_corpus[@]} > 0)); then
 else
   echo "Skipping datasheet eval: no local PDFs found under test/."
 fi
+
+v0_corpus=()
+if [[ -d test/v0 ]]; then
+  while IFS= read -r -d '' pdf; do
+    v0_corpus+=("$pdf")
+  done < <(find test/v0 -type f -iname '*.pdf' -print0)
+fi
+
+if ((${#v0_corpus[@]} > 0)); then
+  if [[ "${GLYPHRUSH_VERIFY_PDFIUM:-0}" == "1" ]]; then
+    run cargo run -q -p glyphrush-cli --features pdfium -- --backend pdfium eval test/corpus.v0.json --jobs 2
+  else
+    echo "Skipping v0 eval: set GLYPHRUSH_VERIFY_PDFIUM=1 to evaluate PDFium-generated test/corpus.v0.json."
+  fi
+else
+  echo "Skipping v0 eval: no local PDFs found under test/v0/."
+fi
