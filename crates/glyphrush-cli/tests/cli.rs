@@ -684,6 +684,100 @@ fn feature_parity_marks_liteparse_speed_claim_ready_with_quality_and_coverage_ev
 }
 
 #[test]
+fn feature_parity_marks_native_text_speed_advantage_ready_when_baseline_quality_fails() {
+    let dir = temp_dir("feature-parity-bench-speed-advantage");
+    let report_path = dir.join("bench.json");
+    fs::write(
+        &report_path,
+        r#"{
+          "report_version": "glyphrush-bench-report-v1",
+          "backend": "pdfium",
+          "quality_status": "checked",
+          "quality": {
+            "category_summaries": {
+              "clean_digital": { "document_count": 1, "page_count": 2, "failed_checks": 0, "quality_passed": true },
+              "hybrid": { "document_count": 1, "page_count": 3, "failed_checks": 0, "quality_passed": true },
+              "academic_columns": { "document_count": 1, "page_count": 8, "failed_checks": 0, "quality_passed": true },
+              "tables": { "document_count": 1, "page_count": 2, "failed_checks": 0, "quality_passed": true },
+              "forms": { "document_count": 1, "page_count": 1, "failed_checks": 0, "quality_passed": true },
+              "rotated": { "document_count": 1, "page_count": 1, "failed_checks": 0, "quality_passed": true },
+              "weird_encoding": { "document_count": 1, "page_count": 1, "failed_checks": 0, "quality_passed": true },
+              "large": { "document_count": 1, "page_count": 50, "failed_checks": 0, "quality_passed": true }
+            }
+          },
+          "speedup_claims": [
+            {
+              "baseline": "liteparse",
+              "required_glyphrush_speedup": 2.0,
+              "actual_glyphrush_speedup": 64.0,
+              "speed_comparable": true,
+              "speed_passed": true,
+              "glyphrush_quality_checked": true,
+              "glyphrush_quality_passed": true,
+              "baseline_quality_checked": true,
+              "baseline_quality_passed": false,
+              "glyphrush_quality_backed": true,
+              "quality_backed": false,
+              "quality_blocker": "baseline_quality_failed",
+              "claim_passed": false,
+              "status": "quality_failed"
+            },
+            {
+              "baseline": "liteparse-no-ocr",
+              "required_glyphrush_speedup": 1.5,
+              "actual_glyphrush_speedup": 4.5,
+              "speed_comparable": true,
+              "speed_passed": true,
+              "glyphrush_quality_checked": true,
+              "glyphrush_quality_passed": true,
+              "baseline_quality_checked": true,
+              "baseline_quality_passed": false,
+              "glyphrush_quality_backed": true,
+              "quality_backed": false,
+              "quality_blocker": "baseline_quality_failed",
+              "claim_passed": false,
+              "status": "quality_failed"
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "feature-parity",
+            "--bench-report",
+            report_path.to_str().unwrap(),
+            "--require-coverage-preset",
+            "glyphrush-v0-native-text",
+        ])
+        .output()
+        .expect("run glyphrush feature-parity with native-text speed advantage evidence");
+
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value =
+        serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
+
+    assert_eq!(json["readiness"]["native_text_speed_claim_ready"], false);
+    assert_eq!(
+        json["readiness"]["native_text_speed_claim_blockers"],
+        serde_json::json!(["missing_quality_backed_liteparse_claims"])
+    );
+    assert_eq!(json["readiness"]["native_text_speed_advantage_ready"], true);
+    assert_eq!(
+        json["readiness"]["native_text_speed_advantage_blockers"],
+        serde_json::json!([])
+    );
+}
+
+#[test]
 fn feature_parity_speed_evidence_gate_fails_when_liteparse_claim_is_missing() {
     let dir = temp_dir("feature-parity-bench-evidence-missing");
     let report_path = dir.join("bench.json");

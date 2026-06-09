@@ -576,6 +576,8 @@ struct FeatureParityReadiness {
     native_text_speed_race_ready: bool,
     native_text_speed_claim_ready: bool,
     native_text_speed_claim_blockers: Vec<String>,
+    native_text_speed_advantage_ready: bool,
+    native_text_speed_advantage_blockers: Vec<String>,
     full_liteparse_drop_in_ready: bool,
     glyphrush_product_parity_ready: bool,
     native_text_speed_race_gate: &'static str,
@@ -3156,11 +3158,15 @@ fn feature_parity_readiness(
     let native_text_speed_race_ready = hot_path_ready && quality_gate_ready;
     let (native_text_speed_claim_ready, native_text_speed_claim_blockers) =
         feature_parity_speed_claim_readiness(native_text_speed_race_ready, benchmark_evidence);
+    let (native_text_speed_advantage_ready, native_text_speed_advantage_blockers) =
+        feature_parity_speed_advantage_readiness(native_text_speed_race_ready, benchmark_evidence);
 
     FeatureParityReadiness {
         native_text_speed_race_ready,
         native_text_speed_claim_ready,
         native_text_speed_claim_blockers,
+        native_text_speed_advantage_ready,
+        native_text_speed_advantage_blockers,
         full_liteparse_drop_in_ready: summary.partial == 0
             && summary.planned == 0
             && summary.not_planned == 0,
@@ -3212,6 +3218,82 @@ fn feature_parity_speed_claim_readiness(
         blockers.push("invalid_benchmark_report".to_string());
     } else if !benchmark_evidence.evidence_passed {
         blockers.push("missing_quality_backed_liteparse_claims".to_string());
+    }
+
+    let coverage_requirement = &benchmark_evidence.coverage_requirement;
+    if !coverage_requirement.required {
+        blockers.push("missing_coverage_preset".to_string());
+    } else if !coverage_requirement.passed {
+        blockers.push("coverage_preset_missing_categories".to_string());
+    }
+
+    (blockers.is_empty(), blockers)
+}
+
+fn feature_parity_speed_advantage_readiness(
+    capability_ready: bool,
+    benchmark_evidence: Option<&FeatureParityBenchmarkEvidence>,
+) -> (bool, Vec<String>) {
+    let mut blockers = Vec::new();
+
+    if !capability_ready {
+        blockers.push("native_text_speed_race_capabilities_not_ready".to_string());
+    }
+
+    let Some(benchmark_evidence) = benchmark_evidence else {
+        blockers.push("missing_benchmark_evidence".to_string());
+        return (false, blockers);
+    };
+
+    if !benchmark_evidence.report_valid {
+        blockers.push("invalid_benchmark_report".to_string());
+    } else {
+        let mut missing_required_claims = false;
+        let mut speed_evidence_failed = false;
+        let mut glyphrush_quality_not_backed = false;
+        let mut baseline_quality_not_checked = false;
+
+        for (baseline, required_speedup) in FEATURE_PARITY_REQUIRED_SPEED_CLAIMS {
+            let Some(claim) = benchmark_evidence
+                .claims
+                .iter()
+                .find(|claim| claim.baseline == baseline)
+            else {
+                missing_required_claims = true;
+                continue;
+            };
+
+            let requested_speedup_met = claim
+                .required_glyphrush_speedup
+                .is_some_and(|actual_required| actual_required >= required_speedup);
+            let actual_speedup_met = claim
+                .actual_glyphrush_speedup
+                .is_some_and(|actual_speedup| actual_speedup >= required_speedup);
+            let speed_comparable = claim.speed_comparable.unwrap_or(false);
+            let speed_passed = claim.speed_passed.unwrap_or(false);
+            if !requested_speedup_met || !actual_speedup_met || !speed_comparable || !speed_passed {
+                speed_evidence_failed = true;
+            }
+            if claim.glyphrush_quality_backed != Some(true) {
+                glyphrush_quality_not_backed = true;
+            }
+            if claim.baseline_quality_checked != Some(true) {
+                baseline_quality_not_checked = true;
+            }
+        }
+
+        if missing_required_claims {
+            blockers.push("missing_required_liteparse_claims".to_string());
+        }
+        if speed_evidence_failed {
+            blockers.push("speed_evidence_failed".to_string());
+        }
+        if glyphrush_quality_not_backed {
+            blockers.push("glyphrush_quality_not_backed".to_string());
+        }
+        if baseline_quality_not_checked {
+            blockers.push("baseline_quality_not_checked".to_string());
+        }
     }
 
     let coverage_requirement = &benchmark_evidence.coverage_requirement;
