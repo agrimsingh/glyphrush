@@ -422,6 +422,61 @@ fn aligned_whitespace_table_payload_merges_wrapped_descriptor_rows() {
 }
 
 #[test]
+fn key_value_table_payload_preserves_multi_word_labels() {
+    let artifact = parse_extracted_pages(
+        "doc-key-value-table".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "Document Number: DS-4312\n",
+                "Revision Code: A2\n",
+                "Package Type: SOT-23\n",
+                "Operating Range: -40 C to 85 C\n"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 1,
+                native_text_bytes: 116,
+                glyph_count: 92,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 1);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Table);
+    let table = page.layout_blocks[0].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            vec!["Field", "Value"],
+            vec!["Document Number", "DS-4312"],
+            vec!["Revision Code", "A2"],
+            vec!["Package Type", "SOT-23"],
+            vec!["Operating Range", "-40 C to 85 C"],
+        ]
+    );
+}
+
+#[test]
 fn ocr_text_can_produce_layout_blocks_when_native_text_is_missing() {
     let artifact = parse_extracted_pages(
         "doc-ocr-layout".to_string(),

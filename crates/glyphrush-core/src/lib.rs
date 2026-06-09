@@ -3680,6 +3680,10 @@ fn table_payload_from_text(text: &str, kind: &LayoutBlockKind) -> Option<LayoutT
         return layout_table_from_text_rows(rows);
     }
 
+    if let Some(rows) = key_value_table_rows(&lines) {
+        return layout_table_from_text_rows(rows);
+    }
+
     let rows = lines
         .iter()
         .map(|line| table_cells_from_text_line(line))
@@ -3822,6 +3826,10 @@ fn is_whitespace_table_lines_str(lines: &[&str]) -> bool {
     }
 
     if header_guided_whitespace_table_rows(lines).is_some() {
+        return true;
+    }
+
+    if key_value_table_rows(lines).is_some() {
         return true;
     }
 
@@ -6514,6 +6522,56 @@ fn header_guided_whitespace_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>
         && merged_descriptor_rows > 0
         && rows_with_table_value_cells == data_row_count)
         .then_some(rows)
+}
+
+fn key_value_table_rows(lines: &[&str]) -> Option<Vec<Vec<String>>> {
+    if lines.len() < 3 {
+        return None;
+    }
+
+    let mut rows = Vec::with_capacity(lines.len() + 1);
+    rows.push(vec!["Field".to_string(), "Value".to_string()]);
+
+    for line in lines {
+        let (label, value) = key_value_table_row(line)?;
+        rows.push(vec![label, value]);
+    }
+
+    Some(rows)
+}
+
+fn key_value_table_row(line: &str) -> Option<(String, String)> {
+    let trimmed = line.trim();
+    if trimmed.is_empty() || trimmed.contains("://") {
+        return None;
+    }
+
+    let (label, value) = trimmed.split_once(':')?;
+    let label = label.trim();
+    let value = value.trim();
+    if !looks_like_key_value_table_label(label) || !looks_like_key_value_table_value(value) {
+        return None;
+    }
+
+    Some((label.to_string(), value.to_string()))
+}
+
+fn looks_like_key_value_table_label(label: &str) -> bool {
+    !label.is_empty()
+        && label.chars().count() <= 80
+        && label.split_whitespace().count() <= 8
+        && label.chars().any(char::is_alphabetic)
+        && label.chars().all(|ch| {
+            ch.is_alphanumeric() || ch.is_whitespace() || matches!(ch, '-' | '/' | '(' | ')' | '%')
+        })
+}
+
+fn looks_like_key_value_table_value(value: &str) -> bool {
+    !value.is_empty()
+        && value.chars().count() <= 160
+        && value
+            .chars()
+            .any(|ch| ch.is_alphanumeric() || matches!(ch, '-' | '+' | '.'))
 }
 
 fn header_guided_row_has_trailing_blank_descriptor(tokens: &[&str], column_count: usize) -> bool {
