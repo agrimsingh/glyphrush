@@ -3280,7 +3280,7 @@ fn split_leading_text_table_caption(
     lines: &[String],
     run_table_recovery: bool,
 ) -> Option<(String, Vec<String>)> {
-    if !run_table_recovery || lines.len() < 4 {
+    if !run_table_recovery || lines.len() < 3 {
         return None;
     }
 

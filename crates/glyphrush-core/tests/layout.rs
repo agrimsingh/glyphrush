@@ -166,6 +166,54 @@ fn pipe_table_recovery_keeps_leading_caption_outside_table_grid() {
 }
 
 #[test]
+fn pipe_table_recovery_keeps_leading_caption_for_two_row_table() {
+    let artifact = parse_extracted_pages(
+        "doc-pipe-table-short-leading-caption".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: concat!(
+                "REGISTER SUMMARY\n",
+                "| Address | Name |\n",
+                "| 0x00 | CTRL |"
+            )
+            .to_string(),
+            native_spans: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 3,
+                native_text_bytes: 64,
+                glyph_count: 48,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_blocks.len(), 2);
+    assert_eq!(page.layout_blocks[0].kind, LayoutBlockKind::Heading);
+    assert_eq!(page.layout_blocks[0].text, "REGISTER SUMMARY");
+    assert_eq!(page.layout_blocks[1].kind, LayoutBlockKind::Table);
+
+    let table = page.layout_blocks[1].table.as_ref().expect("table payload");
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.text.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(rows, vec![vec!["Address", "Name"], vec!["0x00", "CTRL"]]);
+}
+
+#[test]
 fn aligned_whitespace_table_payload_preserves_empty_cells_and_column_indexes() {
     let artifact = parse_extracted_pages(
         "doc-aligned-table-empty-cells".to_string(),
