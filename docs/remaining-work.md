@@ -50,31 +50,15 @@ Exit criteria:
 - Labeled table fixtures pass across at least datasheet, invoice/form, budget, and academic categories.
 - Table recovery improves structured output without harming non-table pages or plain text order.
 
-### 3. Refresh LiteParse benchmark evidence
+### 3. Refresh LiteParse benchmark evidence — DONE (narrow claim)
 
-Why it matters: the project goal is "faster LiteParse," but the claim must be phrased correctly. Today the narrow Glyphrush native-text speed advantage is ready, while the stricter quality-backed LiteParse comparison is not ready.
+Status: the native-text v0 benchmark was re-run against the committed corpus and the narrow claim gate passes: `feature-parity --bench-report .glyphrush-baselines/reports/liteparse-v0-native-text-gate.json --require-speed-advantage --require-coverage-preset glyphrush-v0-native-text` exits zero with `native_text_speed_advantage_ready: true`. Headline numbers and the exact command, manifest SHA-256, PDF root, coverage preset, timing, and quality status are recorded in `docs/benchmarking.md` under "Saved v0 native-text evidence": Glyphrush 1.88 s / 491 pages/sec over 924 pages with passing quality, 77.4x vs LiteParse default and 1.90x vs LiteParse no-OCR.
 
-Concrete tasks:
+The stricter both-pass claim remains intentionally blocked by `missing_quality_backed_liteparse_claims`. Triage shows LiteParse's `required_text` failures are largely caused by backend-flavored generated anchors (PDFium spacing quirks such as `Helloworld`, `\u0002` hyphenation markers) and stdout-format table expectations, not proven LiteParse content loss.
 
-- Re-run the native-text v0 benchmark against LiteParse and LiteParse-no-OCR using the current parser.
-- Preserve the full saved report under `.glyphrush-baselines/reports/` and keep the progress log for stalled or slow baselines.
-- Investigate saved LiteParse quality failures by category before using the result for public claims.
-- Decide whether a release note should say "Glyphrush passes quality and is faster on this corpus" or the stricter "Glyphrush and LiteParse both pass quality, and Glyphrush is faster."
-- Document the exact command, corpus manifest, PDF root, coverage preset, timing, and quality status with every claim.
+Remaining follow-up to unlock the strict claim:
 
-Recommended command:
-
-```sh
-GLYPHRUSH_BENCH_CATEGORY=native-text \
-GLYPHRUSH_BENCH_MANIFEST=test/corpus.v0.json \
-GLYPHRUSH_BENCH_OUTPUT=.glyphrush-baselines/reports/liteparse-v0-native-text-gate.json \
-scripts/bench-liteparse.sh
-```
-
-Exit criteria:
-
-- `feature-parity --bench-report <saved-report> --require-speed-advantage --require-coverage-preset glyphrush-v0-native-text` passes.
-- If using the stricter claim, `--require-speed-evidence` also passes and the report contains quality-backed LiteParse claims.
+- Make generated required-text anchors backend-neutral (skip or normalize spacing/control-character artifacts) or move backend-flavored anchors into `expect_by_backend.pdfium`, then re-run the gate with `--require-speed-evidence`.
 
 ### 4. Harden OCR fallback on scanned and hybrid documents
 
