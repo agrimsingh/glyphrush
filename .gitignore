@@ -9,3 +9,5 @@ __pycache__/
 *.egg-info/
 /test/**/*.pdf
 /test/**/*.PDF
+!/test/v0/**/*.pdf
+!/test/v0/**/*.PDF

@@ -11,7 +11,7 @@
     "ocr_http_url": false,
     "ocr_timeout_ms": 120000
   },
-  "corpus_fingerprint": "ea9f46f831253748203fde4e57414cd1bda3f35fe1f9309c08a78fbe47f99ef9",
+  "corpus_fingerprint": "0cc7867569367ee70cd8cb36eb41d72c3adc403b52a2865a142242a8d1bb83fe",
   "required_categories": [
     "academic_columns",
     "clean_digital",
@@ -139,7 +139,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Proceedings of NAACL-HLT 2019, pages 4171–4186"
+              "Proceedings of NAACL-HLT 2019, pages 4171\u20134186"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -502,7 +502,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "• Learning rate (Adam): 5e-5, 3e-5, 2e-5"
+              "\u2022 Learning rate (Adam): 5e-5, 3e-5, 2e-5"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -584,42 +584,102 @@
       }
     },
     {
-      "path": "v0/clean_digital/fema-firm-database-technical-reference-2024.pdf",
+      "path": "v0/clean_digital/nist-sp-800-63b-digital-identity-guidelines.pdf",
       "category": "clean_digital",
-      "document_fingerprint": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e",
-      "source_size_bytes": 2081162,
+      "document_fingerprint": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e",
+      "source_size_bytes": 1480377,
       "expect": {
-        "page_count": 161,
-        "fallback_pages": 6,
+        "page_count": 80,
+        "fallback_pages": 66,
         "ocr_required_pages": 0,
         "ocr_applied_pages": 0,
-        "image_artifact_count": 2,
-        "warnings_count": 6,
+        "image_artifact_count": 69,
+        "warnings_count": 65,
         "required_warnings": [
-          "p000002: unsupported_feature: annotation_or_form",
-          "p000004: unsupported_feature: annotation_or_form",
-          "p000005: unsupported_feature: annotation_or_form",
+          "p000000: unsupported_feature: annotation_or_form",
+          "p000003: unsupported_feature: annotation_or_form",
           "p000006: unsupported_feature: annotation_or_form",
           "p000007: unsupported_feature: annotation_or_form",
-          "p000008: unsupported_feature: annotation_or_form"
+          "p000008: unsupported_feature: annotation_or_form",
+          "p000009: unsupported_feature: annotation_or_form",
+          "p000011: unsupported_feature: annotation_or_form",
+          "p000012: unsupported_feature: annotation_or_form",
+          "p000014: unsupported_feature: annotation_or_form",
+          "p000015: unsupported_feature: annotation_or_form",
+          "p000016: unsupported_feature: annotation_or_form",
+          "p000017: unsupported_feature: annotation_or_form",
+          "p000018: unsupported_feature: annotation_or_form",
+          "p000019: unsupported_feature: annotation_or_form",
+          "p000020: unsupported_feature: annotation_or_form",
+          "p000021: unsupported_feature: annotation_or_form",
+          "p000022: unsupported_feature: annotation_or_form",
+          "p000023: unsupported_feature: annotation_or_form",
+          "p000024: unsupported_feature: annotation_or_form",
+          "p000025: unsupported_feature: annotation_or_form",
+          "p000026: unsupported_feature: annotation_or_form",
+          "p000027: unsupported_feature: annotation_or_form",
+          "p000028: unsupported_feature: annotation_or_form",
+          "p000029: unsupported_feature: annotation_or_form",
+          "p000030: unsupported_feature: annotation_or_form",
+          "p000031: unsupported_feature: annotation_or_form",
+          "p000032: unsupported_feature: annotation_or_form",
+          "p000033: unsupported_feature: annotation_or_form",
+          "p000034: unsupported_feature: annotation_or_form",
+          "p000035: unsupported_feature: annotation_or_form",
+          "p000036: unsupported_feature: annotation_or_form",
+          "p000037: unsupported_feature: annotation_or_form",
+          "p000038: unsupported_feature: annotation_or_form",
+          "p000039: unsupported_feature: annotation_or_form",
+          "p000040: unsupported_feature: annotation_or_form",
+          "p000042: unsupported_feature: annotation_or_form",
+          "p000043: unsupported_feature: annotation_or_form",
+          "p000044: unsupported_feature: annotation_or_form",
+          "p000045: unsupported_feature: annotation_or_form",
+          "p000046: unsupported_feature: annotation_or_form",
+          "p000047: unsupported_feature: annotation_or_form",
+          "p000048: unsupported_feature: annotation_or_form",
+          "p000049: unsupported_feature: annotation_or_form",
+          "p000051: unsupported_feature: annotation_or_form",
+          "p000055: unsupported_feature: annotation_or_form",
+          "p000056: unsupported_feature: annotation_or_form",
+          "p000057: unsupported_feature: annotation_or_form",
+          "p000058: unsupported_feature: annotation_or_form",
+          "p000059: unsupported_feature: annotation_or_form",
+          "p000060: unsupported_feature: annotation_or_form",
+          "p000061: unsupported_feature: annotation_or_form",
+          "p000063: unsupported_feature: annotation_or_form",
+          "p000064: unsupported_feature: annotation_or_form",
+          "p000065: unsupported_feature: annotation_or_form",
+          "p000066: unsupported_feature: annotation_or_form",
+          "p000067: unsupported_feature: annotation_or_form",
+          "p000068: unsupported_feature: annotation_or_form",
+          "p000069: unsupported_feature: annotation_or_form",
+          "p000072: unsupported_feature: annotation_or_form",
+          "p000073: unsupported_feature: annotation_or_form",
+          "p000074: unsupported_feature: annotation_or_form",
+          "p000075: unsupported_feature: annotation_or_form",
+          "p000076: unsupported_feature: annotation_or_form",
+          "p000077: unsupported_feature: annotation_or_form",
+          "p000078: unsupported_feature: annotation_or_form"
         ],
         "route_counts": {
-          "native_fast_path": 155,
-          "needs_fallback": 0,
+          "native_fast_path": 14,
+          "needs_fallback": 1,
           "ocr_fallback": 0,
-          "unsupported": 6
+          "unsupported": 65
         },
         "route_reason_counts": {
-          "annotation_or_form": 6,
-          "duplicate_char_ratio": 4
+          "annotation_or_form": 65,
+          "duplicate_char_ratio": 4,
+          "table_line_density": 1
         },
         "quality_flag_counts": {
           "requires_ocr": 0,
           "low_confidence_text": 0,
           "broken_encoding": 0,
           "layout_uncertain": 4,
-          "table_uncertain": 0,
-          "unsupported_feature": 6
+          "table_uncertain": 1,
+          "unsupported_feature": 65
         },
         "ocr_required_classification": {
           "expected_pages": [],
@@ -630,10 +690,18 @@
           {
             "flag": "layout_uncertain",
             "expected_pages": [
-              4,
-              5,
               6,
-              7
+              7,
+              8,
+              9
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "table_uncertain",
+            "expected_pages": [
+              2
             ],
             "min_precision": 1.0,
             "min_recall": 1.0
@@ -641,15 +709,104 @@
           {
             "flag": "unsupported_feature",
             "expected_pages": [
-              2,
-              4,
-              5,
+              0,
+              3,
               6,
               7,
-              8
+              8,
+              9,
+              11,
+              12,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39,
+              40,
+              42,
+              43,
+              44,
+              45,
+              46,
+              47,
+              48,
+              49,
+              51,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78
             ],
             "min_precision": 1.0,
             "min_recall": 1.0
+          }
+        ],
+        "table_structure": [
+          {
+            "page": 2,
+            "expected_rows": [
+              [
+                "Ray",
+                "A.",
+                "Perlner"
+              ],
+              [
+                "Andrew",
+                "R.",
+                "Regenscheid"
+              ],
+              [
+                "Computer",
+                "Security",
+                "Division"
+              ],
+              [
+                "Information",
+                "Technology",
+                "Laboratory"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
           }
         ],
         "silent_failures": {
@@ -658,14 +815,14 @@
         "pages": [
           {
             "index": 0,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000000:7b96ea79c8b1",
-            "page_fingerprint": "7b96ea79c8b157e6a1534276c265044d6ca3b111687aca15690a084a01577607",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000000:463c6c7e540c",
+            "page_fingerprint": "463c6c7e540ca2d49813c63e53c7aa8778427be6c291e3def13a6c47169a44d9",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Flood Insurance Rate Map"
+              "Date updated: July 24, 2025"
             ],
-            "image_artifact_count": 2,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -676,22 +833,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 1,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000001:ffa05e0d68fd",
-            "page_fingerprint": "ffa05e0d68fd63fb28d29becd1a48a5fe7328ec3136e22eec560af4ef53645a2",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000001:1ca8ff029058",
+            "page_fingerprint": "1ca8ff02905878805b1a739675731715ada3fbd1abf28a7cd1f9e61c050c35b8",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST Special Publication 800-63B"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
+              "block_count": 3,
+              "paragraph_blocks": 3,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -704,12 +865,42 @@
           },
           {
             "index": 2,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000002:07a7ad81c53b",
-            "page_fingerprint": "07a7ad81c53bb25160549f56e5ae66fcceb8c67da56f74089b1ebff9460fa7fa",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000002:11b1540a4283",
+            "page_fingerprint": "11b1540a42834b2e3c55a959c320bab8e130dce0126bb89484bb95a48337c5fd",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "NIST Special Publication 800-63B"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 9,
+              "paragraph_blocks": 8,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 1,
+              "table_rows": 4,
+              "table_cells": 12,
+              "table_cells_with_bbox": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain"
+            ],
+            "required_reasons": [
+              "table_line_density"
+            ]
+          },
+          {
+            "index": 3,
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000003:23babd81d10e",
+            "page_fingerprint": "23babd81d10e033c8d9d0b0e6593d0557c3d16958512e4b70710e55d24307e89",
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "Authority"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -730,13 +921,36 @@
             ]
           },
           {
-            "index": 3,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000003:0fbaf5ecd23e",
-            "page_fingerprint": "0fbaf5ecd23ef89f420ef9e2cafbf6b0ee33ade70d8b01162f6edcd2ff0545be",
+            "index": 4,
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000004:fc264cdaadba",
+            "page_fingerprint": "fc264cdaadbac56eca038bdb11382fbcbdcec9b172b11219e3fafe3d7fa58e0c",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [],
+            "required_reasons": []
+          },
+          {
+            "index": 5,
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000005:017512fd01e8",
+            "page_fingerprint": "017512fd01e8b2909ed075dde4653317e1469dbae994c6f1c4a8c14ffb632af0",
+            "route": "native_fast_path",
+            "empty_text_output": false,
+            "required_text": [
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -753,76 +967,18 @@
             "required_reasons": []
           },
           {
-            "index": 4,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000004:59c3eb095eca",
-            "page_fingerprint": "59c3eb095ecac8ebe8fa19b8be25dae99c11e32032f4659c2468c48042bed29f",
-            "route": "unsupported",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [
-              "layout_uncertain",
-              "unsupported_feature"
-            ],
-            "required_reasons": [
-              "duplicate_char_ratio",
-              "annotation_or_form"
-            ]
-          },
-          {
-            "index": 5,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000005:e2d520fea96e",
-            "page_fingerprint": "e2d520fea96e144f4b9013f3d312b6937c0aa7708b8ccec4a3782eda1c622029",
-            "route": "unsupported",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [
-              "layout_uncertain",
-              "unsupported_feature"
-            ],
-            "required_reasons": [
-              "duplicate_char_ratio",
-              "annotation_or_form"
-            ]
-          },
-          {
             "index": 6,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000006:8c50466423d0",
-            "page_fingerprint": "8c50466423d0608cb804f84fca0c5d9b118fc15ef8d0acf83b7cef7906fd2cb7",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000006:252e758b92ad",
+            "page_fingerprint": "252e758b92ad97a47f095c391c2ee10730729398903815f0f2f8bb03d19c2bda",
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 6,
             "layout_block_counts": {
-              "block_count": 2,
-              "paragraph_blocks": 2,
+              "block_count": 1,
+              "paragraph_blocks": 1,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -841,14 +997,14 @@
           },
           {
             "index": 7,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000007:adfff2eef74d",
-            "page_fingerprint": "adfff2eef74dc6ee75774f37486b8a28d332636f2f1eec80a2446acef37ad8d2",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000007:4adc09926e7b",
+            "page_fingerprint": "4adc09926e7b98d5c32838b7c88b0d2d3aa09d8a16f177d7784d7c025708dfc5",
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 9,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -870,12 +1026,93 @@
           },
           {
             "index": 8,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000008:4d434ac8dd64",
-            "page_fingerprint": "4d434ac8dd64d00d6960c8deb6c321962de04005b02060f2a7c73ea8b52def03",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000008:1b105deb13d2",
+            "page_fingerprint": "1b105deb13d2f03d3c5855ce4a4dedb52d91b4d79cfaf14b89951f1c8773ae39",
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
+            ],
+            "image_artifact_count": 14,
+            "layout_block_counts": {
+              "block_count": 2,
+              "paragraph_blocks": 2,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "duplicate_char_ratio",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 9,
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000009:422e3967b56a",
+            "page_fingerprint": "422e3967b56a702106179fb0bb0f35c998b584dab97f975d57b23f6df323eb29",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 2,
+              "paragraph_blocks": 2,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "duplicate_char_ratio",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 10,
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000010:447af9e4cec7",
+            "page_fingerprint": "447af9e4cec756a104fe842aea2e709369a1daf8cc8b39918d79096c9dd47176",
+            "route": "native_fast_path",
+            "empty_text_output": false,
+            "required_text": [
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 3,
+              "paragraph_blocks": 3,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [],
+            "required_reasons": []
+          },
+          {
+            "index": 11,
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000011:c5373ec1ac35",
+            "page_fingerprint": "c5373ec1ac358256427b4996a576c826c20b120920bf3dfc005f73a6f906b893",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -896,82 +1133,13 @@
             ]
           },
           {
-            "index": 9,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000009:579369ba2259",
-            "page_fingerprint": "579369ba2259ca610a72e62482275f615fb40fa99917296fd077884a179329aa",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 10,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000010:dd16a1085084",
-            "page_fingerprint": "dd16a10850844ea1da081e6baab33266c61248fe9f949a45943fdf959b49e9ce",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 11,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000011:3c78658ab449",
-            "page_fingerprint": "3c78658ab4498a616c5d38253ba6de6fac08a8e449336124c12f8bafa7a69a82",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
             "index": 12,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000012:e68cec840537",
-            "page_fingerprint": "e68cec840537d0b373a6cac6f0e38e897317fdb2323eed6337148862b76d53ce",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000012:1546b0c913b1",
+            "page_fingerprint": "1546b0c913b1209fb1e3728f92383d26f9c2701df79eb19e924ea77a3628bec8",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -984,17 +1152,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 13,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000013:f913a203710a",
-            "page_fingerprint": "f913a203710a99e768fdad8704f8d23a62b4f4554c831cd50e8bb0c8afd94dc7",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000013:b6e2df589c97",
+            "page_fingerprint": "b6e2df589c97d99fc49f572a5d71615c8be12a7c662b43be5fe53171eb314412",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1012,17 +1184,17 @@
           },
           {
             "index": 14,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000014:474d4bbacdae",
-            "page_fingerprint": "474d4bbacdae5b6ca44e97df96da40ea91a53714e79efa7ab4c785098e0a2097",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000014:b198a55e9bd7",
+            "page_fingerprint": "b198a55e9bd729b804bbf9c66299aa9168f029a6caf3811af1b6e3c35f0853de",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
+              "block_count": 2,
+              "paragraph_blocks": 2,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1030,19 +1202,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 15,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000015:617ffeee0252",
-            "page_fingerprint": "617ffeee025268b4e234c743db4d2a0af5b24a87cc63f002e4469cc1dac3138f",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000015:50945800cfb6",
+            "page_fingerprint": "50945800cfb6b34aa1aedca49ce34986d1b94db4422358b0328c81a8cf2c17ac",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1053,19 +1229,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 16,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000016:80627b0cd541",
-            "page_fingerprint": "80627b0cd5419024f4584d9e7b80eef9651884af86dd2c000d3807692aace149",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000016:5c1cece52032",
+            "page_fingerprint": "5c1cece52032305b00ebca2f435331db290e1b55009236e9d9d68f391dcbcefb",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1076,22 +1256,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 17,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000017:6e2e353684a4",
-            "page_fingerprint": "6e2e353684a475bbc118e0c19259006c394eee0c83b6ba81eb421537880756b6",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000017:917a11947904",
+            "page_fingerprint": "917a11947904423e52d719f753f3bf82f3e0a7daf25cd402762894014199daf9",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 2,
-              "paragraph_blocks": 2,
+              "block_count": 1,
+              "paragraph_blocks": 1,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1099,19 +1283,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 18,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000018:297e89996767",
-            "page_fingerprint": "297e89996767e03d6f9e6f7e83dff5e4073641688441cc091f3582411f9ffc57",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000018:95005dfa2f10",
+            "page_fingerprint": "95005dfa2f10c7af4d9c077c56856db5cf1ad7eb5592893ab40d4adef4dcc4c6",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1122,17 +1310,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 19,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000019:6fa4347b78f1",
-            "page_fingerprint": "6fa4347b78f1b23ac7153d392e31ab26c70e28783198f8b87c8b9c1e30c96b15",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000019:2965567fa28a",
+            "page_fingerprint": "2965567fa28a55c3755d0984ebe6097fe3afb9497d29b70de986d45921d0b5f7",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1145,22 +1337,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 20,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000020:f7eb3087fbc9",
-            "page_fingerprint": "f7eb3087fbc9d14645ba25a9f5548246567684247f3f9e3b18cfe5118561dc0a",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000020:8d4985913bff",
+            "page_fingerprint": "8d4985913bff818ca25725a153bb148904648e9adebe3f4ef978efe1de537576",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
+              "block_count": 2,
+              "paragraph_blocks": 2,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1168,22 +1364,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 21,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000021:91b68054d6ea",
-            "page_fingerprint": "91b68054d6eac912f2cb9f4dafac7e2e2dff6223305330f78eab1d17b4fc6bb8",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000021:6ed6eacf76bc",
+            "page_fingerprint": "6ed6eacf76bc24c6159fb4a7d28eb4f8503a7b27d5a17bd00ce54156f90eae23",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
-              "block_count": 2,
-              "paragraph_blocks": 2,
+              "block_count": 1,
+              "paragraph_blocks": 1,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1191,17 +1391,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 22,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000022:299dbb1e1930",
-            "page_fingerprint": "299dbb1e193067239bf5eecb94597c20018eafbb00a3d85753328956a8614d50",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000022:cd4e41894923",
+            "page_fingerprint": "cd4e418949239c610bff14ed94c60a15cca60fcfd36c8d257b417f93b2932df8",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1214,19 +1418,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 23,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000023:9991783f68b0",
-            "page_fingerprint": "9991783f68b024bf6e070019184c743cbe4c9c8b5bc1909b0ea087c7aa663042",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000023:1011fd8005bb",
+            "page_fingerprint": "1011fd8005bbe57de462752dcc0f1a20bb2275f9164585aab963a9bd6543e4b5",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 2,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1237,22 +1445,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 24,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000024:8bc61edaf1da",
-            "page_fingerprint": "8bc61edaf1da5117f03521486c49396c2861050b807480956ff917720c636451",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000024:405631e9d1b6",
+            "page_fingerprint": "405631e9d1b6b70db4b9f95452b21e7c8a890011a13b8cbf9943b4a4e2a31897",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 5,
-              "paragraph_blocks": 5,
+              "block_count": 1,
+              "paragraph_blocks": 1,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1260,22 +1472,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 25,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000025:f3428ea2f178",
-            "page_fingerprint": "f3428ea2f178b9fa753b3d15154d2c46b94f4e1a227f8110e87b09084e0cc539",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000025:356c24947117",
+            "page_fingerprint": "356c24947117b18173edb15dca8ed742adbcb7a45d352e4b8d8f152082f78422",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
-              "block_count": 5,
-              "paragraph_blocks": 5,
+              "block_count": 1,
+              "paragraph_blocks": 1,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1283,19 +1499,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 26,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000026:cc924d1aacd8",
-            "page_fingerprint": "cc924d1aacd85ca4dcdbdf7c4723fb487f93f107bf194fa6364688659c90df0f",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000026:c44b8d5beb96",
+            "page_fingerprint": "c44b8d5beb9603df928c8e955c61e13854f6888900df37994b1056085ed9e6bf",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1306,22 +1526,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 27,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000027:377b6b6d92e6",
-            "page_fingerprint": "377b6b6d92e654a27cf1c225be41288aa93409433090c58b2827cacbb04c8f6d",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000027:e490027b452c",
+            "page_fingerprint": "e490027b452cfa614e846c49573ea2976f17fea5947bee8a032520da0c211e49",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 2,
-              "paragraph_blocks": 2,
+              "block_count": 1,
+              "paragraph_blocks": 1,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1329,17 +1553,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 28,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000028:60ad578d3275",
-            "page_fingerprint": "60ad578d3275a03f737e495769d28354d57c2bda267670981ec50bc3bcb8208f",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000028:ed2a4f19daf7",
+            "page_fingerprint": "ed2a4f19daf7c995e7f42535ffd854f519e0e732929d0e429bf7fd9e3e841c8b",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1352,19 +1580,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 29,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000029:ebd52c4ccb37",
-            "page_fingerprint": "ebd52c4ccb371fd694c0c64fbbfe7c74596f352474b166ac8ebd777ec6a00a07",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000029:9c5455adcde5",
+            "page_fingerprint": "9c5455adcde55e66dee45b2a58fbb7180da4dbea6b598e3c358a298d91264fcb",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1375,19 +1607,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 30,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000030:88df88654c0a",
-            "page_fingerprint": "88df88654c0a03f8a3409633e68648565db764ed54fbafd8333a20d8b8287056",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000030:c8ed53ac5cc4",
+            "page_fingerprint": "c8ed53ac5cc4c7f19d27d46f22471d7bb036caa28199761c939b444fbd6c0242",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1398,22 +1634,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 31,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000031:7863dfa4bb3a",
-            "page_fingerprint": "7863dfa4bb3a4a089cee6aa67c0be8520b608951ded390191c9ffd91ce0a7e58",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000031:4f44f8ddf7db",
+            "page_fingerprint": "4f44f8ddf7db11c12753ab82f4a6fd0d36f864625f1827cf33375bb958ed4cdd",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 3,
-              "paragraph_blocks": 3,
+              "block_count": 1,
+              "paragraph_blocks": 1,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1421,19 +1661,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 32,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000032:c98097f23f23",
-            "page_fingerprint": "c98097f23f233865e9dc30d2c978821cd1955d379920df74d1a5f59fdd078175",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000032:22097a49af6e",
+            "page_fingerprint": "22097a49af6e2cd36acc2bd862ed7aab3a8c7e3bc7a8b47b56b141fd3221e658",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 2,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1444,19 +1688,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 33,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000033:708682e88779",
-            "page_fingerprint": "708682e8877996f5d4449fce4dbf28fa05f8c31cd92eb87659b513698769dc52",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000033:50a9bd507267",
+            "page_fingerprint": "50a9bd507267eb73ee42e734b0c7c387eccd9443b2eb189410d01e93d2ff80c1",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1467,19 +1715,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 34,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000034:e7bd39597bec",
-            "page_fingerprint": "e7bd39597bec22244512548ddf391b11b2763d59920703f7a1cf3c1ae56f1311",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000034:4f3b1bf11ce5",
+            "page_fingerprint": "4f3b1bf11ce5b64c9751abc76b4cbf6ea38f8623c2028879250ce4ad6c30ff69",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1490,19 +1742,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 35,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000035:dfd1a1104640",
-            "page_fingerprint": "dfd1a1104640d3de99e5f4934557a4ed30ec6fa26c8cf5d95a9dcb8d4657f410",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000035:3ca7c8400468",
+            "page_fingerprint": "3ca7c8400468ce32bd816720cc40e2209552a79a3ca1ef82cda5d605882f3d78",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1513,17 +1769,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 36,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000036:752b1c2d5c5f",
-            "page_fingerprint": "752b1c2d5c5f2dc8c34acc20733eb3fd51c911277f7383383cbe2515685b11cc",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000036:9d79c916be64",
+            "page_fingerprint": "9d79c916be64730238a547c6f5ac1da3ad17b8f1d474cc60c891c2cbc09a0d0b",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1536,17 +1796,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 37,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000037:93c1fe51256a",
-            "page_fingerprint": "93c1fe51256a73f257b59a9129e78f75b79c123482f4ebf57f4c7f38c5e4aeff",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000037:d4e50abb0379",
+            "page_fingerprint": "d4e50abb0379aebc8e825c553b03e0729f6f32538197fa130a631b0d915b1443",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1559,17 +1823,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 38,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000038:40e8c90da6d4",
-            "page_fingerprint": "40e8c90da6d4cbd560e2e9d3d8875131d80fbbfb3ccb2bdf385d3d6bdf12f687",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000038:6f3797952f9a",
+            "page_fingerprint": "6f3797952f9ae4572d0f6e41b182e02d7a012615f41d1ed3b1bd8d382a0b8244",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1582,17 +1850,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 39,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000039:a845ac6055f7",
-            "page_fingerprint": "a845ac6055f71bd422d0413d77baf70a371570aae972ae53367a29807dc5418c",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000039:fdeef75aa2fb",
+            "page_fingerprint": "fdeef75aa2fba98bb831f45ad666f162553036670d453891ae8bb3b25a617a89",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1605,17 +1877,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 40,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000040:c556cc86e064",
-            "page_fingerprint": "c556cc86e064aee19314972f1a19acdf0c73fe8aff946a397a2358e20137326d",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000040:5b5f3d792991",
+            "page_fingerprint": "5b5f3d79299161327e6fa3df501fecd8c387724fc2bef3154b80ef0380eae492",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1628,17 +1904,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 41,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000041:cce024e9a5bf",
-            "page_fingerprint": "cce024e9a5bf93e6e28e780e2e918dd2ba6fc9721846c1f61203cb00ba3e4311",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000041:cf10450eefa1",
+            "page_fingerprint": "cf10450eefa178dfba0221354547c968de69af69db0d4d92c747da1e76630431",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1656,14 +1936,14 @@
           },
           {
             "index": 42,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000042:dabe5d979545",
-            "page_fingerprint": "dabe5d9795454c755bdc00731791b069b6aa1728119c53f89c5a2d9d79beeecc",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000042:f8e74bcf9488",
+            "page_fingerprint": "f8e74bcf9488593f01d1c1b08985b28244b95314079de1d398fd34f2214a9a25",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1674,17 +1954,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 43,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000043:bb7bee0b5b3b",
-            "page_fingerprint": "bb7bee0b5b3b8a0948b0b18c048e2268937e0b591850a5d7a419da278591b469",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000043:c3f9cdea9145",
+            "page_fingerprint": "c3f9cdea91452b6fb3c6706d6fcb4f871814ed79eb8d24d94e4601ed5c0cf8fc",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1697,17 +1981,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 44,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000044:a55f959609c9",
-            "page_fingerprint": "a55f959609c9b7a1708800b3537861cc8da3146afd2636f3c91cf2d01edcc65e",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000044:420d805faba2",
+            "page_fingerprint": "420d805faba26cb4c7042a32736c93eaae0fe18ffd5bc5b3ad1bc29fa603782c",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1720,19 +2008,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 45,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000045:d60f7e7a37af",
-            "page_fingerprint": "d60f7e7a37afec7a6113d495b7e9a6d70b0a9240f50855ea93fafaa0efacaef4",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000045:19ec27a1d65e",
+            "page_fingerprint": "19ec27a1d65e70afb7808986b21e923641bb8b58695fb1b832279a7d6e6aad4c",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1743,19 +2035,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 46,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000046:bae8018ffe51",
-            "page_fingerprint": "bae8018ffe5107128d5aa3d55343c4fe7197492445543523a9cefab2fba970aa",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000046:6000ace443f7",
+            "page_fingerprint": "6000ace443f73baa04463a63403464342666487cbd00da2a491b001b3469ce34",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 2,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1766,19 +2062,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 47,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000047:8a813879ea40",
-            "page_fingerprint": "8a813879ea40e97c8067d9b7ec32d1f6e7b326fae07107ce40cdf1e5a34308c8",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000047:46a8dbe4bcf2",
+            "page_fingerprint": "46a8dbe4bcf25b4f68682332d9fad5a50c6ad0ed11ee2131b92d43b567c5cb1e",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1789,17 +2089,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 48,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000048:81562294c6ad",
-            "page_fingerprint": "81562294c6adc7ae834324716dfaf33dce7b985510fcddfd062ad39e4715013d",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000048:1dab15f242d6",
+            "page_fingerprint": "1dab15f242d6a74dee0f60a09c1c22a5563b3be0f725a8bd278bd1988dacabe2",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1812,19 +2116,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 49,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000049:4171f75eff70",
-            "page_fingerprint": "4171f75eff70d32771b78a32feb46e485778c725c3f48d1436b58e771eb13eb1",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000049:33dfa82167fa",
+            "page_fingerprint": "33dfa82167fa39eef9cf75f6fe1aad2ef5197425ea489ce4541dfabeb8c3e38c",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 2,
               "paragraph_blocks": 2,
@@ -1835,17 +2143,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 50,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000050:89ac32e01e7b",
-            "page_fingerprint": "89ac32e01e7bb1f28a9111a67c7cce31534fe4136fade3958e0c8049ea516704",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000050:4060286e733d",
+            "page_fingerprint": "4060286e733d7905aa0b3ad472465be0980e9480d3e5d6cf48a66172f4a4e204",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1863,14 +2175,14 @@
           },
           {
             "index": 51,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000051:ecdc31c76d86",
-            "page_fingerprint": "ecdc31c76d861790a947a6d17f861c47fc7b26e13f8ff4b31531f4e94b5ca668",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000051:bc4a0404decb",
+            "page_fingerprint": "bc4a0404decb16abc1e060fbc286fb5b23f656885c47a8d1e679b526cc3adfb3",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -1881,22 +2193,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 52,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000052:eed4b6d230c3",
-            "page_fingerprint": "eed4b6d230c3bfa6d9d71d52f82552c89e6fa4b76c100a9fc97358657b7022d0",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000052:9997339e65f5",
+            "page_fingerprint": "9997339e65f5a46762aa97f987fd453353aa733aeb534e1ddc16c1da66ae73eb",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
+              "block_count": 2,
+              "paragraph_blocks": 2,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1909,12 +2225,12 @@
           },
           {
             "index": 53,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000053:423d9f087920",
-            "page_fingerprint": "423d9f087920eaa175c1c3a9ae1e1de2304dab92d50beb2746168fe78ad9b9f9",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000053:4f2e9939d65a",
+            "page_fingerprint": "4f2e9939d65a53fdefcc0b125c5081b4d05e3ee7aa597b16b8ac0abd6e8fa3db",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1932,12 +2248,12 @@
           },
           {
             "index": 54,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000054:32da3099b02a",
-            "page_fingerprint": "32da3099b02a29e459b9847c0b6abce1792269af72f76ca97d81a343cf168abd",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000054:6658d5693a07",
+            "page_fingerprint": "6658d5693a07e1c276a66973b6d7645abf49224edc98554a75ef950067aa5155",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1955,17 +2271,17 @@
           },
           {
             "index": 55,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000055:4132c9c641dc",
-            "page_fingerprint": "4132c9c641dce0dd6065e64bdbcf5d0195e54e3dce8165c02c631f2828253ae8",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000055:14d2d67713e5",
+            "page_fingerprint": "14d2d67713e5012ca014c599eacc2887a2921f689615e3e227f36508882dbb92",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
+              "block_count": 2,
+              "paragraph_blocks": 2,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1973,22 +2289,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 56,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000056:c1b63d7fce71",
-            "page_fingerprint": "c1b63d7fce7111711e855f3077e17ab57209d166db75ac720dbf3153510a1488",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000056:416d8f88a261",
+            "page_fingerprint": "416d8f88a261ea5fd3d9d52a53d71d625cc4fe73e7b5501a33131b02649b0e93",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
+              "block_count": 2,
+              "paragraph_blocks": 2,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -1996,19 +2316,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 57,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000057:62be63564b07",
-            "page_fingerprint": "62be63564b0761bef99807fff2b205f1d81d2f7f9ab26c32c6a14e8c582a7c06",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000057:8cba3e361a2d",
+            "page_fingerprint": "8cba3e361a2d3f0534da7c4f7f14390225f59a87677f41e6a1fa7b85b0146d1f",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 2,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -2019,22 +2343,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 58,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000058:f25b868d1b68",
-            "page_fingerprint": "f25b868d1b6867c5aa3ada7c0dc9820b4cf3243a7589083a8b8fb0fd0d204ccf",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000058:df04b368bf61",
+            "page_fingerprint": "df04b368bf61d8672d6ace4e9827c83de205d2eecbec22bca647a1d5f805b4bc",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 3,
             "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
+              "block_count": 2,
+              "paragraph_blocks": 2,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -2042,19 +2370,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 59,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000059:4298412d6b61",
-            "page_fingerprint": "4298412d6b612a29244a5a86645b09571d71603634be05e3731b90d2ed3ebdfd",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000059:dc60d675e9f4",
+            "page_fingerprint": "dc60d675e9f4e019d39785faa7bd3c80da86c054c366f457161497239f71bf02",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -2065,17 +2397,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 60,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000060:9e728b1a5728",
-            "page_fingerprint": "9e728b1a57282a8b11106d4343730b7a88b544825faadeacad5fc9fabd66dbf4",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000060:8afff5ea4389",
+            "page_fingerprint": "8afff5ea4389a9b19cbf80f60ae9ff7fee4f60c3c80c91d5240bf32d0db757ad",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -2088,19 +2424,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 61,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000061:99d210fc47c7",
-            "page_fingerprint": "99d210fc47c7613b4c0abe50edd2c87898a0373cfba084415132df9ba7b15c5e",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000061:a3022490635c",
+            "page_fingerprint": "a3022490635c957220a19c19889026c86acf8e3c2685a69c48d4d8b1fb69944f",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -2111,17 +2451,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 62,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000062:92674e213816",
-            "page_fingerprint": "92674e213816d7be0d4cd1de9f2e466d37314be0fb597b083baafbd711225d9e",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000062:7a1b27317bdb",
+            "page_fingerprint": "7a1b27317bdb77f93f9305c4baf0455a9517ccbd9e6085958cf95008bfb29334",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -2139,14 +2483,14 @@
           },
           {
             "index": 63,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000063:331be992d225",
-            "page_fingerprint": "331be992d225cce5769ef738943adacac109b8712d71dca90a8266a1adf89c7d",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000063:1493f2693433",
+            "page_fingerprint": "1493f2693433622ba0c5075b2ea2ed620054e1f9b6b9d6d3124863c772c1b7dd",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -2157,17 +2501,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 64,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000064:ca59e09d8d87",
-            "page_fingerprint": "ca59e09d8d878f54d5314b13a06dd9dcfa4435538933fb3f90fab88e0205bc10",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000064:d8c3c33c4e6b",
+            "page_fingerprint": "d8c3c33c4e6be4ad0a34490f89c7c748364b442597c7e6c857636e655715ed9b",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -2180,17 +2528,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 65,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000065:a63ad22ffc49",
-            "page_fingerprint": "a63ad22ffc494118609cdd5cccfef9ac98ac5e4fcf456c446256c04a218f606c",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000065:c2e2a8d4442b",
+            "page_fingerprint": "c2e2a8d4442b598a2053befa6e5cf28580c72a59597698533671627eea0b9fa7",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -2203,22 +2555,26 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 66,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000066:c320bea1439e",
-            "page_fingerprint": "c320bea1439e398bf9c089335e0fb4338ed90abc955e3d602f8b567ab575c017",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000066:939841774c90",
+            "page_fingerprint": "939841774c9087bbefd6062551192a5524622da64cf5e49bd1a3d9fef69ebc0f",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 2,
-              "paragraph_blocks": 2,
+              "block_count": 1,
+              "paragraph_blocks": 1,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -2226,19 +2582,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 67,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000067:7a572e71137e",
-            "page_fingerprint": "7a572e71137ea548be6d404eb3497b03043ee3fbe25f92293666e212dd514eff",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000067:8de0ed072cce",
+            "page_fingerprint": "8de0ed072cce686bbbf885ac6bdf69946a01ab049f1f9e413f406daae6d31d69",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -2249,19 +2609,50 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 68,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000068:a685f53dcc76",
-            "page_fingerprint": "a685f53dcc76f8c19ff6ef3d22b5fcdd815339cbb95823046560f53a8c03aae4",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000068:c348c9b15c84",
+            "page_fingerprint": "c348c9b15c84e3e0e68009ecce778ece91493aaca38b2eb90beb440e0df76cef",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 3,
+              "paragraph_blocks": 3,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 69,
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000069:4c07817e7821",
+            "page_fingerprint": "4c07817e7821beb0af4f95c473e577dc3b846e69f31a548a447e54e7e1b032fd",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
+            ],
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 2,
               "paragraph_blocks": 2,
@@ -2272,40 +2663,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 69,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000069:2d97d8b61d57",
-            "page_fingerprint": "2d97d8b61d572a92264e57a114586d94ae3026a82bd1c4069277c56407082c3d",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+            "required_flags": [
+              "unsupported_feature"
             ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 70,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000070:6063640bbb39",
-            "page_fingerprint": "6063640bbb39e362d0314c6384d588ae829de84fda8d1744a584328e64961c85",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000070:f5ac464f0e17",
+            "page_fingerprint": "f5ac464f0e17dff6af7fce04f1437eb4245b5983eed99454e19430d1febce7e2",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -2323,12 +2695,12 @@
           },
           {
             "index": 71,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000071:05798491866b",
-            "page_fingerprint": "05798491866be3891786cd356e04e745b2c361f62f007e7d00381ee6c8c5162f",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000071:40ea1de04bfc",
+            "page_fingerprint": "40ea1de04bfcd84e44510ba582c262598ffa0c6e49c614627627c11f37e781c2",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -2346,14 +2718,14 @@
           },
           {
             "index": 72,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000072:e9e6b741f49c",
-            "page_fingerprint": "e9e6b741f49c8327b21849da98349f5bb432a5beb0f4eeef4d2e2cd3a18c5e0a",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000072:c6f49c3a46ae",
+            "page_fingerprint": "c6f49c3a46aed4e7c1826f758dc7b4368cc4e9986f8eb596e8d43c608f98ca3f",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -2364,19 +2736,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 73,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000073:b967c4fd269d",
-            "page_fingerprint": "b967c4fd269d27ec978eb9038a71a2e92a52b3df53ea6e0e72224cf6f86f5164",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000073:771e94d874a8",
+            "page_fingerprint": "771e94d874a8bde0cf9caf80f3a393c2ff6225e0a8d54d8c0c8ab796501c39c5",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -2387,19 +2763,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 74,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000074:f4b01ceb90c8",
-            "page_fingerprint": "f4b01ceb90c8cc043d9ad76b8eeddc45293168e3d8ae244ac2d722ef6ba33f3f",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000074:22fc1b5fd147",
+            "page_fingerprint": "22fc1b5fd147d1d40dd203a47adbe54660f6300797a948966c51ac24cb4384d9",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -2410,19 +2790,23 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 75,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000075:a3a6d6f72bfa",
-            "page_fingerprint": "a3a6d6f72bfac7ba5913f619f30564d6a4144783869950783ae9c78a11616b9c",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000075:8137e7682659",
+            "page_fingerprint": "8137e76826594d1d32db1ca4a17a68c543b23b6bdef28db0d4f32d5792b010c6",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
-            "image_artifact_count": 0,
+            "image_artifact_count": 1,
             "layout_block_counts": {
               "block_count": 1,
               "paragraph_blocks": 1,
@@ -2433,17 +2817,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 76,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000076:04cf82b4fffd",
-            "page_fingerprint": "04cf82b4fffd9fd9fdaa8421bfc09ad4515c1f2b0e6cb17f1d77b8e2cc257509",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000076:43a8389463c9",
+            "page_fingerprint": "43a8389463c95a6355fa4670afdc787575ae46b22e355a9e076df662818f627f",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -2456,17 +2844,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 77,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000077:c084033c7f5a",
-            "page_fingerprint": "c084033c7f5aa323a27fdf0b03be26e4a6dbee222e666f4616305966948859a8",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000077:fec15fe4283a",
+            "page_fingerprint": "fec15fe4283a4722a271bbd55b91564e52af8c6582b300a7c2fcb8a1874e435a",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -2479,17 +2871,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 78,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000078:2cc75b27440f",
-            "page_fingerprint": "2cc75b27440fc1c25b55fcaf6f8d547c98caad9344f1a316d30c7f3db50d4280",
-            "route": "native_fast_path",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000078:d6ba817d8082",
+            "page_fingerprint": "d6ba817d8082b040e51c52959986555af12641930cd9c79c7537468684fc9997",
+            "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -2502,1880 +2898,21 @@
               "header_blocks": 0,
               "footer_blocks": 0
             },
-            "required_flags": [],
-            "required_reasons": []
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
           },
           {
             "index": 79,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000079:200178befa7f",
-            "page_fingerprint": "200178befa7f1475885d69b0d3252886a571acca70260852b17266b18a114a7d",
+            "artifact_id": "ccfce7510a1267933f912d023306c6e7d485f21be63d271108b61aad6139127e:p000079:c5dce2b04a7a",
+            "page_fingerprint": "c5dce2b04a7a89babc0a54eb1b77e9ae5d50a76a152cbfcc740e865660dd9bf9",
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 80,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000080:d0019dbe79e4",
-            "page_fingerprint": "d0019dbe79e4418b71d46061b3e40fb27c93ee8a9887c07b3997f2face933c73",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 81,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000081:dddc51f1de29",
-            "page_fingerprint": "dddc51f1de293dae063e19c167e357af003ce5b49fb7745f13b6e1051fb578e7",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 82,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000082:cfcf249cee8a",
-            "page_fingerprint": "cfcf249cee8a2852efac72f8c073b7520a1e88566c196a1507288dfc36a622df",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 83,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000083:dde7cd48c0ae",
-            "page_fingerprint": "dde7cd48c0ae219fdb4cde9005daecf8a438763948c0b73e93a006413ee9603f",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 84,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000084:8423445378f8",
-            "page_fingerprint": "8423445378f8d66c23a5c0a2e843d725aaffedd9cb54e92adcc96a4f7a5d859f",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 85,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000085:1e0dcf905389",
-            "page_fingerprint": "1e0dcf9053896cea7d0954e09891b8a521c31197925a059a87c07b7b35c2684d",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 86,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000086:44ed6b73d901",
-            "page_fingerprint": "44ed6b73d901ea81891371de8417770ed995cf50cd8d21d206aa89310623e064",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 87,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000087:b4b301b87dac",
-            "page_fingerprint": "b4b301b87dac3b296af2c252903ea1da8446eed1ccbce34cc795621195615fd7",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 88,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000088:d0a4969b7647",
-            "page_fingerprint": "d0a4969b764744216f2bc7def47e40ab702d8ea9cc92bf5e35d573bd066481c0",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 89,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000089:152385017e1f",
-            "page_fingerprint": "152385017e1f7bc5a72c9567da4716cc0b0dca015cfec0cb5306ea8add53de6e",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 90,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000090:28780e590794",
-            "page_fingerprint": "28780e590794d7468e56159cb4c8bcd0a43f4631ac45191286c7005553b3ff07",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 91,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000091:f4b08daf4dab",
-            "page_fingerprint": "f4b08daf4dab656773e188c1e30c9eed81a941752059c8e7d60f304aa7e98a5b",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 92,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000092:26b0738288eb",
-            "page_fingerprint": "26b0738288eb2bfd46a5f3050328c2acf6e6e769c34c7bf09d64c6fc53929e59",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 93,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000093:7894b180e1c6",
-            "page_fingerprint": "7894b180e1c663d2caefc7a9a3222b440eebc0f2e1e5c9ee4d3776c71b8d75f0",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 94,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000094:5c2c0a3865aa",
-            "page_fingerprint": "5c2c0a3865aaba74f36e402ac6ba7d562042f0b577b8e0d086c651ff0c6639e2",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 95,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000095:1af032023ce5",
-            "page_fingerprint": "1af032023ce5c8db66ca64726003ee6e8ce8af8c9402666ed7275728e9fa4cc2",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 96,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000096:36ccca648a61",
-            "page_fingerprint": "36ccca648a61ad1ff9f4181bc6631ac40c6703559d9b3727361c457aba2cecb7",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 97,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000097:76455968c972",
-            "page_fingerprint": "76455968c9726de0aaf8fa61efe5b2c3f761f0921e1583ca7f529bb8c2cb13c4",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 98,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000098:89f3fcc8ece7",
-            "page_fingerprint": "89f3fcc8ece7f3895078816cbb0c48f641ec65f62e7c16321980687a46e3098d",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 99,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000099:ef2c753ca2c3",
-            "page_fingerprint": "ef2c753ca2c3cce123306e21da7acdfae7989c36d2e10e331739a88921f755d7",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 100,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000100:e896be5209bc",
-            "page_fingerprint": "e896be5209bc27167fc0e94c2ffbc762824661b1ca116466e8f688930966261c",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 101,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000101:abfb8018b6c5",
-            "page_fingerprint": "abfb8018b6c519692562a141f49ca7c40aca386bdf766919cae261b4596fe639",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 102,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000102:7dd9aeb91ca1",
-            "page_fingerprint": "7dd9aeb91ca1a0f332d7bcc624f44ba84ccc14e1d65532e265eb07898f303ce3",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 103,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000103:c7b2d0db8ac4",
-            "page_fingerprint": "c7b2d0db8ac4617612d27e5209e7f67151e503c3fb7cdcd87b2947440f2b3c94",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 104,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000104:be87d901d70b",
-            "page_fingerprint": "be87d901d70b5bb9245c29eedda8de8b717e03b5b8231d08746fe02e65e8b602",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 105,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000105:e0266ee1b842",
-            "page_fingerprint": "e0266ee1b842f51b78b55ee492d8705a1da7c28da6ba06ec55db665cfb534983",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 106,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000106:9050c7057e22",
-            "page_fingerprint": "9050c7057e223df3a29a8b7537f110d83f7c62acaa4d767cfbd064408ffea015",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 107,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000107:d0fff35467ce",
-            "page_fingerprint": "d0fff35467ce418d64db8761376ab148003649461e7326ff52986a08a6385ce5",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 108,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000108:8e0cc2ae35ac",
-            "page_fingerprint": "8e0cc2ae35ac6524856ca58fb8874f66509545d8b17029b2ae892549f91bfcc0",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 109,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000109:fc15091db475",
-            "page_fingerprint": "fc15091db475a83cf492736e5f1d1d35ad16e98cab7c9683b981784dd081f536",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 110,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000110:0b6056cbfc8c",
-            "page_fingerprint": "0b6056cbfc8c11cb766c95f4202e4f3aaa581572edeeecd9685fafd4f652a727",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 111,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000111:07fd06fc8703",
-            "page_fingerprint": "07fd06fc870320ed82f6d2c4029335c20f385f416d5c8c4975df7ecc9e9d8320",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 112,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000112:68f9b2b7927e",
-            "page_fingerprint": "68f9b2b7927e50c744dd7e35f4f56cf5b34f67779f7d66579a158a19d5d2e8c3",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 113,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000113:e1dc1d47f7f2",
-            "page_fingerprint": "e1dc1d47f7f28ea4c6666ea16928ef91dcc41bb0a951f82d98b1f05920ba07b8",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 114,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000114:8505c87fe7ce",
-            "page_fingerprint": "8505c87fe7cec05ce6e76ebfae4a8c61391ee21ca01d3989d53f789ae5c8ff9b",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 115,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000115:428d6bdb05a7",
-            "page_fingerprint": "428d6bdb05a7f963c9475afa2f7538756b1de53443364efca4dac872b18b2bce",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 116,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000116:ceaaa38934b2",
-            "page_fingerprint": "ceaaa38934b2ac18291c45661ff7375446babcced9d87a4ab95a29161cd54f67",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 117,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000117:c4b20dcf9cdc",
-            "page_fingerprint": "c4b20dcf9cdc9352a290c728975ecaac0c94ecc12d4baeb7577ef885c5311568",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 118,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000118:256b3347dbd7",
-            "page_fingerprint": "256b3347dbd76e96e764209fa7a4efaab45c544d3fc1462155a94b288751e769",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 119,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000119:adf6cfc187cb",
-            "page_fingerprint": "adf6cfc187cbcf7f7ccb0a8b3ffe336812e25e82b7fd8acae5efa37e54b6097d",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 120,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000120:fa8a44a45de5",
-            "page_fingerprint": "fa8a44a45de5f6281ecaf55ee1e8fffbfcd21645fd0319632c3df35b6c4d286c",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 121,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000121:1db7c12fa185",
-            "page_fingerprint": "1db7c12fa1852a75806a5092e787eb6024871886e6aeb29ac8f7bdcd37a3fcb3",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 122,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000122:5f34c42754f9",
-            "page_fingerprint": "5f34c42754f9b01535d8813f3cb5b47ea1ab50197c758cbaa65549146d073487",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 123,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000123:3278f293cbe1",
-            "page_fingerprint": "3278f293cbe145a6f19ff6976acfe6d7c7aaa88a793c5645c03638acf4370f80",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 124,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000124:6824eb399b70",
-            "page_fingerprint": "6824eb399b704717cc5123abd2b49af0df5786bda952d836f1936db7a3438945",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 125,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000125:efee8c592b23",
-            "page_fingerprint": "efee8c592b2306bc74745d1a3279dca9ba98ea63e578aa0272a1eddb8a2baa0b",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 126,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000126:a177e994148a",
-            "page_fingerprint": "a177e994148a9743aa6e6dea014825521345928e2580e7d0528c571d60b7792f",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 127,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000127:0774f856bf74",
-            "page_fingerprint": "0774f856bf7480298c45186731005f602cc153ca0202101dd902a560743b7b52",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 128,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000128:0859a3f5634b",
-            "page_fingerprint": "0859a3f5634bf1f49bd0ebf1205d631fd4084c36f6f3ea114ff0bc493753ded4",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 129,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000129:0a038a8dad56",
-            "page_fingerprint": "0a038a8dad5637cd7d5ce1bc51b67c895d8e139b0d47b9e62104d848c084a202",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 130,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000130:3ed362f863b2",
-            "page_fingerprint": "3ed362f863b2e7b0259cc7951c58c071e7b1700330d460c655e887fef2884142",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 131,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000131:bc891c03b899",
-            "page_fingerprint": "bc891c03b89974cafa1e8b7735723b4f0b25ffad1a70d9ef807c0406db995630",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 132,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000132:cbaa826e7986",
-            "page_fingerprint": "cbaa826e7986b25bbff3556c41f2f0664543621ced4d70bedc1e0b0c22689f15",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 133,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000133:085c91315274",
-            "page_fingerprint": "085c91315274649d82a079b1dbdd85e25a70dee6ae6e8f17c9f3bcc72694956c",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 134,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000134:0fc6020ce3b2",
-            "page_fingerprint": "0fc6020ce3b2632c8201508319a00b57d35ce5888d172422db4b02f0ba848001",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 135,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000135:71b3de0c1329",
-            "page_fingerprint": "71b3de0c13290df50ad87fa22742835973091594e8b3cd9442e80e2cc6b2c108",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 136,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000136:f57ab991733f",
-            "page_fingerprint": "f57ab991733f0860d4c0b462930917c684b8207d9afa44038f39d77e8b67bf28",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 137,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000137:bcc431d49d5e",
-            "page_fingerprint": "bcc431d49d5e3a6035a20255f2de0ba9710f769d576f2d53f5fd70321b0c67e2",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 138,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000138:95ecc86c59e8",
-            "page_fingerprint": "95ecc86c59e855be7eb2decab04d348d71d10fe8bcc28ff6aba8b408f33b07cf",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 139,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000139:4e75a30da84a",
-            "page_fingerprint": "4e75a30da84a4eca718159bb6b4a0991d7cd8dcd6686f3d738106a58002cd7c0",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 140,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000140:52cf543b8797",
-            "page_fingerprint": "52cf543b87975f193591cdc21aa5b726969cd26fa4a81708607a0af61b1222e5",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 141,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000141:dfc783e504dd",
-            "page_fingerprint": "dfc783e504ddd6dddfedfa01fcf8a363b36a67306c0e5ea566a46c89b21a7299",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 142,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000142:824cbac53f54",
-            "page_fingerprint": "824cbac53f54568cf0978afbde48d59be2757d063b6da1f2fac82eddf043a785",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 143,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000143:e2e51f97cf63",
-            "page_fingerprint": "e2e51f97cf63d5ddf2399d418aa24077e34668b32eb602f793868e570b003e8a",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 144,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000144:39ee958bf4ef",
-            "page_fingerprint": "39ee958bf4ef1920d02f26e1096b1840daca121f99f726a1f091ff6dbfdfd10b",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 145,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000145:54f3eb0423cb",
-            "page_fingerprint": "54f3eb0423cb603e383aad867d63e893f6aaeaf7fd262cca0846181f80f0ba4f",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 146,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000146:84ed3dff7734",
-            "page_fingerprint": "84ed3dff7734839565edd225c399f59c012f12c11d9774969143c3c35be9a8bd",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 147,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000147:4adb237c051b",
-            "page_fingerprint": "4adb237c051b2876cc82ff7827eb7481c52a45c33d2af316311f818745c92172",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 148,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000148:762a1086df18",
-            "page_fingerprint": "762a1086df18647d148c263d2ab4d63bfc11226dfbe6841b0eb40eb1176cd7f7",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 149,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000149:d80acb155ee5",
-            "page_fingerprint": "d80acb155ee589db9014b63323850c5d3528b9b1326d956eb5c44b6b21a1cc1f",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 150,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000150:fb4271f7f184",
-            "page_fingerprint": "fb4271f7f184cf184465bbda88d3ac3670effbc5c66d8e93a1ff0d8b8b65767e",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 151,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000151:859afe5a8ceb",
-            "page_fingerprint": "859afe5a8cebe227ec5c30656f07ace8bca7d95103f16079094876aa525f76e7",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 152,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000152:047e14fe3c89",
-            "page_fingerprint": "047e14fe3c897457f21ec9e40faf1082c74c3a951b814d8a5147e53e149b2749",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 153,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000153:1e18b1576d53",
-            "page_fingerprint": "1e18b1576d53f1140659ab773c642de5e6ead189eb79c8ee413ddb13e0c735a1",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 154,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000154:c42cf26f1298",
-            "page_fingerprint": "c42cf26f129896ee5f339719dfedff43b48fbd2b39347742a3da05baf8bc9e62",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 155,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000155:e653639fac37",
-            "page_fingerprint": "e653639fac3769ffb2f10993867d6dd54839deb82fd67076f0343e062953ddfa",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 156,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000156:0561263b865d",
-            "page_fingerprint": "0561263b865dfab5d7f5745211e45d9f1d86e77bf651dda928ef27e82c98b235",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 157,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000157:c254ff82ee93",
-            "page_fingerprint": "c254ff82ee93ef56271c4e5d046024e99bcd068e9bc970643e36b8210305e1f2",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 158,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000158:60536eede00e",
-            "page_fingerprint": "60536eede00ea8a5cb3e49f9eb8b462745e9c3e597ca715b2615815441f1266a",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 159,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000159:a2a5220ef366",
-            "page_fingerprint": "a2a5220ef366aa2d0ffb4e3415c7a0349f5b27c1a1cb9e3bed726dbacb0119f6",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
-            ],
-            "image_artifact_count": 0,
-            "layout_block_counts": {
-              "block_count": 1,
-              "paragraph_blocks": 1,
-              "heading_blocks": 0,
-              "list_blocks": 0,
-              "table_blocks": 0,
-              "figure_blocks": 0,
-              "header_blocks": 0,
-              "footer_blocks": 0
-            },
-            "required_flags": [],
-            "required_reasons": []
-          },
-          {
-            "index": 160,
-            "artifact_id": "35f996f77bc4035a9f276d721896cf03669b16194d9729746d9b40a3c29a548e:p000160:593a05d701bf",
-            "page_fingerprint": "593a05d701bfd18eab40957e65e0ea89b6e20716e2a3632fdd2e89776465e143",
-            "route": "native_fast_path",
-            "empty_text_output": false,
-            "required_text": [
-              "Guidance for Flood Risk Analysis and Mapping, FIRM Database Technical Reference"
+              "NIST SP 800-63B DIGITAL IDENTITY GUIDELINES:"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -4464,7 +3001,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Form 1040 U.S. Individual Income Tax Return 2025 Department of the Treasury—Internal Revenue Service"
+              "Form 1040 U.S. Individual Income Tax Return 2025 Department of the Treasury\u2014Internal Revenue Service"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -12900,8 +11437,8 @@
     {
       "path": "v0/scanned/uspto-us4399515-scanned.pdf",
       "category": "scanned",
-      "document_fingerprint": "13dfad52fbe9255e0166ab29ce15698211c524090637558c85f2111c883882ca",
-      "source_size_bytes": 371163,
+      "document_fingerprint": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca",
+      "source_size_bytes": 371164,
       "expect": {
         "page_count": 6,
         "fallback_pages": 6,
@@ -12967,8 +11504,8 @@
         "pages": [
           {
             "index": 0,
-            "artifact_id": "13dfad52fbe9255e0166ab29ce15698211c524090637558c85f2111c883882ca:p000000:421011391e90",
-            "page_fingerprint": "421011391e90038aa38ac3aea856c0671f6c8b43aef34e819c5f63984c4b0386",
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000000:b24593259d36",
+            "page_fingerprint": "b24593259d36866d80b91462b019d2e9c29f3f4f12d4d29a2e8166a020cf4287",
             "route": "ocr_fallback",
             "empty_text_output": true,
             "image_artifact_count": 1,
@@ -12992,8 +11529,8 @@
           },
           {
             "index": 1,
-            "artifact_id": "13dfad52fbe9255e0166ab29ce15698211c524090637558c85f2111c883882ca:p000001:1cb33c1628fa",
-            "page_fingerprint": "1cb33c1628fa9c681dd218f4be0d26eb9e8bcbfeee9bbfd59e5305e3956d0a63",
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000001:9c4b69581d9b",
+            "page_fingerprint": "9c4b69581d9b23668fbd3311d3cd93c75cc9d23f79b68ddfd9d732efeb3b4b7e",
             "route": "ocr_fallback",
             "empty_text_output": true,
             "image_artifact_count": 1,
@@ -13017,8 +11554,8 @@
           },
           {
             "index": 2,
-            "artifact_id": "13dfad52fbe9255e0166ab29ce15698211c524090637558c85f2111c883882ca:p000002:17cad5faf74f",
-            "page_fingerprint": "17cad5faf74fc65af94572fe0eacc7c1fbb9f16ebd0dcfe7377708c3f9eeb2cc",
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000002:6f844575b96b",
+            "page_fingerprint": "6f844575b96be01c4ef58efe197f74630b46cb5b0391580f3c6e61d885149e5e",
             "route": "ocr_fallback",
             "empty_text_output": true,
             "image_artifact_count": 1,
@@ -13042,8 +11579,8 @@
           },
           {
             "index": 3,
-            "artifact_id": "13dfad52fbe9255e0166ab29ce15698211c524090637558c85f2111c883882ca:p000003:371419d37c00",
-            "page_fingerprint": "371419d37c00806bd8974d4aa570aa09565598504786dd53540991ca2942b848",
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000003:47371167165c",
+            "page_fingerprint": "47371167165cf7716e1f1227a5d0d80a170e6522aa0f129731babbdc6eea4e31",
             "route": "ocr_fallback",
             "empty_text_output": true,
             "image_artifact_count": 1,
@@ -13067,8 +11604,8 @@
           },
           {
             "index": 4,
-            "artifact_id": "13dfad52fbe9255e0166ab29ce15698211c524090637558c85f2111c883882ca:p000004:5001fd40378b",
-            "page_fingerprint": "5001fd40378b09bd5dc87700200a5f2f55f5fa9a21bc7fc23e8b085f3674e23e",
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000004:72ddc5348416",
+            "page_fingerprint": "72ddc5348416814118ee9611de78b36ca0b60527c46b572c97b720016a6465bf",
             "route": "ocr_fallback",
             "empty_text_output": true,
             "image_artifact_count": 1,
@@ -13092,8 +11629,8 @@
           },
           {
             "index": 5,
-            "artifact_id": "13dfad52fbe9255e0166ab29ce15698211c524090637558c85f2111c883882ca:p000005:bd0c564edf07",
-            "page_fingerprint": "bd0c564edf07de8b90294cff3f352dccf9c1acdb261f5c4610b32d5dfdf0626f",
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000005:b3b6c80dd364",
+            "page_fingerprint": "b3b6c80dd364a1d63284c1e99391e5b22087b50c803c8484cb854a3dfc9711ef",
             "route": "ocr_fallback",
             "empty_text_output": true,
             "image_artifact_count": 1,
@@ -13115,10 +11652,6 @@
               "high_image_coverage_without_native_text"
             ]
           }
-        ],
-        "baseline_required_text": [
-          "SELF-CORRECTING ELECTRONICALLY",
-          "SCANNED PRESSURE SENSOR"
         ]
       }
     },

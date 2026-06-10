@@ -28,8 +28,9 @@ See `README.md` for `bench`, `eval`, `manifest`, `debug-page`, and baseline comm
 ### Test corpus
 
 - `cargo test --workspace` generates tiny PDFs at runtime; **no local PDFs required** for the test suite.
-- Drop real PDFs into `test/` for manual benchmarks (gitignored).
-- `test/corpus.datasheets.json` exists but referenced PDFs are not committed.
+- The v0 benchmark corpus PDFs are **committed** under `test/v0/` (public/US-government documents listed in `test/corpus.v0.sources.json`), so the `eval test/corpus.v0.json` quality gate runs without re-downloading.
+- Other PDFs dropped at the top level of `test/` remain gitignored for manual benchmarks.
+- `test/corpus.datasheets.json` exists but referenced datasheet PDFs are not committed (unclear redistribution terms).
 
 ### Optional dependencies (not required for core dev)
 

@@ -2,7 +2,7 @@
   "registry_version": "glyphrush-corpus-sources-v1",
   "manifest": "corpus.v0.json",
   "local_root": "v0",
-  "selection_policy": "One small-to-moderate public or open PDF per glyphrush-v0 coverage category. PDFs are local ignored data; this registry and the generated manifest are the tracked test-case metadata.",
+  "selection_policy": "One small-to-moderate public or open PDF per glyphrush-v0 coverage category. The v0 PDFs are committed under test/v0/ so quality gates run without re-downloading; this registry and the generated manifest remain the tracked test-case metadata.",
   "documents": [
     {
       "path": "v0/academic_columns/acl-bert-naacl-2019.pdf",
@@ -15,14 +15,14 @@
       "selection_note": "Representative academic-columns fixture without adding a large paper."
     },
     {
-      "path": "v0/clean_digital/fema-firm-database-technical-reference-2024.pdf",
+      "path": "v0/clean_digital/nist-sp-800-63b-digital-identity-guidelines.pdf",
       "category": "clean_digital",
-      "title": "FIRM Database Technical Reference, November 2024",
-      "direct_url": "https://www.fema.gov/sites/default/files/documents/fema_rm-firm-database-technical-reference-nov-2024.pdf",
-      "source_page": "https://www.fema.gov/media-collection/technical-references-flood-risk-analysis-and-mapping",
-      "license_note": "FEMA / US federal publication; generally public domain unless a specific third-party notice applies.",
-      "expected_shape": "Native digital technical reference with schema-like tables, appendices, repeated headings, and field definitions.",
-      "selection_note": "Clean digital native-text fixture that is not just prose."
+      "title": "NIST SP 800-63B, Digital Identity Guidelines: Authentication and Lifecycle Management",
+      "direct_url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-63b.pdf",
+      "source_page": "https://csrc.nist.gov/pubs/sp/800/63/b/upd2/final",
+      "license_note": "NIST / US federal publication; works of the US government are generally public domain.",
+      "expected_shape": "Native digital technical reference with requirement tables, appendices, repeated headings, and dense normative definitions.",
+      "selection_note": "Replaced the FEMA FIRM Database Technical Reference, whose direct URL now returns an Akamai Access Denied page for non-browser clients. Same clean-digital shape: native text plus schema-like tables."
     },
     {
       "path": "v0/forms/irs-f1040-2025.pdf",
@@ -72,7 +72,7 @@
       "source_page": "https://ppubs.uspto.gov/pubwebapp/static/pages/ppubsbasic.html",
       "license_note": "Official USPTO patent PDF and public record; verify bulk redistribution terms before committing binaries.",
       "expected_shape": "Image-only patent pages with empty native text, full-page CCITT imagery, columns, and drawings.",
-      "selection_note": "Small hard OCR-required classifier fixture."
+      "selection_note": "Small hard OCR-required classifier fixture. The served bytes drifted by one byte from the original seed download; the manifest fingerprint tracks the current served file."
     },
     {
       "path": "v0/tables/omb-fy2027-table-16-1.pdf",

@@ -43,7 +43,7 @@ cargo run -p glyphrush-cli -- manifest test/ --category-from-path --coverage-pre
 cargo run -p glyphrush-cli -- manifest test/ --category clean_digital --coverage-preset glyphrush-v0 > test/corpus.generated.json
 ```
 
-`*.pdf` and `*.PDF` files in this directory are ignored by git. Directory commands recursively discover PDFs under this directory in stable relative-path order, so category folders work for the same corpus used by `inspect`, `bench`, `baseline-check`, and `backend-check`. `manifest --category-from-path` additionally uses the top-level folder name as each document category for layouts such as `test/clean_digital/`, `test/scanned/`, `test/hybrid/`, `test/academic_columns/`, `test/tables/`, `test/forms/`, `test/rotated/`, `test/weird_encoding/`, and `test/large/`.
+`*.pdf` and `*.PDF` files in this directory are ignored by git, except the committed v0 corpus under `test/v0/` (sources documented in `corpus.v0.sources.json`). Directory commands recursively discover PDFs under this directory in stable relative-path order, so category folders work for the same corpus used by `inspect`, `bench`, `baseline-check`, and `backend-check`. `manifest --category-from-path` additionally uses the top-level folder name as each document category for layouts such as `test/clean_digital/`, `test/scanned/`, `test/hybrid/`, `test/academic_columns/`, `test/tables/`, `test/forms/`, `test/rotated/`, `test/weird_encoding/`, and `test/large/`.
 
 Sidecar OCR files use zero-based page indexes. For `your-file.pdf`, OCR text for page `0` should be written to `test/ocr/your-file.p000000.txt`.
 
