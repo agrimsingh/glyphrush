@@ -1,0 +1,38 @@
+4,399,515
+5 6
+converter means for converting the selected zero offsets same magnitude and opposite sign of the thermal coeffi-
+to a zero offset analog signal; and means for combining cient of sensitivity and a constant current source con-
+said zero offset analog signal with the output of the nected to said pressure sensors whereby whenever there
+corresponding pressure sensor. , is a change in temperature the resulting change in the
+3. In a multiple pressure sensor system according to 5 output of a sensor offsets the change in sensitivity with
+claim 1 or claim 2 wherein said means for providing temperature thereby resulting in a nearly constant pres-
+thermal sensitivity compensations includes a digital sure sensitivity with temperature.
+storage means for storing values related to the sensitivi- 6. In a multiple pressure sensor system according to
+ties of the ae sensors throughout the temper. are claim 1 or claim 2 wherein said means for providing
+operating oad Si said pressure, ddress ene tdi ital 10 thermal sensitivity compensations include a digital stor-
+thermal ° ines ree lecting th “Nei ‘al value Sore age means for storing values related to the sensitivities
+erma’ address for selecting the oigh of the pressure sensors throughout the temperature
+sponding to the sensitivity of the pressure sensor con- operati f sai dre.
+: . ar perating range of said pressure sensor system and re
+nected to said output terminal; digital-to-analog con- sponsive to said digital sensor address and said digital
+verter means for converting the selected digital value to 15 th 1 add al fon sel tine the digital val 8
+an analog signal; and means responsive to said analog omdit ‘the or selec’ ue he igital value corre-
+signal for applying a gain to the signal at said output | SPONding to the sensitivity of the pressure sensor con-
+terminal so that the product of the gain and the sensitiv- _ "€Cted to said output terminal; digital-to-analog con-
+ity is a constant. verter means for converting the selected digital value to
+4. In a multiple pressure sensor system according to 20 4n analog signal; means for applying a gain to the signal
+claim 1 or claim 2 wherein said means for producing a _ at Said output terminal so that the product of the gain
+voltage proportional to temperature is a temperature and the sensitivity is a constant; said pressure ‘Sensors
+transducer. have a thermal coefficient of resistance of. the same
+5. In a multiple pressure sensor system according to magnitude and opposite sign of the thermal coefficient
+claim 1 or claim 2 wherein said means for providing 25 of sensitivity; and a constant current source connected
+thermal sensitivity compensations is the pressure sen- to said pressure sensors.
+sors having a thermal coefficient of resistance of the +e ee F
+30
+35
+40
+45
+50
+55
+60
+65

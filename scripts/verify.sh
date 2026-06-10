@@ -53,6 +53,12 @@ if ((${#v0_corpus[@]} > 0)); then
   if [[ "${GLYPHRUSH_VERIFY_PDFIUM:-0}" == "1" ]]; then
     run cargo run -q -p glyphrush-cli --features pdfium -- --backend pdfium eval test/corpus.v0.json --jobs 2
     run cargo run -q -p glyphrush-cli --features pdfium -- --backend pdfium eval test/corpus.v0.layout.json --span-geometry --jobs 2
+    run cargo run -q -p glyphrush-cli --features pdfium -- --backend pdfium eval test/corpus.v0.ocr.json --ocr-sidecar test/ocr-v0 --jobs 2
+    if command -v tesseract >/dev/null 2>&1; then
+      run cargo run -q -p glyphrush-cli --features pdfium -- --backend pdfium ocr-check test/v0/scanned/uspto-us4399515-scanned.pdf --page-index 0 --ocr-command tools/ocr/tesseract-rendered-image.sh --ocr-command-input rendered-image --strict
+    else
+      echo "Skipping rendered-image OCR check: tesseract not installed."
+    fi
   else
     echo "Skipping v0 eval: set GLYPHRUSH_VERIFY_PDFIUM=1 to evaluate PDFium-generated test/corpus.v0.json."
   fi

@@ -1,0 +1,68 @@
+4,399,515
+1 2
+FIG. 2 is a voltage versus temperature at zero pres-
+SELF-CORRECTING ELECTRONICALLY — sure graph of the pressure sensors used; and
+SCANNED PRESSURE SENSOR FIG. 3 is a partial block diagram of an alternate em-
+: bodiment of the invention that contemplates for the
+ORIGIN OF THE INVENTION 5 pressure sensitivity of the pressure sensors.
+The invention described herein was made by an em- DETAILED DESCRIPTION OF THE
+ployee of the United States Government and may be INVENTION
+used by oF for the.Government for gover mmental pur: Turning now to the embodiment of the invention
+Poses without the payment of any royalties thereon or 10 selected for illustration in the drawings, the number 11
+therefor. in FIG. 1 designates thirty-two different pressure sen-
+BACKGROUND OF THE INVENTION sors. Silicon diaphram pressure sensors of the diffused
+The invention relates generally to pressure sensors Wheatstone Bridge type are used and connected in
+. : . parallel with common excitation nodes—one connected
+and more specifically concerns apparatus for correcting 15 to ground and the other connected to a voltage source
+thermal errors In multiple pressure sensor systems. Vo. Each of the sensors 11 produces a voltage at its
+The major impediment of the widespread use of semi- output that is related to the pressure at its location. The
+conductor ‘type pressure sensors in the past has been outputs from all the sensors 11 are connected to a thirty-
+their sensitivity to temperature. This sensitivity to tem- two channel multiplexer 12. A sensor address 13 includ-
+perature manifests itself as errors that result from 20 ing terminals Ao, A1, Az, A3, Aq applies digital signals
+changes in zero offset (voltage offset at zero pressure) —_ tq multiplexer 12 to sequentially connect the sensors 11
+and in pressure sensitivity. The errors can be reduced to the output of the multiplexer and then to a sensor
+by the use of compensating elements or through “in amplifier 14. If the voltage V at the output of sensor
+situ” calibration (U.S. Pat. No. 4,111,058), but only at amplifier 14 were related to the pressure P applied to
+the expense of size, cost, or complexity. The compensat- 25 the different sensors 11 in accordance with the follow-
+ing elements are often larger than the pressure sensing ing equation:
+elements and require extensive calibration of the pres-
+sure sensors before the proper compensating elements P=kV (a)
+can be chosen, thus adding significantly to the cost.
+Also, because the thermal zero shift is often very non- 30 where k is a constant that is the same for all thirty-two
+linear with temperature, compensating elements gener- _ sensors there would be no problem—the output of am-
+ally only are able to reduce the errors to 0.5% full scale plifier 14 would be proportional to the pressure at all
+per 55° C. For pressure sensors that can be calibrated thirty-two locations. Unfortunately, commercially
+“in situ,” the calibration mechanism is as large as the available pressure sensors are not that uniform. The
+pressure sensing module and requires pneumatic multi- 35 output of sensors 11 are related to the first order to the
+plexing and the generation and accurate measurement Pressure applied to the sensors in accordance with the
+of the calibration pressures as well as automatic data following equation:
+processing equipment to compute and store the calibra-
+; tion coefficients. Pad) + d4D¥i @)
+It is the primary object of this invention to provide a where i=1, 2, ... 32 corresponds to one of the thirty-
+ae wbne ene device that largely overcomes the two sensors 11 and where aT) and b{T) are functions
+rawbacks 0 the above mentioned systems. . of the temperature T. It is the purpose of this invention
+Another object of this invention is to provide a pres- to reduce the thirty-two curves defined by equation (2)
+sure sensing device that will accommodate multiple 45 to the straight lines defined in equation (1).
+Pressures, have a high data rate, and high accuracy Consider first the a{T) term in equation (2). If zero
+through the use of analog and digital electronic cir- pressure is applied to each of the sensors 11, and the
+cuitry that will automatically correct for errors result- voltage V is measured as the temperature T is varied,
+ing from temperature changes. , each of the sensors will have a V versus T curve similar
+Other objects and advantages will become apparent 59 to the one shown in FIG. 2. Inasmuch as a(T) does not
+hereinafter in the specifications and drawings. change with pressure this curve will remain substan-
+SUMMARY OF THE INVENTION tially the same for all values of pressure. If the aT) is
+. . . . . determined at the output of amplifier 14 for each sensor
+The invention consists essentially of a plurality of 11 and is subtracted from the corresponding equation
+solid state pressure sensors, signal multiplexing elec- 55 (2) then the resulting outputs of these sensors will be
+tronics that allow each of the pressure sensors to be related to the pressure applied to the sensors in accor-
+digitally addressed, and solid state memory components dance with the following equation:
+and their associated electronics that have stored in them
+a digital code that will correct for errors resulting from Pi=biV; . Q)
+temperature changes (zero offset and pressure sensitiv- 60
+ity) in each of the pressure sensors. Through the use of | To implement the portion of this invention that elimi-
+this invention, the errors resulting from temperature nates the a{T) term note in FIG. 2 that at the minimum
+shifts can be reduced from typical values of 5% to less temperature in the temperature range (for example, 25°
+than 0.15% for a 55° C. temperature range. C. to 80° C.) the voltage V is not zero. That is, there is
+: 65 a zero offset voltage at minimum temperature. A digital
+BRIEF DESCRIPTION OF THE: DRAWINGS code which when converted to analog is equal to the
+FIG. 1 is a block diagram of an embodiment of the zero ‘offset voltage at minimum temperature is pro-
+invention; ‘ a grammed into a 32X8 programmable read only mem-

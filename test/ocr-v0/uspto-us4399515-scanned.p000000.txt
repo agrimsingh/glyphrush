@@ -1,0 +1,53 @@
+United States Patent 119) [11] 4,399,515
+Gross [45] Aug. 16, 1983
+(54) SELF-CORRECTING ELECTRONICALLY 4,254,469 3/1981 Whitely sss 364/571
+SCANNED PRESSURE SENSOR 4,263,655 4/1981 Chappell, Jr. ..... cece. 364/558 .
+[75] Inventor: Chris Gross, Yorktown, Va. : OTHER PUBLICATIONS
+{73] Assignee: The United States of America as A Microprocessor Controlled Pressure Scanning Sys-
+represented by the Administrator of tem; R. C. Anderson, Conference Proceedings of the
+the National Aeronautics and Space 22nd International Instrumenation Symposium, San
+Administration, Washington, D.C. Diego, CA 25-27 May, 1976, pp. 685-693.
+[21] Appl. No.: 249,304 Primary Examiner—Edward J. Wise
+oa. Attorney, Agent, or Firm—Howard J. Osborn; John R.
+[22] Filed: Mar, 31, 1981 Manning; William H. King
+[SL] Unt, C13 eee esseseeeeeseessessesseesessees GOOF 15/20 y
+[52] US. Ch socececeee 364/571; 364/557, B71 ABSTRACT
+364/558; 73/714 - This invention is a multiple channel high data rate pres-
+[58] Field of Search ...............0...... 364/571, 557, 558; sure sensing device for use in wind tunnels, spacecraft,
+73/708, 714 airborne, process control, automotive, etc., pressure
+[56] References Cited measurements. This device offers data rates in excess of
+100,000 measurements per second with inaccuracies
+U.S. PATENT DOCUMENTS from temperature shifts less than 0.25% (nominal) of
+3,095,735 7/1963 Menzel ........seccsesssecsseeseeenseese 13/147 full scale over a temperature span of 55° C. This device
+3,135,861 6/1964 Burggren et al. ...4.......... 364/571 X consists of thirty-two solid state sensors 11, signal multi-
+382 8 ay 2 Talmo ssssssneneeenennnannnnnnnee eoetien plexing electronics to electronically address each sen-
+F . OTDME 00... seceeeeeereeeseeeeteeee ae * . A .
+Pie ane Meenas part x fan ial ecole eur to somata
+3,841,150 10/1974 Pearson ....sseseeeee 73/398 AR X . : P
+3,965,744 6/1976 Gutjaht oeccsnsncnsesnon 73/393 SeHSOrs and their associated electronics.
+4,111,058 9/1978 Gross esses 13/714 .
+4,192,005 3/1980 Kurtz w.seseccesseessesseseecteeee 364/571 6 Claims, 3 Drawing Figures
+14
+SENSOR
+int AMPLIFIER
+se CHANNEL MuLTIPLexer| ‘© 20 Le Pro 22 a
+s-aitr THER =a on ‘
+CR a L/S
+1 1 Vo SENeoR DATA AMPLIFIER
+L-ayA =-—E | AMPLIFIER THERMAL
+" " 2 a SHIFT +
+a eleltausttad Hee DAC O
+NSO! =
+Anakees 18 TRANSDU 5 ith 22
+ee % 32x8 Le] ‘8
+ee oats, or
+3 pata Pe}
+STROBE O——_-—----—---—~-
+i 23
+SENSITIVITY
+. a SHIFT
+TEMPERATURE ADDRESS ES bac
+FROM CONVERTER 20 Ha 24
+2Kx8 PROM
+SENSITIVITY SHIFT
+DATA

@@ -1,0 +1,554 @@
+{
+  "manifest_version": "glyphrush-eval-manifest-v1",
+  "generator": {
+    "parser_name": "glyphrush",
+    "parser_version": "0.1.0",
+    "backend": "pdfium",
+    "backend_version": "pdfium-adapter-v1",
+    "span_geometry": false,
+    "ocr_sidecar": true,
+    "ocr_command": false,
+    "ocr_http_url": false,
+    "ocr_timeout_ms": 120000
+  },
+  "corpus_fingerprint": "c754a9d5636005b861996333f61bb115d0bdde00a5cd959f57da8491776394bc",
+  "documents": [
+    {
+      "path": "v0/hybrid/govinfo-usreports-218-173-watson.pdf",
+      "category": "hybrid",
+      "document_fingerprint": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1",
+      "source_size_bytes": 1565096,
+      "expect": {
+        "page_count": 8,
+        "fallback_pages": 8,
+        "ocr_required_pages": 0,
+        "ocr_applied_pages": 0,
+        "image_artifact_count": 8,
+        "warnings_count": 1,
+        "required_warnings": [
+          "p000000: unsupported_feature: annotation_or_form"
+        ],
+        "route_counts": {
+          "native_fast_path": 0,
+          "needs_fallback": 7,
+          "ocr_fallback": 0,
+          "unsupported": 1
+        },
+        "route_reason_counts": {
+          "annotation_or_form": 1,
+          "image_text_overlay": 8
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 0,
+          "low_confidence_text": 0,
+          "broken_encoding": 0,
+          "layout_uncertain": 8,
+          "table_uncertain": 0,
+          "unsupported_feature": 1
+        },
+        "ocr_required_classification": {
+          "expected_pages": [],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "layout_uncertain",
+            "expected_pages": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "unsupported_feature",
+            "expected_pages": [
+              0
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        },
+        "pages": [
+          {
+            "index": 0,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000000:fa6cbbb00d3f",
+            "page_fingerprint": "fa6cbbb00d3ff26f5010bb1edda409d12305f899c4b7ca31f8522c3adbf72d0d",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "WATSON v. MARYLAND. 173"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "image_text_overlay",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 1,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000001:424f0928d6be",
+            "page_fingerprint": "424f0928d6bee77fe621bf745e0734822e4af07c4741c46f9f6d42060d5b9188",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "174 OCTOBER TERM, 1909."
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 2,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000002:26db4f163922",
+            "page_fingerprint": "26db4f163922e0636360ad6fce3ee0dc4702280d9415f1f14b72cf0cb58c9f2e",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "WATSON v. MARYLAND. 175"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 3,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000003:16c460d47fe7",
+            "page_fingerprint": "16c460d47fe777e467830115a05377cdb3b1a6580a85d5cc79553222561bbff9",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "176 OCTOBER TERM, 1909."
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 4,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000004:8705bfd30c93",
+            "page_fingerprint": "8705bfd30c9347b037aff5303f89ad21e3f2b6e0a86f1b65c117e3fb95851e80",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "WATSON v. MARYLAND. 177"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 5,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000005:9d0b62e04c2b",
+            "page_fingerprint": "9d0b62e04c2bbe0e12b3dbe9a057657f82bdf20faaec67c115b9c47e1c37cb35",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "178 OCTOBER TERM, 1909."
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 6,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000006:ff070a9400e6",
+            "page_fingerprint": "ff070a9400e6b3887aa03a56d1dc11c487ea3a885c0ef54e769acb7f4ac25e82",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "WATSON v. MARYLAND. 179"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 7,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000007:fe44ac29046b",
+            "page_fingerprint": "fe44ac29046b2a023bea0dce0488a4974e46e02a54f624b72bd94c2ece542600",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "180 OCTOBER TERM, 1909."
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          }
+        ],
+        "required_text": [
+          "WATSON v. STATE OF MARYLAND."
+        ]
+      }
+    },
+    {
+      "path": "v0/scanned/uspto-us4399515-scanned.pdf",
+      "category": "scanned",
+      "document_fingerprint": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca",
+      "source_size_bytes": 371164,
+      "expect": {
+        "page_count": 6,
+        "fallback_pages": 6,
+        "ocr_required_pages": 6,
+        "ocr_applied_pages": 6,
+        "image_artifact_count": 6,
+        "warnings_count": 0,
+        "required_warnings": [],
+        "route_counts": {
+          "native_fast_path": 0,
+          "needs_fallback": 0,
+          "ocr_fallback": 6,
+          "unsupported": 0
+        },
+        "route_reason_counts": {
+          "high_image_coverage_without_native_text": 6
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 6,
+          "low_confidence_text": 6,
+          "broken_encoding": 0,
+          "layout_uncertain": 0,
+          "table_uncertain": 0,
+          "unsupported_feature": 0
+        },
+        "ocr_required_classification": {
+          "expected_pages": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "low_confidence_text",
+            "expected_pages": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        },
+        "pages": [
+          {
+            "index": 0,
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000000:50e08a224be4",
+            "page_fingerprint": "50e08a224be4802404a81adc3f268990ed9ac63731a037d6236c30f574ad0b2b",
+            "route": "ocr_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "United States Patent 119) [11] 4,399,515"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "requires_ocr",
+              "low_confidence_text"
+            ],
+            "required_reasons": [
+              "high_image_coverage_without_native_text"
+            ]
+          },
+          {
+            "index": 1,
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000001:2ed6c4177b04",
+            "page_fingerprint": "2ed6c4177b0469bcedbd427a81b0a9add93e3f81929a313faf39ebf9d396845e",
+            "route": "ocr_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "U.S. Patent Aug. 16, 1983 Sheet 1 of 2 4,399,515"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "requires_ocr",
+              "low_confidence_text"
+            ],
+            "required_reasons": [
+              "high_image_coverage_without_native_text"
+            ]
+          },
+          {
+            "index": 2,
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000002:a297824725bc",
+            "page_fingerprint": "a297824725bc90c102e9c652ae92a6fcacde38369b9fcb35b8470d4e31f3a4eb",
+            "route": "ocr_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "U.S. Patent Aug. 16, 1983 Sheet 2 of 2 4,399,515"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "requires_ocr",
+              "low_confidence_text"
+            ],
+            "required_reasons": [
+              "high_image_coverage_without_native_text"
+            ]
+          },
+          {
+            "index": 3,
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000003:6de89ebfebaa",
+            "page_fingerprint": "6de89ebfebaaf0ec4f34a4854a2e8876281dd8c1d6ee5dff86d2aef9a965ed2c",
+            "route": "ocr_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "FIG. 2 is a voltage versus temperature at zero pres-"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "requires_ocr",
+              "low_confidence_text"
+            ],
+            "required_reasons": [
+              "high_image_coverage_without_native_text"
+            ]
+          },
+          {
+            "index": 4,
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000004:40b6838521a1",
+            "page_fingerprint": "40b6838521a106e92a2f8a17143a37e09d76a5291dfab8acfe6a397a5aab662e",
+            "route": "ocr_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "ory (PROM) 15. Each sensor can have and probably tions and a voltage proportional to temperature. These"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 7,
+              "paragraph_blocks": 7,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "requires_ocr",
+              "low_confidence_text"
+            ],
+            "required_reasons": [
+              "high_image_coverage_without_native_text"
+            ]
+          },
+          {
+            "index": 5,
+            "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000005:6124fd1af675",
+            "page_fingerprint": "6124fd1af675fd1b3bec6e23d5b2e66367f7793bb5a578de19baeaaebf031f62",
+            "route": "ocr_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "converter means for converting the selected zero offsets same magnitude and opposite sign of the thermal coeffi-"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 1,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "requires_ocr",
+              "low_confidence_text"
+            ],
+            "required_reasons": [
+              "high_image_coverage_without_native_text"
+            ]
+          }
+        ],
+        "required_text": [
+          "SELF-CORRECTING ELECTRONICALLY",
+          "SCANNED PRESSURE SENSOR",
+          "Chris Gross, Yorktown, Va.",
+          "National Aeronautics and Space"
+        ],
+        "reading_order": {
+          "expected_sequence": [
+            "United States Patent",
+            "SELF-CORRECTING ELECTRONICALLY",
+            "OTHER PUBLICATIONS"
+          ],
+          "min_score": 1.0
+        }
+      }
+    }
+  ]
+}
