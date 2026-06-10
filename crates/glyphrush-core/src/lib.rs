@@ -112,6 +112,8 @@ pub struct PageArtifact {
     pub ocr_spans: Vec<TextSpan>,
     pub image_artifacts: Vec<ImageArtifact>,
     pub layout_blocks: Vec<LayoutBlock>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub layout_strategy: Option<String>,
     pub route: RouteDecision,
     pub quality: PageQualityReport,
     pub timings: PageTimings,
@@ -133,6 +135,7 @@ impl PageArtifact {
             ocr_spans: Vec::new(),
             image_artifacts: Vec::new(),
             layout_blocks: Vec::new(),
+            layout_strategy: None,
             route: RouteDecision::default(),
             quality: PageQualityReport::default(),
             timings: PageTimings::default(),
@@ -673,6 +676,7 @@ pub fn parse_extracted_pages(
             }
             let run_table_recovery = artifact.route.run_table_recovery;
             artifact.layout_blocks = if let Some(layout_text) = ocr_layout_text.as_deref() {
+                artifact.layout_strategy = Some("ocr_text".to_string());
                 layout_blocks_from_text(
                     page.page_index,
                     page.dimensions,
@@ -680,13 +684,25 @@ pub fn parse_extracted_pages(
                     run_table_recovery,
                 )
             } else if !artifact.native_spans.is_empty() {
-                layout_blocks_from_native_spans(
+                let (blocks, layout_diagnostics) = layout_blocks_from_native_spans(
                     page.page_index,
                     page.dimensions,
                     &artifact.native_spans,
                     run_table_recovery,
-                )
+                );
+                artifact.layout_strategy = Some(layout_diagnostics.strategy.to_string());
+                if layout_diagnostics.column_layout_unresolved {
+                    artifact.route.flags.push(PageQuality::LayoutUncertain);
+                    artifact
+                        .route
+                        .reasons
+                        .push("column_layout_unresolved".to_string());
+                    dedupe_flags(&mut artifact.route.flags);
+                    artifact.quality = quality_from_decision(&artifact.route);
+                }
+                blocks
             } else {
+                artifact.layout_strategy = Some("text_fallback".to_string());
                 layout_blocks_from_text(
                     page.page_index,
                     page.dimensions,
@@ -985,42 +1001,76 @@ fn figure_block_from_image_artifacts(
     })
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct NativeLayoutDiagnostics {
+    strategy: &'static str,
+    column_layout_unresolved: bool,
+}
+
+impl NativeLayoutDiagnostics {
+    fn resolved(strategy: &'static str) -> Self {
+        Self {
+            strategy,
+            column_layout_unresolved: false,
+        }
+    }
+}
+
 fn layout_blocks_from_native_spans(
     page_index: u32,
     dimensions: PageDimensions,
     spans: &[TextSpan],
     run_table_recovery: bool,
-) -> Vec<LayoutBlock> {
+) -> (Vec<LayoutBlock>, NativeLayoutDiagnostics) {
     if let [span] = spans
         && is_page_wide_span(span, &dimensions)
     {
-        return layout_blocks_from_text(page_index, dimensions, &span.text, run_table_recovery);
+        return (
+            layout_blocks_from_text(page_index, dimensions, &span.text, run_table_recovery),
+            NativeLayoutDiagnostics::resolved("page_wide_text"),
+        );
     }
 
     if run_table_recovery
         && let Some(blocks) =
             layout_blocks_from_positioned_table_runs(page_index, dimensions.clone(), spans)
     {
-        return blocks;
+        return (
+            blocks,
+            NativeLayoutDiagnostics::resolved("positioned_table_runs"),
+        );
     }
 
-    let grouped_spans = group_spans_for_reading_order(spans, &dimensions);
+    let (grouped_spans, strategy) = group_spans_for_reading_order(spans, &dimensions);
     if grouped_spans.is_empty() {
         let text = spans
             .iter()
             .map(|span| span.text.as_str())
             .collect::<Vec<_>>()
             .join("\n");
-        return layout_blocks_from_text(page_index, dimensions, &text, run_table_recovery);
+        return (
+            layout_blocks_from_text(page_index, dimensions, &text, run_table_recovery),
+            NativeLayoutDiagnostics::resolved("text_fallback"),
+        );
     }
 
-    grouped_spans
+    let column_layout_unresolved = strategy == ReadingOrderStrategy::VerticalGaps
+        && has_unresolved_column_evidence(spans, &dimensions);
+    let blocks = grouped_spans
         .into_iter()
         .enumerate()
         .filter_map(|(block_index, group)| {
             layout_block_from_span_group(page_index, block_index, group, run_table_recovery)
         })
-        .collect()
+        .collect();
+
+    (
+        blocks,
+        NativeLayoutDiagnostics {
+            strategy: strategy.as_str(),
+            column_layout_unresolved,
+        },
+    )
 }
 
 fn layout_blocks_from_positioned_table_runs(
@@ -2087,24 +2137,52 @@ fn nearly_equal(left: f32, right: f32) -> bool {
     (left - right).abs() <= 0.001
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ReadingOrderStrategy {
+    FullWidthBands,
+    ColumnSplit,
+    ColumnRowBands,
+    VerticalGapColumnSplits,
+    VerticalGaps,
+}
+
+impl ReadingOrderStrategy {
+    fn as_str(self) -> &'static str {
+        match self {
+            ReadingOrderStrategy::FullWidthBands => "full_width_bands",
+            ReadingOrderStrategy::ColumnSplit => "column_split",
+            ReadingOrderStrategy::ColumnRowBands => "column_row_bands",
+            ReadingOrderStrategy::VerticalGapColumnSplits => "vertical_gap_column_splits",
+            ReadingOrderStrategy::VerticalGaps => "vertical_gaps",
+        }
+    }
+}
+
 fn group_spans_for_reading_order<'a>(
     spans: &'a [TextSpan],
     dimensions: &PageDimensions,
-) -> Vec<Vec<&'a TextSpan>> {
+) -> (Vec<Vec<&'a TextSpan>>, ReadingOrderStrategy) {
     let span_refs = spans
         .iter()
         .filter(|span| !span.text.trim().is_empty())
         .collect::<Vec<_>>();
 
-    group_spans_for_reading_order_from_refs(span_refs, dimensions)
+    group_spans_for_reading_order_from_refs_with_strategy(span_refs, dimensions)
 }
 
 fn group_spans_for_reading_order_from_refs<'a>(
     span_refs: Vec<&'a TextSpan>,
     dimensions: &PageDimensions,
 ) -> Vec<Vec<&'a TextSpan>> {
+    group_spans_for_reading_order_from_refs_with_strategy(span_refs, dimensions).0
+}
+
+fn group_spans_for_reading_order_from_refs_with_strategy<'a>(
+    span_refs: Vec<&'a TextSpan>,
+    dimensions: &PageDimensions,
+) -> (Vec<Vec<&'a TextSpan>>, ReadingOrderStrategy) {
     if let Some(groups) = group_span_refs_by_full_width_bands(&span_refs, dimensions) {
-        return groups;
+        return (groups, ReadingOrderStrategy::FullWidthBands);
     }
 
     if let Some(columns) = split_layout_columns(&span_refs, dimensions) {
@@ -2112,16 +2190,130 @@ fn group_spans_for_reading_order_from_refs<'a>(
         for column in columns {
             groups.extend(group_span_refs_by_vertical_gaps(column));
         }
-        return groups;
+        return (groups, ReadingOrderStrategy::ColumnSplit);
+    }
+
+    if let Some(groups) = group_span_refs_by_column_row_bands(&span_refs, dimensions) {
+        return (groups, ReadingOrderStrategy::ColumnRowBands);
     }
 
     if let Some(groups) =
         group_span_refs_by_vertical_gaps_with_column_splits(span_refs.clone(), dimensions)
     {
-        return groups;
+        return (groups, ReadingOrderStrategy::VerticalGapColumnSplits);
     }
 
-    group_span_refs_by_vertical_gaps(span_refs)
+    (
+        group_span_refs_by_vertical_gaps(span_refs),
+        ReadingOrderStrategy::VerticalGaps,
+    )
+}
+
+/// Groups spans for multi-column pages where banner rows (titles, authors,
+/// footers) or centered gutter-straddling rows (page numbers) prevent a clean
+/// whole-page column split. Rows that straddle the page center become their own
+/// reading-order bands, while runs of column-fitting rows between them are
+/// split into columns.
+fn group_span_refs_by_column_row_bands<'a>(
+    span_refs: &[&'a TextSpan],
+    dimensions: &PageDimensions,
+) -> Option<Vec<Vec<&'a TextSpan>>> {
+    if span_refs.len() < 8 || dimensions.width <= 0.0 {
+        return None;
+    }
+
+    let rows = group_positioned_text_rows(span_refs.to_vec());
+    if rows.len() < 6 {
+        return None;
+    }
+
+    let center = dimensions.width * 0.5;
+    let tolerance = column_row_band_center_tolerance(dimensions);
+    let row_is_band = rows
+        .iter()
+        .map(|row| {
+            row.iter()
+                .any(|span| span_straddles_center(span, center, tolerance))
+        })
+        .collect::<Vec<_>>();
+
+    let mut groups = Vec::new();
+    let mut split_any = false;
+    let mut start = 0;
+    while start < rows.len() {
+        let mut end = start + 1;
+        while end < rows.len() && row_is_band[end] == row_is_band[start] {
+            end += 1;
+        }
+        let segment_spans = rows[start..end]
+            .iter()
+            .flatten()
+            .copied()
+            .collect::<Vec<_>>();
+        if row_is_band[start] {
+            groups.extend(group_span_refs_by_vertical_gaps(segment_spans));
+        } else if let Some(columns) = split_layout_columns(&segment_spans, dimensions) {
+            split_any = true;
+            for column in columns {
+                groups.extend(group_span_refs_by_vertical_gaps(column));
+            }
+        } else if end - start <= 3 {
+            groups.extend(group_span_refs_by_vertical_gaps(segment_spans));
+        } else {
+            return None;
+        }
+        start = end;
+    }
+
+    split_any.then_some(groups)
+}
+
+fn column_row_band_center_tolerance(dimensions: &PageDimensions) -> f32 {
+    (dimensions.width * 0.01).max(4.0)
+}
+
+fn span_straddles_center(span: &TextSpan, center: f32, tolerance: f32) -> bool {
+    span.bbox.x0 < center - tolerance && span.bbox.x1 > center + tolerance
+}
+
+/// Detects pages that look multi-column (many rows with text on both sides of
+/// the page center) but could not be split into columns, so vertical-gap
+/// grouping likely interleaved their reading order.
+fn has_unresolved_column_evidence(spans: &[TextSpan], dimensions: &PageDimensions) -> bool {
+    if dimensions.width <= 0.0 {
+        return false;
+    }
+    let span_refs = spans
+        .iter()
+        .filter(|span| !span.text.trim().is_empty())
+        .collect::<Vec<_>>();
+    if span_refs.len() < 12 {
+        return false;
+    }
+
+    let rows = group_positioned_text_rows(span_refs);
+    if rows.len() < 8 {
+        return false;
+    }
+
+    let center = dimensions.width * 0.5;
+    let tolerance = column_row_band_center_tolerance(dimensions);
+    let two_sided_rows = rows
+        .iter()
+        .filter(|row| {
+            if row
+                .iter()
+                .any(|span| span_straddles_center(span, center, tolerance))
+            {
+                return false;
+            }
+            let has_left = row.iter().any(|span| span.bbox.x1 <= center - tolerance);
+            let has_right = row.iter().any(|span| span.bbox.x0 >= center + tolerance);
+            has_left && has_right
+        })
+        .count();
+
+    two_sided_rows >= 6 && two_sided_rows * 2 >= rows.len()
 }
 
 fn group_span_refs_by_vertical_gaps_with_column_splits<'a>(

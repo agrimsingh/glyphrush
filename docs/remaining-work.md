@@ -22,23 +22,15 @@ Current checkpoint:
 
 ## P0: Next Engineering Work
 
-### 1. Close `span_geometry_layout` from partial to implemented
+### 1. Close `span_geometry_layout` from partial to implemented — DONE
 
-Why it matters: this is one of the two remaining partial LiteParse-parity capabilities, and it directly affects reading order, bbox quality, multi-column documents, and confidence flags.
+Status: implemented. The column-row band strategy keeps centered banners, gutter-straddling rows, and trailing page numbers out of column splits, so multi-column academic pages (BERT fixture) read title → abstract → left column → right column → page number instead of interleaving columns line-by-line. Pages with unresolved multi-column evidence are flagged `layout_uncertain` with a `column_layout_unresolved` reason, each page artifact reports its reading-order `layout_strategy`, and `test/corpus.v0.layout.json` is the labeled span-geometry gate (reading-order sequences, span-bbox samples, per-page block counts) wired into `scripts/verify.sh`.
 
-Concrete tasks:
+Remaining follow-ups (not parity blockers):
 
-- Add labeled real-PDF fixtures for multi-column papers, footnotes, sidebars, page headers, page numbers, figures, rotated/cropped pages, and wide cross-column headings.
-- Add reading-order expectations that fail when columns interleave, headers land in body text, captions are misplaced, or page numbers pollute content.
-- Add bbox sanity expectations for representative spans so geometry regressions are caught without requiring full visual overlays.
-- Improve the layout confidence model so bad span geometry, overlapping bands, implausible coordinates, and unsupported writing modes produce `layout_uncertain` or a heavier route instead of quiet bad output.
-- Reduce cases where caps or defensive heuristics throw away useful geometry; caps should route work or flag uncertainty, not hide content.
-- Add debug output that explains why a page stayed on the fast path or escalated to heavier layout work.
-
-Exit criteria:
-
-- The feature-parity status can move from `partial` only when the labeled layout fixtures pass and unsupported cases are explicitly flagged.
-- Multi-column native-text PDFs preserve stable, human-readable order without a broad latency regression.
+- Add a strict nonzero-`/Rotate` fixture; the current `rotated` fixture is landscape-orientation only, and rotated pages are flagged via `rotated_page` rather than re-ordered.
+- Add dedicated sidebar/footnote-heavy fixtures beyond the BERT and Watson coverage.
+- Consider estimating asymmetric gutters instead of assuming the column gutter brackets the page center.
 
 ### 2. Close `table_recovery` from partial to implemented
 

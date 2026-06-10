@@ -1,0 +1,2190 @@
+{
+  "manifest_version": "glyphrush-eval-manifest-v1",
+  "generator": {
+    "parser_name": "glyphrush",
+    "parser_version": "0.1.0",
+    "backend": "pdfium",
+    "backend_version": "pdfium-adapter-v1",
+    "span_geometry": true,
+    "ocr_sidecar": false,
+    "ocr_command": false,
+    "ocr_http_url": false,
+    "ocr_timeout_ms": 120000
+  },
+  "corpus_fingerprint": "eb0849339b79dab0e605f60af8f8f17384fb0cbfb26b2f95fbabca7d737c75d4",
+  "documents": [
+    {
+      "path": "v0/academic_columns/acl-bert-naacl-2019.pdf",
+      "category": "academic_columns",
+      "document_fingerprint": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4",
+      "source_size_bytes": 786279,
+      "expect": {
+        "page_count": 16,
+        "fallback_pages": 16,
+        "ocr_required_pages": 0,
+        "ocr_applied_pages": 0,
+        "image_artifact_count": 2,
+        "warnings_count": 16,
+        "required_warnings": [
+          "p000000: unsupported_feature: annotation_or_form",
+          "p000001: unsupported_feature: annotation_or_form",
+          "p000002: unsupported_feature: annotation_or_form",
+          "p000003: unsupported_feature: annotation_or_form",
+          "p000004: unsupported_feature: annotation_or_form",
+          "p000005: unsupported_feature: annotation_or_form",
+          "p000006: unsupported_feature: annotation_or_form",
+          "p000007: unsupported_feature: annotation_or_form",
+          "p000008: unsupported_feature: annotation_or_form",
+          "p000009: unsupported_feature: annotation_or_form",
+          "p000010: unsupported_feature: annotation_or_form",
+          "p000011: unsupported_feature: annotation_or_form",
+          "p000012: unsupported_feature: annotation_or_form",
+          "p000013: unsupported_feature: annotation_or_form",
+          "p000014: unsupported_feature: annotation_or_form",
+          "p000015: unsupported_feature: annotation_or_form"
+        ],
+        "route_counts": {
+          "native_fast_path": 0,
+          "needs_fallback": 0,
+          "ocr_fallback": 0,
+          "unsupported": 16
+        },
+        "route_reason_counts": {
+          "annotation_or_form": 16,
+          "table_line_density": 8
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 0,
+          "low_confidence_text": 0,
+          "broken_encoding": 0,
+          "layout_uncertain": 0,
+          "table_uncertain": 8,
+          "unsupported_feature": 16
+        },
+        "ocr_required_classification": {
+          "expected_pages": [],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "table_uncertain",
+            "expected_pages": [
+              2,
+              4,
+              5,
+              6,
+              8,
+              12,
+              14,
+              15
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "unsupported_feature",
+            "expected_pages": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "table_structure": [
+          {
+            "page": 2,
+            "expected_rows": [
+              [
+                "Masked Sentence A",
+                "Masked Sentence B",
+                "Question",
+                "Paragraph"
+              ],
+              [
+                "Unlabeled Sentence A and B Pair",
+                "",
+                "",
+                "Question Answer Pair"
+              ],
+              [
+                "Pre-training",
+                "",
+                "Fine-Tuning",
+                ""
+              ],
+              [
+                "Figure 1: Overall pre-training and fine-tuning procedures for BERT. Apart from output layers, the same architec\u0002",
+                "",
+                "",
+                ""
+              ],
+              [
+                "tures are used in both pre-training and fine-tuning. The same pre-trained model parameters are used to initialize",
+                "",
+                "",
+                ""
+              ],
+              [
+                "models for different down-stream tasks. During fine-tuning, all parameters are fine-tuned.",
+                "",
+                "",
+                "[CLS] is a special"
+              ],
+              [
+                "tions/answers).",
+                "symbol added in front of every input example, and [SEP] is a special separator token (e.g. separating ques\u0002"
+              ],
+              [
+                "ing and auto-encoder objectives have been used",
+                "mal difference between the pre-trained architec\u0002"
+              ],
+              [
+                "for pre-training such models ( Howard and Ruder ,",
+                "ture and the final downstream architecture."
+              ],
+              [
+                "2.3 Transfer Learning from Supervised Data",
+                "ture is a multi-layer bidirectional Transformer en\u0002"
+              ],
+              [
+                "There has also been work showing effective trans\u0002",
+                "coder based on the original implementation de\u0002"
+              ],
+              [
+                "fer from supervised tasks with large datasets, such",
+                "scribed in Vaswani et al. ( 2017 ) and released in"
+              ],
+              [
+                "as natural language inference ( Conneau et al.",
+                "the tensor2tensor library. 1 Because the use"
+              ],
+              [
+                ",",
+                "of Transformers has become common and our im\u0002"
+              ],
+              [
+                "2017)",
+                "and",
+                "machine",
+                "translation",
+                "(McCann",
+                "et",
+                "al.,"
+              ],
+              [
+                "2017).",
+                "Computer",
+                "vision",
+                "research",
+                "has",
+                "also",
+                "demon\u0002"
+              ],
+              [
+                "strated",
+                "the",
+                "importance",
+                "of",
+                "transfer",
+                "learning",
+                "from"
+              ],
+              [
+                "large",
+                "pre-trained",
+                "models,",
+                "where",
+                "an",
+                "effective",
+                "recipe"
+              ],
+              [
+                "is to fine-tune models pre-trained with Ima\u0002",
+                "Vaswani et al. ( 2017 ) as well as excellent guides"
+              ],
+              [
+                "geNet ( Deng et al. 2009 ; Yosinski et al. 2014 ).",
+                "such as \u201cThe Annotated Transformer.\u201d 2"
+              ],
+              [
+                "We introduce BERT and its detailed implementa\u0002",
+                "We primarily report results on two model sizes:"
+              ],
+              [
+                "tion in this section. There are two steps in our",
+                "BERT BASE (L=12, H=768, A=12, Total Param\u0002"
+              ],
+              [
+                "question-answering example in Figure 1 will serve",
+                "1",
+                "https://github.com/tensorflow/tensor2tensor"
+              ],
+              [
+                "as a running example for this section.",
+                "2 3",
+                "http://nlp.seas.harvard.edu/2018/04/03/attention.html"
+              ],
+              [
+                "A distinctive feature of BERT is its unified ar\u0002",
+                "i.e., 3072 for the H = 768 and 4096 for the H = 1024 ."
+              ],
+              [
+                "chitecture across different tasks. There is mini\u0002",
+                "4 We note that in the literature the bidirectional Trans-"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          },
+          {
+            "page": 4,
+            "expected_rows": [
+              [
+                "The NSP task is closely related to representation\u0002",
+                "(4) a degenerate text- \u2205 pair in text classification"
+              ],
+              [
+                "learning objectives used in Jernite et al. ( 2017 ) and",
+                "or sequence tagging. At the output, the token rep\u0002"
+              ],
+              [
+                "Pre-training data The pre-training procedure",
+                "Compared to pre-training, fine-tuning is rela\u0002"
+              ],
+              [
+                "largely follows the existing literature on language",
+                "tively inexpensive. All of the results in the pa\u0002"
+              ],
+              [
+                "model pre-training. For the pre-training corpus we",
+                "per can be replicated in at most 1 hour on a sin\u0002"
+              ],
+              [
+                "use the BooksCorpus (800M words) ( Zhu et al. ,",
+                "gle Cloud TPU, or a few hours on a GPU, starting"
+              ],
+              [
+                "2015 ) and English Wikipedia (2,500M words).",
+                "from the exact same pre-trained model. 7 We de\u0002"
+              ],
+              [
+                "For Wikipedia we extract only the text passages",
+                "scribe the task-specific details in the correspond\u0002"
+              ],
+              [
+                "and ignore lists, tables, and headers. It is criti\u0002",
+                "ing subsections of Section 4 . More details can be"
+              ],
+              [
+                "cal to use a document-level corpus rather than a",
+                "found in Appendix A.5 ."
+              ],
+              [
+                "3.2 Fine-tuning BERT",
+                "sults on 11 NLP tasks."
+              ],
+              [
+                "Fine-tuning is straightforward since the self\u0002 attention mechanism in the Transformer al\u0002",
+                "4.1 GLUE"
+              ],
+              [
+                "ing, (2) hypothesis-premise pairs in entailment, (3)",
+                "F1 score of 91.0%."
+              ],
+              [
+                "question-passage pairs in question answering, and",
+                "8 See (10) in https://gluebenchmark.com/faq ."
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          },
+          {
+            "page": 5,
+            "expected_rows": [
+              [
+                "BERT BASE",
+                "84.6/83.4 71.2 90.5 93.5 52.1 85.8 88.9 66.4 79.6"
+              ],
+              [
+                "BERT LARGE",
+                "86.7/85.9 72.1 92.7 94.9 60.5 86.5 89.3 70.1 82.1"
+              ],
+              [
+                "than the official GLUE score, since we exclude the problematic WNLI set. model, single task. F1 scores are reported for QQP and MRPC, Spearman correlations are reported for STS-B, and",
+                "Table 1: GLUE Test results, scored by the evaluation server ( The number below each task denotes the number of training examples. The \u201cAverage\u201d column is slightly different",
+                "accuracy scores are reported for the other tasks. We exclude entries that use BERT as one of their components.",
+                "https://gluebenchmark.com/leaderboard",
+                "8 BERT and OpenAI GPT are single\u0002",
+                ")."
+              ],
+              [
+                "",
+                "",
+                "We use a batch size of 32 and fine-tune for 3",
+                "",
+                "Wikipedia containing the answer, the task is to",
+                ""
+              ],
+              [
+                "",
+                "",
+                "epochs over the data for all GLUE tasks. For each",
+                "predict the answer text span in the passage.",
+                "",
+                ""
+              ],
+              [
+                "task, we selected the best fine-tuning learning rate (among 5e-5, 4e-5, 3e-5, and 2e-5) on the Dev set.",
+                "ing task, we represent the input question and pas\u0002",
+                "As shown in Figure 1 , in the question answer\u0002"
+              ],
+              [
+                "Additionally, for BERT LARGE we found that fine\u0002",
+                "sage as a single packed sequence, with the ques\u0002",
+                ""
+              ],
+              [
+                "tuning was sometimes unstable on small datasets,",
+                "tion using the A embedding and the passage using"
+              ],
+              [
+                "so we ran several random restarts and selected the",
+                "the B embedding. We only introduce a start vec\u0002"
+              ],
+              [
+                "We find that BERT LARGE significantly outper\u0002",
+                "2018a ; Hu et al. , 2018 ). The top results from the"
+              ],
+              [
+                "forms BERT BASE across all tasks, especially those",
+                "SQuAD leaderboard do not have up-to-date public"
+              ],
+              [
+                "",
+                "The Stanford Question Answering Dataset",
+                "Our best performing system outperforms the top"
+              ],
+              [
+                "(SQuAD v1.1) is a collection of 100k crowd\u0002",
+                "",
+                "leaderboard system by +1.5 F1 in ensembling and"
+              ],
+              [
+                "sourced question/answer pairs (",
+                "Rajpurkar et al. ,",
+                "+1.3 F1 as a single system. In fact, our single"
+              ],
+              [
+                "2016",
+                "). Given a question and a passage from",
+                "BERT model outperforms the top ensemble sys\u0002"
+              ],
+              [
+                "labels, and we only made a single GLUE evaluation server",
+                "9 The GLUE data set distribution does not include the Test",
+                "tem in terms of F1 score. Without TriviaQA fine\u0002"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          },
+          {
+            "page": 6,
+            "expected_rows": [
+              [
+                "System Dev Test",
+                "System Dev Test"
+              ],
+              [
+                "EM F1 EM F1",
+                "ESIM+GloVe 51.9 52.7"
+              ],
+              [
+                "Top Leaderboard Systems (Dec 10th, 2018)",
+                "ESIM+ELMo 59.1 59.2"
+              ],
+              [
+                "Human - - 82.3 91.2",
+                "OpenAI GPT - 78.0"
+              ],
+              [
+                "#1 Ensemble - nlnet - - 86.0 91.7 BERT BASE",
+                "81.6 -"
+              ],
+              [
+                "#2 Ensemble - QANet - - 84.5 90.5 BERT LARGE",
+                "86.6 86.3"
+              ],
+              [
+                "BERT",
+                "(Single) 80.8 88.5 - -",
+                "Ours Table 4: SWAG Dev and Test accuracies. \u2020 Human per\u0002"
+              ],
+              [
+                "BASE",
+                "",
+                ""
+              ],
+              [
+                "BERT",
+                "LARGE (Single) 84.1 90.9 - -",
+                "formance is measured with 100 samples, as reported in"
+              ],
+              [
+                "BERT LARGE (Sgl.+TriviaQA)",
+                "84.2 91.1 85.1 91.8"
+              ],
+              [
+                "BERT LARGE (Ens.+TriviaQA)",
+                "86.2 92.2 87.4 93.2"
+              ],
+              [
+                "System Dev Test",
+                "fine-tuned for 2 epochs with a learning rate of 5e-5"
+              ],
+              [
+                "EM F1 EM F1",
+                "and a batch size of 48."
+              ],
+              [
+                "Top Leaderboard Systems (Dec 10th, 2018)",
+                "The results compared to prior leaderboard en\u0002"
+              ],
+              [
+                "Human 86.3 89.0 86.9 89.5",
+                "tries and top published work ( Sun et al. , 2018 ;"
+              ],
+              [
+                "#1 Single - MIR-MRC (F-Net) - - 74.8 78.0",
+                "Wang et al. , 2018b ) are shown in Table 3 , exclud\u0002"
+              ],
+              [
+                "",
+                "",
+                "unet (Ensemble) - - 71.4 74.9",
+                "ponents. We observe a +5.1 F1 improvement over",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "SLQA+ (Single) - 71.4 74.4",
+                "",
+                "the previous best system.",
+                "",
+                ""
+              ],
+              [
+                "Ours",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "use BERT as one of their components.",
+                "Table 3: SQuAD 2.0 results. We exclude entries that",
+                "BERT LARGE (Single) 78.7 81.9 80.0 83.1",
+                "pletion examples that evaluate grounded common\u0002",
+                "The Situations With Adversarial Generations",
+                "4.4 SWAG",
+                "(SWAG) dataset contains 113k sentence-pair com\u0002"
+              ],
+              [
+                "tuning data, we only lose 0.1-0.4 F1, still outper\u0002",
+                "tence, the task is to choose the most plausible con\u0002"
+              ],
+              [
+                "forming all existing systems by a wide margin. 12",
+                "tinuation among four choices."
+              ],
+              [
+                "12",
+                "In this section, we perform ablation experiments"
+              ],
+              [
+                "The TriviaQA data we used consists of paragraphs from",
+                "over a number of facets of BERT in order to better"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          },
+          {
+            "page": 8,
+            "expected_rows": [
+              [
+                "mixed results on the downstream task impact of",
+                "System Dev F1 Test F1"
+              ],
+              [
+                "increasing the pre-trained bi-LM size from two",
+                "ELMo ( Peters et al. , 2018a ) 95.7 92.2"
+              ],
+              [
+                "to four layers and Melamud et al. ( 2016 ) men\u0002",
+                "CVT ( Clark et al. , 2018 ) - 92.6"
+              ],
+              [
+                "",
+                "BERT LARGE",
+                "96.6 92.8"
+              ],
+              [
+                "further to 1,000 did not bring further improve\u0002",
+                "BERT BASE",
+                "96.4 92.4"
+              ],
+              [
+                "cation layer is added to the pre-trained model, and",
+                "layer in the output. We use the representation of"
+              ],
+              [
+                "all parameters are jointly fine-tuned on a down\u0002",
+                "the first sub-token as the input to the token-level"
+              ],
+              [
+                "stream task. However, the feature-based approach,",
+                "classifier over the NER label set."
+              ],
+              [
+                "where fixed features are extracted from the pre\u0002",
+                "To ablate the fine-tuning approach, we apply the"
+              ],
+              [
+                "trained model, has certain advantages. First, not",
+                "feature-based approach by extracting the activa\u0002"
+              ],
+              [
+                "all tasks can be easily represented by a Trans\u0002",
+                "tions from one or more layers without fine-tuning"
+              ],
+              [
+                "former encoder architecture, and therefore require",
+                "any parameters of BERT. These contextual em\u0002"
+              ],
+              [
+                "a task-specific model architecture to be added.",
+                "beddings are used as input to a randomly initial\u0002"
+              ],
+              [
+                "Second, there are major computational benefits",
+                "ized two-layer 768-dimensional BiLSTM before"
+              ],
+              [
+                "to pre-compute an expensive representation of the",
+                "the classification layer."
+              ],
+              [
+                "with cheaper models on top of this representation.",
+                "Results are presented in Table 7 . BERT LARGE"
+              ],
+              [
+                "In this section, we compare the two approaches",
+                "performs competitively with state-of-the-art meth\u0002"
+              ],
+              [
+                "by applying BERT to the CoNLL-2003 Named",
+                "ods. The best performing method concatenates the"
+              ],
+              [
+                "Entity Recognition (NER) task ( Tjong Kim Sang",
+                "token representations from the top four hidden lay\u0002"
+              ],
+              [
+                "and De Meulder , 2003 ). In the input to BERT, we",
+                "ers of the pre-trained Transformer, which is only"
+              ],
+              [
+                "use a case-preserving WordPiece model, and we",
+                "0.3 F1 behind fine-tuning the entire model. This"
+              ],
+              [
+                "include the maximal document context provided",
+                "demonstrates that BERT is effective for both fine\u0002"
+              ],
+              [
+                "",
+                "by the data. Following standard practice, we for\u0002",
+                "mulate this as a tagging task but do not use a CRF",
+                "",
+                "tuning and feature-based approaches.",
+                "",
+                "6 Conclusion",
+                ""
+              ],
+              [
+                "",
+                "",
+                "",
+                "Hyperparams Dev Set Accuracy",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "#L #H #A LM (ppl) MNLI-m MRPC SST-2",
+                "",
+                "",
+                "",
+                "Recent empirical improvements due to transfer",
+                "",
+                ""
+              ],
+              [
+                "",
+                "3 768 12 5.84 77.9 79.8 88.4",
+                "",
+                "",
+                "",
+                "learning with language models have demonstrated",
+                "",
+                ""
+              ],
+              [
+                "",
+                "6 768 3 5.24 80.6 82.2 90.7",
+                "",
+                "",
+                "that rich, unsupervised pre-training is an integral",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "6 768 12 4.68 81.9 84.8 91.3",
+                "",
+                "",
+                "part of many language understanding systems. In",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "",
+                "12 768 12 3.99 84.4 86.7 92.9",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "",
+                "12 1024 16 3.54 85.7 86.9 93.3",
+                "particular, these results enable even low-resource",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "",
+                "24 1024 16 3.23 86.6 87.8 93.7",
+                "tasks to benefit from deep unidirectional architec\u0002 tures. Our major contribution is further general\u0002",
+                "",
+                "",
+                ""
+              ],
+              [
+                "tention heads. \u201cLM (ppl)\u201d is the masked LM perplexity",
+                "number of layers; #H = hidden size; #A = number of at\u0002",
+                "Table 6: Ablation over BERT model size. #L = the",
+                "of held-out training data.",
+                "tures, allowing the same pre-trained model to suc\u0002",
+                "izing these findings to deep",
+                "cessfully tackle a broad set of NLP tasks.",
+                "bidirectional architec\u0002"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          },
+          {
+            "page": 12,
+            "expected_rows": [
+              [
+                "to converge. In Section C.1 we demonstrate that",
+                "epochs over the 3.3 billion word corpus. We"
+              ],
+              [
+                "MLM does converge marginally slower than a left\u0002",
+                "use Adam with learning rate of 1e-4, \u03b2 1 = 0 . 9 ,"
+              ],
+              [
+                "Next Sentence Prediction",
+                "The next sentence vation ( Hendrycks and Gimpel , 2016 ) rather than"
+              ],
+              [
+                "prediction task can be illustrated in the following the standard relu",
+                ", following OpenAI GPT. The"
+              ],
+              [
+                "examples.",
+                "training loss is the sum of the mean masked LM likelihood and the mean next sentence prediction"
+              ],
+              [
+                "embedding and the second receives the B embed\u0002",
+                "For fine-tuning, most model hyperparameters are"
+              ],
+              [
+                "ding. 50% of the time B is the actual next sentence",
+                "the same as in pre-training, with the exception of"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          },
+          {
+            "page": 14,
+            "expected_rows": [
+              [
+                "Class",
+                "Class"
+              ],
+              [
+                "Label",
+                "Label"
+              ],
+              [
+                "with human annotations of their sentiment ( Socher",
+                "RTE",
+                "Recognizing Textual Entailment is a bi\u0002"
+              ],
+              [
+                "et al. , 2013 ).",
+                "nary entailment task similar to MNLI, but with",
+                ""
+              ],
+              [
+                "",
+                "much less training data ( Bentivogli et al. ,",
+                "2009 ). 14"
+              ],
+              [
+                "the goal is to predict whether an English sentence",
+                "WNLI Winograd NLI is a small natural lan\u0002"
+              ],
+              [
+                "is linguistically \u201cacceptable\u201d or not ( Warstadt",
+                "guage inference dataset ( Levesque et al. , 2011 )."
+              ],
+              [
+                "et al. , 2018 ).",
+                "The GLUE webpage notes that there are issues"
+              ],
+              [
+                "for whether the sentences in the pair are semanti\u0002",
+                "task training with MNLI."
+              ],
+              [
+                "cally equivalent ( Dolan and Brockett , 2005 ).",
+                "15 https://gluebenchmark.com/faq"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          },
+          {
+            "page": 15,
+            "expected_rows": [
+              [
+                "C Additional Ablation Studies pears during the fine-tuning stage. We report the",
+                "and fine-tuning, as the [MASK] symbol never ap\u0002"
+              ],
+              [
+                "C.1 Effect of Number of Training Steps",
+                "Dev results for both MNLI and NER. For NER,"
+              ],
+              [
+                "",
+                "",
+                "1.0% additional accuracy on MNLI when",
+                "",
+                "80% 0% 20% 84.1 95.2 94.6"
+              ],
+              [
+                "",
+                "trained on 1M steps compared to 500k steps.",
+                "",
+                "",
+                "80% 20% 0% 84.4 95.2 94.7 0% 20% 80% 83.7 94.8 94.6"
+              ],
+              [
+                "2.",
+                "than every word?",
+                "of words are predicted in each batch rather",
+                "Question: Does MLM pre-training converge slower than LTR pre-training, since only 15% Table 8: Ablation over different masking strategies.",
+                "0% 0% 100% 83.6 94.9 94.6"
+              ],
+              [
+                "Answer: The MLM model does converge",
+                "The results are presented in Table 8 . In the table,"
+              ],
+              [
+                "slightly slower than the LTR model. How\u0002",
+                "M ASK means that we replace the target token with"
+              ],
+              [
+                "strategies. Note that the purpose of the masking strategies",
+                "in Section From the table it can be seen that fine-tuning is",
+                "5.3 ."
+              ],
+              [
+                "is to reduce the mismatch between pre-training",
+                "surprisingly robust to different masking strategies.",
+                ""
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          }
+        ],
+        "span_bbox": [
+          {
+            "page": 0,
+            "text": "Proceedings of NAACL-HLT 2019",
+            "provenance": "native",
+            "min_x0": 202.044,
+            "max_x0": 203.044,
+            "min_y0": 794.816,
+            "max_y0": 795.816,
+            "min_x1": 324.66852,
+            "max_x1": 325.66852,
+            "min_y1": 802.7871,
+            "max_y1": 803.7871
+          },
+          {
+            "page": 1,
+            "text": "word based only on its context. Unlike left-to\u0002",
+            "provenance": "native",
+            "min_x0": 71.72909,
+            "max_x0": 72.72909,
+            "min_y0": 65.8161,
+            "max_y0": 66.8161,
+            "min_x1": 289.24567,
+            "max_x1": 290.24567,
+            "min_y1": 75.63428,
+            "max_y1": 76.63428
+          },
+          {
+            "page": 2,
+            "text": "BERT",
+            "provenance": "native",
+            "min_x0": 371.5526,
+            "max_x0": 372.5526,
+            "min_y0": 123.75946,
+            "max_y0": 124.75946,
+            "min_x1": 399.9204,
+            "max_x1": 400.9204,
+            "min_y1": 131.83441,
+            "max_y1": 132.83441
+          },
+          {
+            "page": 3,
+            "text": "Input/Output Representations",
+            "provenance": "native",
+            "min_x0": 71.718185,
+            "max_x0": 72.718185,
+            "min_y0": 65.72882,
+            "max_y0": 66.72882,
+            "min_x1": 211.64922,
+            "max_x1": 212.64922,
+            "min_y1": 75.49249,
+            "max_y1": 76.49249
+          },
+          {
+            "page": 4,
+            "text": "cute",
+            "provenance": "native",
+            "min_x0": 280.97433,
+            "max_x0": 281.97433,
+            "min_y0": 70.09851,
+            "max_y0": 71.09851,
+            "min_x1": 294.73373,
+            "max_x1": 295.73373,
+            "min_y1": 74.99048,
+            "max_y1": 75.99048
+          },
+          {
+            "page": 5,
+            "text": "System MNLI-(m/mm) QQP QNLI SST-2 CoLA STS-B MRPC RTE",
+            "provenance": "native",
+            "min_x0": 75.14959,
+            "max_x0": 76.14959,
+            "min_y0": 68.54175,
+            "max_y0": 69.54175,
+            "min_x1": 475.66086,
+            "max_x1": 476.66086,
+            "min_y1": 76.548706,
+            "max_y1": 77.548706
+          },
+          {
+            "page": 6,
+            "text": "System Dev Test",
+            "provenance": "native",
+            "min_x0": 124.97059,
+            "max_x0": 125.97059,
+            "min_y0": 67.14673,
+            "max_y0": 68.14673,
+            "min_x1": 265.71616,
+            "max_x1": 266.71616,
+            "min_y1": 75.15369,
+            "max_y1": 76.15369
+          },
+          {
+            "page": 7,
+            "text": "Dev Set",
+            "provenance": "native",
+            "min_x0": 197.74147,
+            "max_x0": 198.74147,
+            "min_y0": 67.14673,
+            "max_y0": 68.14673,
+            "min_x1": 226.0215,
+            "max_x1": 227.0215,
+            "min_y1": 73.324585,
+            "max_y1": 74.324585
+          },
+          {
+            "page": 8,
+            "text": "mixed results on the downstream task impact of",
+            "provenance": "native",
+            "min_x0": 71.674545,
+            "max_x0": 72.674545,
+            "min_y0": 65.8161,
+            "max_y0": 66.8161,
+            "min_x1": 290.31476,
+            "max_x1": 291.31476,
+            "min_y1": 75.62341,
+            "max_y1": 76.62341
+          },
+          {
+            "page": 9,
+            "text": "References",
+            "provenance": "native",
+            "min_x0": 71.81084,
+            "max_x0": 72.81084,
+            "min_y0": 65.00598,
+            "max_y0": 66.00598,
+            "min_x1": 126.709114,
+            "max_x1": 127.709114,
+            "min_y1": 73.422424,
+            "max_y1": 74.422424
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        },
+        "pages": [
+          {
+            "index": 0,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000000:c54376c6cf27",
+            "page_fingerprint": "c54376c6cf2701a2e694d0f6296c5e3d2cc052a1fa5787e4285b5ee9f48275bb",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "BERT: Pre-training of Deep Bidirectional Transformers for"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 8,
+              "paragraph_blocks": 8,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 1,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000001:3c45b4e73368",
+            "page_fingerprint": "3c45b4e73368da5ffe3209a26b4cb8b39fe6a71e751ee1f06a95545e6084c667",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "word based only on its context. Unlike left-to\u0002"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 4,
+              "paragraph_blocks": 4,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 2,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000002:329c178df980",
+            "page_fingerprint": "329c178df98086ee13f5c45bd57c35055a1ab4dbacc5b37084ee3aea01b1a5be",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "NSP Mask LM Mask LM"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 27,
+              "paragraph_blocks": 12,
+              "heading_blocks": 7,
+              "list_blocks": 0,
+              "table_blocks": 8,
+              "table_rows": 26,
+              "table_cells": 86,
+              "table_cells_with_bbox": 46,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "table_line_density",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 3,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000003:d1ed6378efec",
+            "page_fingerprint": "d1ed6378efecc121ae5da24e6bece83a9cce95a91f508cd139ed83963f505bc4",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "Input/Output Representations To make BERT"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 5,
+              "paragraph_blocks": 5,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 4,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000004:d957b7458e7a",
+            "page_fingerprint": "d957b7458e7aa30e9abe571c7bcd61f33228e8749eee3902968fff4d88e8bcf4",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "Input [CLS] my dog is cute [SEP] he likes play ##ing [SEP]"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 16,
+              "paragraph_blocks": 12,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 4,
+              "table_rows": 14,
+              "table_cells": 28,
+              "table_cells_with_bbox": 28,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "table_line_density",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 5,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000005:24eaf0c57937",
+            "page_fingerprint": "24eaf0c57937934a90f67b90628f74ce5092413bc023fdbaaf8ea36a738ca9e2",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "System MNLI-(m/mm) QQP QNLI SST-2 CoLA STS-B MRPC RTE Average"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 15,
+              "paragraph_blocks": 9,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 6,
+              "table_rows": 16,
+              "table_cells": 51,
+              "table_cells_with_bbox": 40,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "table_line_density",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 6,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000006:3f41af5ec12b",
+            "page_fingerprint": "3f41af5ec12b76c32402659dda550b0714bcd8d5ddf78ba4a2836fa3c40e0bef",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "| System Dev Test | System Dev Test |"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 21,
+              "paragraph_blocks": 12,
+              "heading_blocks": 0,
+              "list_blocks": 1,
+              "table_blocks": 8,
+              "table_rows": 24,
+              "table_cells": 71,
+              "table_cells_with_bbox": 53,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "table_line_density",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 7,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000007:d2bf13e51174",
+            "page_fingerprint": "d2bf13e51174cfd3e8d2f1ca0c8b29dcd1fb2a4a228e85fec9a4a6052b7ab4b4",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "Dev Set"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 7,
+              "paragraph_blocks": 7,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 8,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000008:5c97883d49d9",
+            "page_fingerprint": "5c97883d49d94fbc1fbb1f7b1787a52e1e434974025fe761ba7cc7d6747ef4d4",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "| mixed results on the downstream task impact of | System Dev F1 Test F1 |"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 13,
+              "paragraph_blocks": 8,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 5,
+              "table_rows": 32,
+              "table_cells": 126,
+              "table_cells_with_bbox": 71,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "table_line_density",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 9,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000009:7299881cacce",
+            "page_fingerprint": "7299881cacceec64563109787cf2c5721907a6785cd060ad9db85fec104f8b6c",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "References"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 17,
+              "paragraph_blocks": 17,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 10,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000010:e44419cf13c2",
+            "page_fingerprint": "e44419cf13c2f97619fcd0f74855a0ca0f525becccf48d5fc0009be1aa59afc9",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "Mandar Joshi, Eunsol Choi, Daniel S Weld, and Luke"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 3,
+              "paragraph_blocks": 3,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 11,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000011:f1bbd3e14bce",
+            "page_fingerprint": "f1bbd3e14bce40c725c48f1101e1bbfeab1da7bd15f9e42f42dd8ed0b49498ee",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "for natural language understanding. In Proceedings"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 10,
+              "paragraph_blocks": 8,
+              "heading_blocks": 0,
+              "list_blocks": 2,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 12,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000012:8a60eb62f6f4",
+            "page_fingerprint": "8a60eb62f6f490a304af756ef725330ee09cab5a78b46f24c583ba5dead9af0e",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "BERT (Ours) OpenAI GPT ELMo"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 16,
+              "paragraph_blocks": 11,
+              "heading_blocks": 1,
+              "list_blocks": 1,
+              "table_blocks": 3,
+              "table_rows": 7,
+              "table_cells": 14,
+              "table_cells_with_bbox": 14,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "table_line_density",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 13,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000013:c2ef761aff10",
+            "page_fingerprint": "c2ef761aff10162630473aaab0ee10052950cef8783d87fb6fa983a2a937fd5b",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "\u2022 Learning rate (Adam): 5e-5, 3e-5, 2e-5"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 5,
+              "paragraph_blocks": 3,
+              "heading_blocks": 0,
+              "list_blocks": 2,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 14,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000014:f0ea914bd1f5",
+            "page_fingerprint": "f0ea914bd1f52cad22c1a3be0f3bd0c2fdb0f2877dc8d9f0e96deb61ed9ab681",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "| Class | Class |"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 30,
+              "paragraph_blocks": 15,
+              "heading_blocks": 11,
+              "list_blocks": 0,
+              "table_blocks": 4,
+              "table_rows": 10,
+              "table_cells": 23,
+              "table_cells_with_bbox": 17,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "table_line_density",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 15,
+            "artifact_id": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4:p000015:420766132165",
+            "page_fingerprint": "420766132165fbb1c22e5df4c3aea7e5b8c545bb4d702933fa91fafee2c7c37f",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "| C Additional Ablation Studies pears during the fine-tuning stage. We report the | and fine-tuning, as the [MASK] symbol never ap\u0002 |"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 15,
+              "paragraph_blocks": 10,
+              "heading_blocks": 0,
+              "list_blocks": 1,
+              "table_blocks": 4,
+              "table_rows": 9,
+              "table_cells": 29,
+              "table_cells_with_bbox": 22,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "table_line_density",
+              "annotation_or_form"
+            ]
+          }
+        ],
+        "reading_order": {
+          "expected_sequence": [
+            "BERT: Pre-training of Deep Bidirectional Transformers for",
+            "Abstract",
+            "We introduce a new language representa",
+            "1 Introduction",
+            "Language model pre-training has been shown to",
+            "There are two existing strategies for apply",
+            "2 Related Work",
+            "2.1 Unsupervised Feature-based Approaches"
+          ],
+          "min_score": 1.0
+        }
+      }
+    },
+    {
+      "path": "v0/hybrid/govinfo-usreports-218-173-watson.pdf",
+      "category": "hybrid",
+      "document_fingerprint": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1",
+      "source_size_bytes": 1565096,
+      "expect": {
+        "page_count": 8,
+        "fallback_pages": 8,
+        "ocr_required_pages": 0,
+        "ocr_applied_pages": 0,
+        "image_artifact_count": 8,
+        "warnings_count": 1,
+        "required_warnings": [
+          "p000000: unsupported_feature: annotation_or_form"
+        ],
+        "route_counts": {
+          "native_fast_path": 0,
+          "needs_fallback": 7,
+          "ocr_fallback": 0,
+          "unsupported": 1
+        },
+        "route_reason_counts": {
+          "annotation_or_form": 1,
+          "column_layout_unresolved": 1,
+          "image_text_overlay": 8
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 0,
+          "low_confidence_text": 0,
+          "broken_encoding": 0,
+          "layout_uncertain": 8,
+          "table_uncertain": 0,
+          "unsupported_feature": 1
+        },
+        "ocr_required_classification": {
+          "expected_pages": [],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "layout_uncertain",
+            "expected_pages": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "unsupported_feature",
+            "expected_pages": [
+              0
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "span_bbox": [
+          {
+            "page": 0,
+            "text": "WATSON",
+            "provenance": "native",
+            "min_x0": 113.38486,
+            "max_x0": 114.38486,
+            "min_y0": 57.76306,
+            "max_y0": 58.76306,
+            "min_x1": 157.34416,
+            "max_x1": 158.34416,
+            "min_y1": 64.79028,
+            "max_y1": 65.79028
+          },
+          {
+            "page": 1,
+            "text": "OCTOBER",
+            "provenance": "native",
+            "min_x0": 155.5707,
+            "max_x0": 156.5707,
+            "min_y0": 58.881958,
+            "max_y0": 59.881958,
+            "min_x1": 204.57677,
+            "max_x1": 205.57677,
+            "min_y1": 66.60419,
+            "max_y1": 67.60419
+          },
+          {
+            "page": 2,
+            "text": "WATSON",
+            "provenance": "native",
+            "min_x0": 103.484955,
+            "max_x0": 104.484955,
+            "min_y0": 56.171204,
+            "max_y0": 57.171204,
+            "min_x1": 147.6048,
+            "max_x1": 148.6048,
+            "min_y1": 63.90442,
+            "max_y1": 64.90442
+          },
+          {
+            "page": 3,
+            "text": "OCTOBER",
+            "provenance": "native",
+            "min_x0": 160.61557,
+            "max_x0": 161.61557,
+            "min_y0": 57.460083,
+            "max_y0": 58.460083,
+            "min_x1": 208.91028,
+            "max_x1": 209.91028,
+            "min_y1": 64.43939,
+            "max_y1": 65.43939
+          },
+          {
+            "page": 4,
+            "text": "WATSON",
+            "provenance": "native",
+            "min_x0": 101.33495,
+            "max_x0": 102.33495,
+            "min_y0": 51.871216,
+            "max_y0": 52.871216,
+            "min_x1": 145.4548,
+            "max_x1": 146.4548,
+            "min_y1": 59.60443,
+            "max_y1": 60.60443
+          },
+          {
+            "page": 5,
+            "text": "OCTOBER",
+            "provenance": "native",
+            "min_x0": 153.41522,
+            "max_x0": 154.41522,
+            "min_y0": 52.615356,
+            "max_y0": 53.615356,
+            "min_x1": 201.66608,
+            "max_x1": 202.66608,
+            "min_y1": 60.30359,
+            "max_y1": 61.30359
+          },
+          {
+            "page": 6,
+            "text": "WATSON",
+            "provenance": "native",
+            "min_x0": 106.734955,
+            "max_x0": 107.734955,
+            "min_y0": 54.02118,
+            "max_y0": 55.02118,
+            "min_x1": 150.8548,
+            "max_x1": 151.8548,
+            "min_y1": 61.754395,
+            "max_y1": 62.754395
+          },
+          {
+            "page": 7,
+            "text": "OCTOBER",
+            "provenance": "native",
+            "min_x0": 162.36597,
+            "max_x0": 163.36597,
+            "min_y0": 54.78003,
+            "max_y0": 55.78003,
+            "min_x1": 210.74918,
+            "max_x1": 211.74918,
+            "min_y1": 62.453247,
+            "max_y1": 63.453247
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        },
+        "pages": [
+          {
+            "index": 0,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000000:197e41fca8c8",
+            "page_fingerprint": "197e41fca8c820789f7f4d46dd89966731bb4bb4667ddb2827ab933b5eb0ca59",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "WATSON v. MARYLAND. 173"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 7,
+              "paragraph_blocks": 7,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "image_text_overlay",
+              "annotation_or_form",
+              "column_layout_unresolved"
+            ]
+          },
+          {
+            "index": 1,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000001:9f3f3449f3a3",
+            "page_fingerprint": "9f3f3449f3a3e49f1c057aa903aaf166d2da6a660b95d6bcd61e5b66637c7bde",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "174 OCTOBER TERM, 1909."
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 4,
+              "paragraph_blocks": 3,
+              "heading_blocks": 1,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 2,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000002:6adb9c8bac14",
+            "page_fingerprint": "6adb9c8bac14454561213c75abf1fccf422099ddef5cb8ffa208b84ddda52560",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "WATSON v. MARYLAND. 175"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 3,
+              "paragraph_blocks": 3,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 3,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000003:916e48006053",
+            "page_fingerprint": "916e4800605341019242ecc3dcfb68ec536050d839aad0cef9e8659769a34b34",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "176 OCTOBER TERM, 1909."
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 3,
+              "paragraph_blocks": 2,
+              "heading_blocks": 1,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 4,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000004:c1be49a1665f",
+            "page_fingerprint": "c1be49a1665f008d6996cc6124c3e924ba65e71905f39f2e7088adac7ea9cb0e",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "WATSON v. MARYLAND. 177"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 3,
+              "paragraph_blocks": 3,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 5,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000005:4c64e95ebcc1",
+            "page_fingerprint": "4c64e95ebcc17c8efeac94176d24507c55b110d4e3cb04e58486a12d2a8a39fd",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "178 OCTOBER TERM, 1909."
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 3,
+              "paragraph_blocks": 2,
+              "heading_blocks": 1,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 6,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000006:8318a5335c4e",
+            "page_fingerprint": "8318a5335c4e0a56adef4f4966166b59e5488164a5b2973df636b93b311eecda",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "WATSON v. MARYLAND. 179"
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 3,
+              "paragraph_blocks": 3,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          },
+          {
+            "index": 7,
+            "artifact_id": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1:p000007:47a316fade79",
+            "page_fingerprint": "47a316fade7929ef8e4b2b2c8089d7d8682ba4f7e04b9933cee8f6c2110461f7",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "180 OCTOBER TERM, 1909."
+            ],
+            "image_artifact_count": 1,
+            "layout_block_counts": {
+              "block_count": 5,
+              "paragraph_blocks": 4,
+              "heading_blocks": 1,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "layout_uncertain"
+            ],
+            "required_reasons": [
+              "image_text_overlay"
+            ]
+          }
+        ],
+        "reading_order": {
+          "expected_sequence": [
+            "WATSON v. STATE OF MARYLAND.",
+            "No. 174. Argued April 27, 1910.",
+            "105 Maryland, 650, affirmed.",
+            "Justice Day delivered the opinion of the court."
+          ],
+          "min_score": 1.0
+        }
+      }
+    },
+    {
+      "path": "v0/rotated/irs-f1095c-2025-landscape.pdf",
+      "category": "rotated",
+      "document_fingerprint": "53f0a430f0444342d6c3f96cdfb2e819fa5a52929dddf4859bf2d77ac347e080",
+      "source_size_bytes": 270510,
+      "expect": {
+        "page_count": 4,
+        "fallback_pages": 2,
+        "ocr_required_pages": 0,
+        "ocr_applied_pages": 0,
+        "image_artifact_count": 0,
+        "warnings_count": 2,
+        "required_warnings": [
+          "p000000: unsupported_feature: annotation_or_form",
+          "p000002: unsupported_feature: annotation_or_form"
+        ],
+        "route_counts": {
+          "native_fast_path": 2,
+          "needs_fallback": 0,
+          "ocr_fallback": 0,
+          "unsupported": 2
+        },
+        "route_reason_counts": {
+          "annotation_or_form": 2,
+          "table_line_density": 2
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 0,
+          "low_confidence_text": 0,
+          "broken_encoding": 0,
+          "layout_uncertain": 0,
+          "table_uncertain": 2,
+          "unsupported_feature": 2
+        },
+        "ocr_required_classification": {
+          "expected_pages": [],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "table_uncertain",
+            "expected_pages": [
+              0,
+              2
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          },
+          {
+            "flag": "unsupported_feature",
+            "expected_pages": [
+              0,
+              2
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "table_structure": [
+          {
+            "page": 0,
+            "expected_rows": [
+              [
+                "Department of the Treasury",
+                "Do not attach to your tax return. Keep for your records .",
+                "CORRECTED",
+                "20 25"
+              ],
+              [
+                "Internal Revenue Service",
+                "Go to www.irs.gov/Form1095C for instructions and the latest information.",
+                "",
+                ""
+              ],
+              [
+                "1 Name of employee (f",
+                "irst name, middle initial, last name)",
+                "2 Social security number (SSN)",
+                "7 Name of employer",
+                "",
+                "8 Employer identification number (EIN)"
+              ],
+              [
+                "3 Street address (including apartment no.)",
+                "",
+                "",
+                "9 Street address (including room or suite no.)",
+                "",
+                "10 Contact telephone number"
+              ],
+              [
+                "4 City or town",
+                "5 State or province",
+                "6 Country and ZIP or foreign postal code",
+                "11 City or town",
+                "12 State or province",
+                "13 Country and ZIP or foreign postal code"
+              ],
+              [
+                "Part II",
+                "Employee Offer of Coverage",
+                "",
+                "Employee\u2019s Age on January 1",
+                "Plan Start Month",
+                "(enter 2-digit number):"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
+          }
+        ],
+        "span_bbox": [
+          {
+            "page": 0,
+            "text": "Form",
+            "provenance": "native",
+            "min_x0": 36.046,
+            "max_x0": 37.046,
+            "min_y0": 82.21002,
+            "max_y0": 83.21002,
+            "min_x1": 51.39,
+            "max_x1": 52.39,
+            "min_y1": 87.285034,
+            "max_y1": 88.285034
+          },
+          {
+            "page": 1,
+            "text": "Form 1095-C (2025)",
+            "provenance": "native",
+            "min_x0": 36.046,
+            "max_x0": 37.046,
+            "min_y0": 37.940002,
+            "max_y0": 38.940002,
+            "min_x1": 97.93999,
+            "max_x1": 98.93999,
+            "min_y1": 44.436035,
+            "max_y1": 45.436035
+          },
+          {
+            "page": 2,
+            "text": "Form 1095-C (2025)",
+            "provenance": "native",
+            "min_x0": 36.046,
+            "max_x0": 37.046,
+            "min_y0": 37.940002,
+            "max_y0": 38.940002,
+            "min_x1": 97.93999,
+            "max_x1": 98.93999,
+            "min_y1": 44.436035,
+            "max_y1": 45.436035
+          },
+          {
+            "page": 3,
+            "text": "Form 1095-C (2025)",
+            "provenance": "native",
+            "min_x0": 36.046,
+            "max_x0": 37.046,
+            "min_y0": 37.940002,
+            "max_y0": 38.940002,
+            "min_x1": 97.93999,
+            "max_x1": 98.93999,
+            "min_y1": 44.436035,
+            "max_y1": 45.436035
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        },
+        "pages": [
+          {
+            "index": 0,
+            "artifact_id": "53f0a430f0444342d6c3f96cdfb2e819fa5a52929dddf4859bf2d77ac347e080:p000000:1ddcd0a64cb2",
+            "page_fingerprint": "1ddcd0a64cb2e4ff6ada1f841e56b6731b47d0e125f1b05375db4a7336ae8536",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "1095-C Form"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 19,
+              "paragraph_blocks": 17,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 2,
+              "table_rows": 6,
+              "table_cells": 32,
+              "table_cells_with_bbox": 25,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "table_line_density",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 1,
+            "artifact_id": "53f0a430f0444342d6c3f96cdfb2e819fa5a52929dddf4859bf2d77ac347e080:p000001:9d35c177f0f7",
+            "page_fingerprint": "9d35c177f0f7d6c02b590c0087dfb1d3068ccf06543bc0dcf0ca941dec1505fe",
+            "route": "native_fast_path",
+            "empty_text_output": false,
+            "required_text": [
+              "Form 1095-C (2025)"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 2,
+              "paragraph_blocks": 2,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [],
+            "required_reasons": []
+          },
+          {
+            "index": 2,
+            "artifact_id": "53f0a430f0444342d6c3f96cdfb2e819fa5a52929dddf4859bf2d77ac347e080:p000002:1111b162bcee",
+            "page_fingerprint": "1111b162bcee7037f0036e10f09e92f5e78b6215b3bf8719dd6fdc6abd6bd421",
+            "route": "unsupported",
+            "empty_text_output": false,
+            "required_text": [
+              "Form 1095-C (2025)"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 20,
+              "paragraph_blocks": 20,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain",
+              "unsupported_feature"
+            ],
+            "required_reasons": [
+              "table_line_density",
+              "annotation_or_form"
+            ]
+          },
+          {
+            "index": 3,
+            "artifact_id": "53f0a430f0444342d6c3f96cdfb2e819fa5a52929dddf4859bf2d77ac347e080:p000003:35ff63826c3f",
+            "page_fingerprint": "35ff63826c3fcc771604ea89c1dccf626a85685ceef1a2430c4ee6bedc459b87",
+            "route": "native_fast_path",
+            "empty_text_output": false,
+            "required_text": [
+              "Form 1095-C (2025)"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 2,
+              "paragraph_blocks": 2,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 0,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [],
+            "required_reasons": []
+          }
+        ]
+      }
+    }
+  ]
+}

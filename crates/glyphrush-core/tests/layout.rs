@@ -4579,6 +4579,190 @@ fn repeated_margin_blocks_are_classified_as_headers_and_footers() {
     );
 }
 
+#[test]
+fn two_column_page_with_banner_and_centered_page_number_preserves_column_reading_order() {
+    // Mimics an academic first page: centered title/author banner rows and a
+    // centered trailing page number straddle the gutter, while the body is two
+    // clean columns. The banner and page number must become their own bands
+    // instead of defeating the column split.
+    let mut native_spans = vec![
+        span(
+            "Paper Title Spanning Both Columns",
+            100.0,
+            40.0,
+            500.0,
+            55.0,
+        ),
+        span("Author One Author Two", 150.0, 60.0, 450.0, 72.0),
+    ];
+    let mut left_lines = Vec::new();
+    let mut right_lines = Vec::new();
+    for row in 0..8 {
+        let y0 = 100.0 + row as f32 * 15.0;
+        let left_text = format!("left column line {row}");
+        let right_text = format!("right column line {row}");
+        native_spans.push(span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
+        native_spans.push(span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
+        left_lines.push(left_text);
+        right_lines.push(right_text);
+    }
+    native_spans.push(span("42", 296.0, 720.0, 316.0, 730.0));
+
+    let native_text = native_spans
+        .iter()
+        .map(|span| span.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let artifact = parse_extracted_pages(
+        "doc-two-column-banner".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text,
+            native_spans,
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_strategy.as_deref(), Some("column_row_bands"));
+    assert!(!page.quality.flags.contains(&PageQuality::LayoutUncertain));
+
+    let page_text = page
+        .layout_blocks
+        .iter()
+        .map(|block| block.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let position = |needle: &str| {
+        page_text
+            .find(needle)
+            .unwrap_or_else(|| panic!("missing {needle:?} in {page_text:?}"))
+    };
+
+    assert!(position("Paper Title Spanning Both Columns") < position("left column line 0"));
+    assert!(position("Author One Author Two") < position("left column line 0"));
+    for window in left_lines.windows(2) {
+        assert!(position(&window[0]) < position(&window[1]));
+    }
+    for window in right_lines.windows(2) {
+        assert!(position(&window[0]) < position(&window[1]));
+    }
+    assert!(position("left column line 7") < position("right column line 0"));
+    assert!(position("right column line 7") < position("42"));
+}
+
+#[test]
+fn unresolved_two_column_evidence_flags_layout_uncertain() {
+    // Two-column evidence with a jagged gutter: half the rows leave a clean
+    // column gap, the other half spill into the gutter so no global column
+    // split exists. The page must be flagged layout_uncertain instead of
+    // silently interleaving columns.
+    let mut native_spans = Vec::new();
+    for row in 0..14 {
+        let y0 = 100.0 + row as f32 * 15.0;
+        let (left_x1, right_x0) = if row % 2 == 0 {
+            (290.0, 322.0)
+        } else {
+            (311.0, 340.0)
+        };
+        native_spans.push(span(
+            &format!("tight left line {row}"),
+            60.0,
+            y0,
+            left_x1,
+            y0 + 10.0,
+        ));
+        native_spans.push(span(
+            &format!("tight right line {row}"),
+            right_x0,
+            y0,
+            552.0,
+            y0 + 10.0,
+        ));
+    }
+
+    let native_text = native_spans
+        .iter()
+        .map(|span| span.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let artifact = parse_extracted_pages(
+        "doc-unresolved-columns".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text,
+            native_spans,
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_eq!(page.layout_strategy.as_deref(), Some("vertical_gaps"));
+    assert!(page.quality.flags.contains(&PageQuality::LayoutUncertain));
+    assert!(
+        page.route
+            .reasons
+            .iter()
+            .any(|reason| reason == "column_layout_unresolved"),
+        "expected column_layout_unresolved reason, got {:?}",
+        page.route.reasons
+    );
+    assert!(page.quality.layout_confidence < 85);
+}
+
+#[test]
+fn single_column_page_is_not_split_or_flagged_by_column_row_bands() {
+    let mut native_spans = Vec::new();
+    for row in 0..10 {
+        let y0 = 100.0 + row as f32 * 15.0;
+        native_spans.push(span(
+            &format!("full width prose line {row}"),
+            60.0,
+            y0,
+            552.0,
+            y0 + 10.0,
+        ));
+    }
+
+    let native_text = native_spans
+        .iter()
+        .map(|span| span.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let artifact = parse_extracted_pages(
+        "doc-single-column".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text,
+            native_spans,
+            image_artifacts: Vec::new(),
+            signals: native_signals(0),
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert_ne!(page.layout_strategy.as_deref(), Some("column_row_bands"));
+    assert!(!page.quality.flags.contains(&PageQuality::LayoutUncertain));
+    assert!(
+        !page
+            .route
+            .reasons
+            .iter()
+            .any(|reason| reason == "column_layout_unresolved")
+    );
+}
+
 fn span(text: &str, x0: f32, y0: f32, x1: f32, y1: f32) -> ExtractedTextSpan {
     ExtractedTextSpan {
         text: text.to_string(),

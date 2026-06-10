@@ -205,8 +205,8 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         env!("CARGO_PKG_VERSION")
     );
     assert_eq!(json["summary"]["target_capability_count"], 13);
-    assert_eq!(json["summary"]["implemented"], 7);
-    assert_eq!(json["summary"]["partial"], 3);
+    assert_eq!(json["summary"]["implemented"], 8);
+    assert_eq!(json["summary"]["partial"], 2);
     assert_eq!(json["summary"]["planned"], 2);
     assert_eq!(json["summary"]["not_planned"], 1);
     assert_eq!(
@@ -243,11 +243,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(json["readiness"]["liteparse_capabilities"]["target"], 13);
     assert_eq!(
         json["readiness"]["remaining_partial"],
-        serde_json::json!([
-            "span_geometry_layout",
-            "page_render_for_ocr",
-            "table_recovery"
-        ])
+        serde_json::json!(["page_render_for_ocr", "table_recovery"])
     );
     assert_eq!(
         json["readiness"]["remaining_planned"],
@@ -271,7 +267,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(benchmark["glyphrush"], "strict_speedup_claim_gate");
 
     let span_geometry = capability(capabilities, "span_geometry_layout");
-    assert_eq!(span_geometry["glyphrush_status"], "partial");
+    assert_eq!(span_geometry["glyphrush_status"], "implemented");
     assert!(
         span_geometry["notes"]
             .as_str()
@@ -1600,12 +1596,12 @@ fn feature_parity_counts_pdfium_ocr_runtime_caps_and_cache_as_implemented() {
         serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
 
     assert_eq!(json["selected_backend"], "pdfium");
-    assert_eq!(json["summary"]["implemented"], 8);
-    assert_eq!(json["summary"]["partial"], 2);
+    assert_eq!(json["summary"]["implemented"], 9);
+    assert_eq!(json["summary"]["partial"], 1);
     assert_eq!(json["summary"]["planned"], 2);
     assert_eq!(
         json["readiness"]["remaining_partial"],
-        serde_json::json!(["span_geometry_layout", "table_recovery"])
+        serde_json::json!(["table_recovery"])
     );
     assert_eq!(
         json["readiness"]["remaining_planned"],
@@ -6551,7 +6547,7 @@ fn parse_with_cache_dir_reports_miss_then_hit_for_same_pdf() {
     let snapshot: Value =
         serde_json::from_slice(&fs::read(&cache_files[0]).unwrap()).expect("cache snapshot json");
     assert_eq!(snapshot["snapshot_version"], "glyphrush-cache-snapshot-v1");
-    assert_eq!(snapshot["cache_schema"], "glyphrush-cache-v40");
+    assert_eq!(snapshot["cache_schema"], "glyphrush-cache-v41");
     assert_eq!(
         snapshot["cache_key"],
         first["global_diagnostics"]["cache_key"]
@@ -6833,8 +6829,12 @@ fn cache_key_does_not_reuse_prior_schema_artifacts() {
         "glyphrush-cache-v39:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
         env!("CARGO_PKG_VERSION")
     ));
-    let expected_current_key = sha256_hex(format!(
+    let old_v40_key = sha256_hex(format!(
         "glyphrush-cache-v40:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
+        env!("CARGO_PKG_VERSION")
+    ));
+    let expected_current_key = sha256_hex(format!(
+        "glyphrush-cache-v41:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
         env!("CARGO_PKG_VERSION")
     ));
 
@@ -7071,6 +7071,12 @@ fn cache_key_does_not_reuse_prior_schema_artifacts() {
             .as_str()
             .expect("cache key is present"),
         old_v39_key
+    );
+    assert_ne!(
+        json["global_diagnostics"]["cache_key"]
+            .as_str()
+            .expect("cache key is present"),
+        old_v40_key
     );
     assert_eq!(
         json["global_diagnostics"]["cache_key"]

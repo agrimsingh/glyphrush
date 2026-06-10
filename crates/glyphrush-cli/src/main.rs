@@ -63,7 +63,7 @@ const MAX_PDFIUM_TEXT_SEGMENT_NATIVE_TEXT_BYTES: u32 = 256 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
 const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
 const TABLE_ROUTE_DENSITY_THRESHOLD: f32 = 0.25;
-const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v40";
+const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v41";
 const CACHE_SNAPSHOT_VERSION: &str = "glyphrush-cache-snapshot-v1";
 const DEFAULT_BASELINE_TIMEOUT_MS: u64 = 120_000;
 const DEFAULT_OCR_TIMEOUT_MS: u64 = 120_000;
@@ -1872,6 +1872,8 @@ struct DebugPageOutput {
     quality: PageQualityReport,
     text_output: TextOutputMetrics,
     layout: DebugLayoutSummary,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    layout_strategy: Option<String>,
     timings: PageTimings,
     image_artifacts: Vec<ImageArtifact>,
     warnings: Vec<String>,
@@ -3045,10 +3047,10 @@ fn liteparse_feature_parity_capabilities(
             area: "layout",
             liteparse: "layout_projection_and_character_geometry",
             glyphrush: "bounded_span_geometry_and_full_width_aware_layout_blocks",
-            glyphrush_status: FeatureParityStatus::Partial,
+            glyphrush_status: FeatureParityStatus::Implemented,
             hot_path: false,
             quality_guard: "layout_uncertain_flag_reading_order_and_span_bbox_eval",
-            notes: "Glyphrush avoids always-on per-character metadata, preserves full-width bands, fragmented full-width heading rows, fragmented middle cross-column bands, fragmented short section separators, leading, middle, and trailing cross-column bands, conservative short section separators, narrow academic gutters with trailing centered page numbers, and clearly separated 2-5 column reading order when span geometry is available, seeds bounded span-bbox manifest samples, and escalates layout work when signals require it.",
+            notes: "Glyphrush avoids always-on per-character metadata, preserves full-width bands, fragmented full-width heading rows, fragmented middle cross-column bands, fragmented short section separators, leading, middle, and trailing cross-column bands, conservative short section separators, narrow academic gutters with trailing centered page numbers, column-row bands that keep centered banners, gutter-straddling rows, and trailing page numbers out of column splits, and clearly separated 2-5 column reading order when span geometry is available, seeds bounded span-bbox manifest samples, reports the per-page reading-order strategy as layout_strategy, escalates layout work when signals require it, and flags unresolved multi-column evidence as layout_uncertain with a column_layout_unresolved reason instead of silently interleaving columns. Labeled real-PDF reading-order and span-bbox fixtures gate this in test/corpus.v0.layout.json.",
         },
         FeatureParityCapability {
             id: "ocr",
@@ -4965,6 +4967,7 @@ fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) -> Result<(
                 quality: page.quality.clone(),
                 text_output,
                 layout,
+                layout_strategy: page.layout_strategy.clone(),
                 timings: page.timings.clone(),
                 image_artifacts: page.image_artifacts.clone(),
                 warnings,

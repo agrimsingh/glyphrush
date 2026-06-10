@@ -52,6 +52,7 @@ fi
 if ((${#v0_corpus[@]} > 0)); then
   if [[ "${GLYPHRUSH_VERIFY_PDFIUM:-0}" == "1" ]]; then
     run cargo run -q -p glyphrush-cli --features pdfium -- --backend pdfium eval test/corpus.v0.json --jobs 2
+    run cargo run -q -p glyphrush-cli --features pdfium -- --backend pdfium eval test/corpus.v0.layout.json --span-geometry --jobs 2
   else
     echo "Skipping v0 eval: set GLYPHRUSH_VERIFY_PDFIUM=1 to evaluate PDFium-generated test/corpus.v0.json."
   fi
