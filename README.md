@@ -12,6 +12,8 @@ The dependency-light backend extracts native text through `lopdf`, can preserve 
 
 ## Commands
 
+See [docs/remaining-work.md](docs/remaining-work.md) for the current parity-driven TODO list and release blockers.
+
 ```sh
 cargo run -p glyphrush-cli -- eval test/corpus.datasheets.json --category datasheet --jobs 2
 bash scripts/verify.sh
