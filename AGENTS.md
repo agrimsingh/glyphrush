@@ -23,7 +23,7 @@ Glyphrush is a **Rust CLI** (no web server, no database). The binary is `glyphru
 | Inspect PDF | `cargo run -p glyphrush-cli -- inspect <pdf>` |
 | Parse to text/JSON | `cargo run -p glyphrush-cli -- parse <pdf> --format text` |
 
-See `README.md` for `bench`, `eval`, `manifest`, `debug-page`, and baseline commands.
+See `docs/cli-reference.md` for `bench`, `eval`, `manifest`, `debug-page`, and baseline commands.
 
 ### Test corpus
 
