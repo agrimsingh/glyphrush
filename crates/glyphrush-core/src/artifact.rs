@@ -399,7 +399,7 @@ pub struct PageSignals {
 }
 
 impl PageSignals {
-    pub fn empty(page_index: u32, dimensions: PageDimensions) -> Self {
+    pub fn zeroed(page_index: u32, dimensions: PageDimensions) -> Self {
         Self {
             page_index,
             dimensions,
@@ -417,6 +417,10 @@ impl PageSignals {
             huge_object_count: 0,
             span_geometry_capped: false,
         }
+    }
+
+    pub fn empty(page_index: u32, dimensions: PageDimensions) -> Self {
+        Self::zeroed(page_index, dimensions)
     }
 }
 

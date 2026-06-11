@@ -1,6 +1,7 @@
+mod common;
+
 use glyphrush_core::{
-    BBox, ExtractedPage, ExtractedTextSpan, LayoutBlockKind, PageDimensions, PageQuality,
-    PageSignals, PageTimings, parse_extracted_pages,
+    ExtractedPage, LayoutBlockKind, PageDimensions, PageQuality, PageSignals, parse_extracted_pages,
 };
 
 #[test]
@@ -8,8 +9,6 @@ fn native_text_is_split_into_deterministic_layout_blocks() {
     let artifact = parse_extracted_pages(
         "doc-layout".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "INTRODUCTION\n\n",
                 "Glyphrush keeps layout artifacts explicit.\n",
@@ -20,12 +19,7 @@ fn native_text_is_split_into_deterministic_layout_blocks() {
                 "| A | 1 |\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -49,20 +43,13 @@ fn pipe_table_payload_preserves_empty_cells_and_column_indexes() {
     let artifact = parse_extracted_pages(
         "doc-table-empty-cells".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "| Part | Value | Note |\n",
                 "| A | | missing value |\n",
                 "| B | 2 | |"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -87,15 +74,8 @@ fn pipe_table_payload_ignores_markdown_separator_rows() {
     let artifact = parse_extracted_pages(
         "doc-table-markdown-separator".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!("| Part | Value |\n", "| --- | --- |\n", "| A | 1 |").to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -115,8 +95,6 @@ fn pipe_table_recovery_keeps_leading_caption_outside_table_grid() {
     let artifact = parse_extracted_pages(
         "doc-pipe-table-leading-caption".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "REGISTER MAP\n",
                 "| Address | Name | Default |\n",
@@ -125,18 +103,14 @@ fn pipe_table_recovery_keeps_leading_caption_outside_table_grid() {
                 "| 0x01 | STATUS | 0x00 |"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 5,
                 native_text_bytes: 124,
                 glyph_count: 92,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -174,26 +148,20 @@ fn pipe_table_recovery_keeps_leading_caption_for_two_row_table() {
     let artifact = parse_extracted_pages(
         "doc-pipe-table-short-leading-caption".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "REGISTER SUMMARY\n",
                 "| Address | Name |\n",
                 "| 0x00 | CTRL |"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 3,
                 native_text_bytes: 64,
                 glyph_count: 48,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -223,8 +191,6 @@ fn pipe_table_recovery_splits_prefix_caption_and_table() {
     let artifact = parse_extracted_pages(
         "doc-pipe-table-prefix-leading-caption".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "The following registers are implemented:\n",
                 "REGISTER MAP\n",
@@ -232,18 +198,14 @@ fn pipe_table_recovery_splits_prefix_caption_and_table() {
                 "| 0x00 | CTRL |"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 4,
                 native_text_bytes: 108,
                 glyph_count: 82,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -278,26 +240,20 @@ fn aligned_whitespace_table_payload_preserves_empty_cells_and_column_indexes() {
     let artifact = parse_extracted_pages(
         "doc-aligned-table-empty-cells".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Part          Value        Note\n",
                 "A                          missing value\n",
                 "B             2\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 1,
                 native_text_bytes: 84,
                 glyph_count: 60,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -322,8 +278,6 @@ fn aligned_whitespace_table_payload_preserves_section_rows() {
     let artifact = parse_extracted_pages(
         "doc-aligned-table-section-row".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter           Symbol      Typ     Max     Unit\n",
                 "Input voltage       VIN         3.3     5.5     V\n",
@@ -332,18 +286,14 @@ fn aligned_whitespace_table_payload_preserves_section_rows() {
                 "Thermal shutdown    TSD         150     175     C\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 1,
                 native_text_bytes: 224,
                 glyph_count: 154,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -379,8 +329,6 @@ fn aligned_whitespace_table_payload_merges_wrapped_descriptor_rows() {
     let artifact = parse_extracted_pages(
         "doc-aligned-table-wrapped-descriptor-row".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter           Symbol      Typ     Max     Unit\n",
                 "Output voltage\n",
@@ -389,18 +337,14 @@ fn aligned_whitespace_table_payload_merges_wrapped_descriptor_rows() {
                 "Thermal shutdown    TSD         150     175     C\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 1,
                 native_text_bytes: 224,
                 glyph_count: 154,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -435,8 +379,6 @@ fn key_value_table_payload_preserves_multi_word_labels() {
     let artifact = parse_extracted_pages(
         "doc-key-value-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Document Number: DS-4312\n",
                 "Revision Code: A2\n",
@@ -444,18 +386,14 @@ fn key_value_table_payload_preserves_multi_word_labels() {
                 "Operating Range: -40 C to 85 C\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 1,
                 native_text_bytes: 116,
                 glyph_count: 92,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -491,21 +429,15 @@ fn ocr_text_can_produce_layout_blocks_when_native_text_is_missing() {
     let artifact = parse_extracted_pages(
         "doc-ocr-layout".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
-            native_text: String::new(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 native_span_count: 0,
                 native_text_bytes: 0,
                 glyph_count: 0,
                 image_area_ratio: 0.95,
-                ..native_signals(0)
+                ..common::signals(0)
             },
             ocr_text: Some("OCR HEADING\n\nRecovered paragraph.".to_string()),
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -522,21 +454,16 @@ fn applied_ocr_replaces_low_confidence_native_text_for_layout() {
     let artifact = parse_extracted_pages(
         "doc-ocr-over-native-layout".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "x".to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 native_span_count: 1,
                 native_text_bytes: 1,
                 glyph_count: 1,
                 image_area_ratio: 0.95,
-                ..native_signals(0)
+                ..common::signals(0)
             },
             ocr_text: Some("OCR HEADING\n\nRecovered OCR paragraph.".to_string()),
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -556,8 +483,6 @@ fn layout_reflows_short_pdf_fragments_inside_paragraph_blocks() {
     let artifact = parse_extracted_pages(
         "doc-fragments".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "AP735\n",
                 "4\n\n",
@@ -575,12 +500,7 @@ fn layout_reflows_short_pdf_fragments_inside_paragraph_blocks() {
                 "- item two\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -601,8 +521,6 @@ fn layout_reflows_adjacent_short_fragment_blocks() {
     let artifact = parse_extracted_pages(
         "doc-cross-block-fragments".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "AP735\n\n",
                 "4\n\n",
@@ -621,12 +539,7 @@ fn layout_reflows_adjacent_short_fragment_blocks() {
                 "November 2019\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -643,8 +556,6 @@ fn positioned_native_spans_preserve_two_column_reading_order() {
     let artifact = parse_extracted_pages(
         "doc-two-column-layout".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Left column starts\n",
                 "Left column continues\n",
@@ -653,16 +564,12 @@ fn positioned_native_spans_preserve_two_column_reading_order() {
             )
             .to_string(),
             native_spans: vec![
-                span("Left column starts", 72.0, 100.0, 230.0, 114.0),
-                span("Right column starts", 330.0, 100.0, 500.0, 114.0),
-                span("Left column continues", 72.0, 118.0, 248.0, 132.0),
-                span("Right column continues", 330.0, 118.0, 520.0, 132.0),
+                common::span("Left column starts", 72.0, 100.0, 230.0, 114.0),
+                common::span("Right column starts", 330.0, 100.0, 500.0, 114.0),
+                common::span("Left column continues", 72.0, 118.0, 248.0, 132.0),
+                common::span("Right column continues", 330.0, 118.0, 520.0, 132.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -684,8 +591,6 @@ fn positioned_native_spans_preserve_three_column_reading_order() {
     let artifact = parse_extracted_pages(
         "doc-three-column-layout".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Left column starts\n",
                 "Left column continues\n",
@@ -696,18 +601,14 @@ fn positioned_native_spans_preserve_three_column_reading_order() {
             )
             .to_string(),
             native_spans: vec![
-                span("Left column starts", 48.0, 100.0, 156.0, 114.0),
-                span("Middle column starts", 230.0, 100.0, 350.0, 114.0),
-                span("Right column starts", 430.0, 100.0, 552.0, 114.0),
-                span("Left column continues", 48.0, 118.0, 178.0, 132.0),
-                span("Middle column continues", 230.0, 118.0, 370.0, 132.0),
-                span("Right column continues", 430.0, 118.0, 570.0, 132.0),
+                common::span("Left column starts", 48.0, 100.0, 156.0, 114.0),
+                common::span("Middle column starts", 230.0, 100.0, 350.0, 114.0),
+                common::span("Right column starts", 430.0, 100.0, 552.0, 114.0),
+                common::span("Left column continues", 48.0, 118.0, 178.0, 132.0),
+                common::span("Middle column continues", 230.0, 118.0, 370.0, 132.0),
+                common::span("Right column continues", 430.0, 118.0, 570.0, 132.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -732,7 +633,6 @@ fn positioned_native_spans_preserve_five_column_reading_order() {
     let artifact = parse_extracted_pages(
         "doc-five-column-layout".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
             dimensions: PageDimensions::new(900.0, 792.0),
             native_text: concat!(
                 "Column one starts\n",
@@ -748,22 +648,18 @@ fn positioned_native_spans_preserve_five_column_reading_order() {
             )
             .to_string(),
             native_spans: vec![
-                span("Column one starts", 40.0, 100.0, 120.0, 114.0),
-                span("Column two starts", 220.0, 100.0, 300.0, 114.0),
-                span("Column three starts", 400.0, 100.0, 480.0, 114.0),
-                span("Column four starts", 580.0, 100.0, 660.0, 114.0),
-                span("Column five starts", 760.0, 100.0, 840.0, 114.0),
-                span("Column one continues", 40.0, 118.0, 128.0, 132.0),
-                span("Column two continues", 220.0, 118.0, 308.0, 132.0),
-                span("Column three continues", 400.0, 118.0, 488.0, 132.0),
-                span("Column four continues", 580.0, 118.0, 668.0, 132.0),
-                span("Column five continues", 760.0, 118.0, 848.0, 132.0),
+                common::span("Column one starts", 40.0, 100.0, 120.0, 114.0),
+                common::span("Column two starts", 220.0, 100.0, 300.0, 114.0),
+                common::span("Column three starts", 400.0, 100.0, 480.0, 114.0),
+                common::span("Column four starts", 580.0, 100.0, 660.0, 114.0),
+                common::span("Column five starts", 760.0, 100.0, 840.0, 114.0),
+                common::span("Column one continues", 40.0, 118.0, 128.0, 132.0),
+                common::span("Column two continues", 220.0, 118.0, 308.0, 132.0),
+                common::span("Column three continues", 400.0, 118.0, 488.0, 132.0),
+                common::span("Column four continues", 580.0, 118.0, 668.0, 132.0),
+                common::span("Column five continues", 760.0, 118.0, 848.0, 132.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -789,8 +685,6 @@ fn positioned_native_spans_preserve_trailing_cross_column_note_after_two_columns
     let artifact = parse_extracted_pages(
         "doc-two-column-trailing-note".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Left column starts\n",
                 "Left column continues\n",
@@ -800,11 +694,11 @@ fn positioned_native_spans_preserve_trailing_cross_column_note_after_two_columns
             )
             .to_string(),
             native_spans: vec![
-                span("Left column starts", 72.0, 100.0, 230.0, 114.0),
-                span("Right column starts", 330.0, 100.0, 500.0, 114.0),
-                span("Left column continues", 72.0, 118.0, 248.0, 132.0),
-                span("Right column continues", 330.0, 118.0, 520.0, 132.0),
-                span(
+                common::span("Left column starts", 72.0, 100.0, 230.0, 114.0),
+                common::span("Right column starts", 330.0, 100.0, 500.0, 114.0),
+                common::span("Left column continues", 72.0, 118.0, 248.0, 132.0),
+                common::span("Right column continues", 330.0, 118.0, 520.0, 132.0),
+                common::span(
                     "Note: output voltage measured after startup",
                     72.0,
                     172.0,
@@ -812,11 +706,7 @@ fn positioned_native_spans_preserve_trailing_cross_column_note_after_two_columns
                     186.0,
                 ),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -840,8 +730,6 @@ fn positioned_native_spans_preserve_leading_cross_column_subtitle_before_two_col
     let artifact = parse_extracted_pages(
         "doc-two-column-leading-subtitle".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Typical application conditions\n",
                 "Left column starts\n",
@@ -851,17 +739,13 @@ fn positioned_native_spans_preserve_leading_cross_column_subtitle_before_two_col
             )
             .to_string(),
             native_spans: vec![
-                span("Typical application conditions", 72.0, 72.0, 430.0, 86.0),
-                span("Left column starts", 72.0, 120.0, 230.0, 134.0),
-                span("Right column starts", 330.0, 120.0, 500.0, 134.0),
-                span("Left column continues", 72.0, 138.0, 248.0, 152.0),
-                span("Right column continues", 330.0, 138.0, 520.0, 152.0),
+                common::span("Typical application conditions", 72.0, 72.0, 430.0, 86.0),
+                common::span("Left column starts", 72.0, 120.0, 230.0, 134.0),
+                common::span("Right column starts", 330.0, 120.0, 500.0, 134.0),
+                common::span("Left column continues", 72.0, 138.0, 248.0, 152.0),
+                common::span("Right column continues", 330.0, 138.0, 520.0, 152.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -882,8 +766,6 @@ fn positioned_native_spans_preserve_full_width_heading_before_two_columns() {
     let artifact = parse_extracted_pages(
         "doc-heading-two-column-layout".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "FULL WIDTH TITLE\n",
                 "Left column starts\n",
@@ -893,17 +775,13 @@ fn positioned_native_spans_preserve_full_width_heading_before_two_columns() {
             )
             .to_string(),
             native_spans: vec![
-                span("FULL WIDTH TITLE", 72.0, 72.0, 540.0, 88.0),
-                span("Left column starts", 72.0, 120.0, 230.0, 134.0),
-                span("Right column starts", 330.0, 120.0, 500.0, 134.0),
-                span("Left column continues", 72.0, 138.0, 248.0, 152.0),
-                span("Right column continues", 330.0, 138.0, 520.0, 152.0),
+                common::span("FULL WIDTH TITLE", 72.0, 72.0, 540.0, 88.0),
+                common::span("Left column starts", 72.0, 120.0, 230.0, 134.0),
+                common::span("Right column starts", 330.0, 120.0, 500.0, 134.0),
+                common::span("Left column continues", 72.0, 138.0, 248.0, 152.0),
+                common::span("Right column continues", 330.0, 138.0, 520.0, 152.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -927,8 +805,6 @@ fn positioned_native_spans_preserve_fragmented_full_width_heading_before_two_col
     let artifact = parse_extracted_pages(
         "doc-fragmented-heading-two-column-layout".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "APPLICATION INFORMATION\n",
                 "Left column starts\n",
@@ -938,18 +814,14 @@ fn positioned_native_spans_preserve_fragmented_full_width_heading_before_two_col
             )
             .to_string(),
             native_spans: vec![
-                span("APPLICATION", 72.0, 72.0, 210.0, 88.0),
-                span("INFORMATION", 220.0, 72.0, 430.0, 88.0),
-                span("Left column starts", 72.0, 120.0, 230.0, 134.0),
-                span("Right column starts", 330.0, 120.0, 500.0, 134.0),
-                span("Left column continues", 72.0, 138.0, 248.0, 152.0),
-                span("Right column continues", 330.0, 138.0, 520.0, 152.0),
+                common::span("APPLICATION", 72.0, 72.0, 210.0, 88.0),
+                common::span("INFORMATION", 220.0, 72.0, 430.0, 88.0),
+                common::span("Left column starts", 72.0, 120.0, 230.0, 134.0),
+                common::span("Right column starts", 330.0, 120.0, 500.0, 134.0),
+                common::span("Left column continues", 72.0, 138.0, 248.0, 152.0),
+                common::span("Right column continues", 330.0, 138.0, 520.0, 152.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -971,8 +843,6 @@ fn positioned_native_spans_preserve_short_section_heading_between_two_column_reg
     let artifact = parse_extracted_pages(
         "doc-short-section-between-columns".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "FULL WIDTH TITLE\n",
                 "Left intro starts\n",
@@ -987,22 +857,18 @@ fn positioned_native_spans_preserve_short_section_heading_between_two_column_reg
             )
             .to_string(),
             native_spans: vec![
-                span("FULL WIDTH TITLE", 72.0, 72.0, 540.0, 88.0),
-                span("Left intro starts", 72.0, 120.0, 230.0, 134.0),
-                span("Right intro starts", 330.0, 120.0, 500.0, 134.0),
-                span("Left intro continues", 72.0, 138.0, 248.0, 152.0),
-                span("Right intro continues", 330.0, 138.0, 520.0, 152.0),
-                span("ELECTRICAL CHARACTERISTICS", 72.0, 196.0, 250.0, 212.0),
-                span("Left specs starts", 72.0, 238.0, 230.0, 252.0),
-                span("Right specs starts", 330.0, 238.0, 500.0, 252.0),
-                span("Left specs continues", 72.0, 256.0, 248.0, 270.0),
-                span("Right specs continues", 330.0, 256.0, 520.0, 270.0),
+                common::span("FULL WIDTH TITLE", 72.0, 72.0, 540.0, 88.0),
+                common::span("Left intro starts", 72.0, 120.0, 230.0, 134.0),
+                common::span("Right intro starts", 330.0, 120.0, 500.0, 134.0),
+                common::span("Left intro continues", 72.0, 138.0, 248.0, 152.0),
+                common::span("Right intro continues", 330.0, 138.0, 520.0, 152.0),
+                common::span("ELECTRICAL CHARACTERISTICS", 72.0, 196.0, 250.0, 212.0),
+                common::span("Left specs starts", 72.0, 238.0, 230.0, 252.0),
+                common::span("Right specs starts", 330.0, 238.0, 500.0, 252.0),
+                common::span("Left specs continues", 72.0, 256.0, 248.0, 270.0),
+                common::span("Right specs continues", 330.0, 256.0, 520.0, 270.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1023,8 +889,6 @@ fn positioned_native_spans_preserve_fragmented_short_section_heading_between_two
     let artifact = parse_extracted_pages(
         "doc-fragmented-short-section-between-columns".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "FULL WIDTH TITLE\n",
                 "Left intro starts\n",
@@ -1039,23 +903,19 @@ fn positioned_native_spans_preserve_fragmented_short_section_heading_between_two
             )
             .to_string(),
             native_spans: vec![
-                span("FULL WIDTH TITLE", 72.0, 72.0, 540.0, 88.0),
-                span("Left intro starts", 72.0, 120.0, 230.0, 134.0),
-                span("Right intro starts", 330.0, 120.0, 500.0, 134.0),
-                span("Left intro continues", 72.0, 138.0, 248.0, 152.0),
-                span("Right intro continues", 330.0, 138.0, 520.0, 152.0),
-                span("ELECTRICAL", 72.0, 196.0, 150.0, 212.0),
-                span("CHARACTERISTICS", 158.0, 196.0, 280.0, 212.0),
-                span("Left specs starts", 72.0, 238.0, 230.0, 252.0),
-                span("Right specs starts", 330.0, 238.0, 500.0, 252.0),
-                span("Left specs continues", 72.0, 256.0, 248.0, 270.0),
-                span("Right specs continues", 330.0, 256.0, 520.0, 270.0),
+                common::span("FULL WIDTH TITLE", 72.0, 72.0, 540.0, 88.0),
+                common::span("Left intro starts", 72.0, 120.0, 230.0, 134.0),
+                common::span("Right intro starts", 330.0, 120.0, 500.0, 134.0),
+                common::span("Left intro continues", 72.0, 138.0, 248.0, 152.0),
+                common::span("Right intro continues", 330.0, 138.0, 520.0, 152.0),
+                common::span("ELECTRICAL", 72.0, 196.0, 150.0, 212.0),
+                common::span("CHARACTERISTICS", 158.0, 196.0, 280.0, 212.0),
+                common::span("Left specs starts", 72.0, 238.0, 230.0, 252.0),
+                common::span("Right specs starts", 330.0, 238.0, 500.0, 252.0),
+                common::span("Left specs continues", 72.0, 256.0, 248.0, 270.0),
+                common::span("Right specs continues", 330.0, 256.0, 520.0, 270.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1076,8 +936,6 @@ fn positioned_native_spans_preserve_middle_cross_column_caption_between_two_colu
     let artifact = parse_extracted_pages(
         "doc-middle-cross-column-caption".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Left intro starts\n",
                 "Left intro continues\n",
@@ -1091,21 +949,17 @@ fn positioned_native_spans_preserve_middle_cross_column_caption_between_two_colu
             )
             .to_string(),
             native_spans: vec![
-                span("Left intro starts", 72.0, 120.0, 230.0, 134.0),
-                span("Right intro starts", 330.0, 120.0, 500.0, 134.0),
-                span("Left intro continues", 72.0, 138.0, 248.0, 152.0),
-                span("Right intro continues", 330.0, 138.0, 520.0, 152.0),
-                span("Typical performance curves", 72.0, 196.0, 430.0, 212.0),
-                span("Left details starts", 72.0, 238.0, 230.0, 252.0),
-                span("Right details starts", 330.0, 238.0, 500.0, 252.0),
-                span("Left details continues", 72.0, 256.0, 248.0, 270.0),
-                span("Right details continues", 330.0, 256.0, 520.0, 270.0),
+                common::span("Left intro starts", 72.0, 120.0, 230.0, 134.0),
+                common::span("Right intro starts", 330.0, 120.0, 500.0, 134.0),
+                common::span("Left intro continues", 72.0, 138.0, 248.0, 152.0),
+                common::span("Right intro continues", 330.0, 138.0, 520.0, 152.0),
+                common::span("Typical performance curves", 72.0, 196.0, 430.0, 212.0),
+                common::span("Left details starts", 72.0, 238.0, 230.0, 252.0),
+                common::span("Right details starts", 330.0, 238.0, 500.0, 252.0),
+                common::span("Left details continues", 72.0, 256.0, 248.0, 270.0),
+                common::span("Right details continues", 330.0, 256.0, 520.0, 270.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1132,8 +986,6 @@ fn positioned_native_spans_preserve_fragmented_middle_cross_column_caption_betwe
     let artifact = parse_extracted_pages(
         "doc-fragmented-middle-cross-column-caption".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Left intro starts\n",
                 "Left intro continues\n",
@@ -1147,22 +999,18 @@ fn positioned_native_spans_preserve_fragmented_middle_cross_column_caption_betwe
             )
             .to_string(),
             native_spans: vec![
-                span("Left intro starts", 72.0, 120.0, 230.0, 134.0),
-                span("Right intro starts", 330.0, 120.0, 500.0, 134.0),
-                span("Left intro continues", 72.0, 138.0, 248.0, 152.0),
-                span("Right intro continues", 330.0, 138.0, 520.0, 152.0),
-                span("Typical performance", 72.0, 196.0, 250.0, 212.0),
-                span("curves", 258.0, 196.0, 430.0, 212.0),
-                span("Left details starts", 72.0, 238.0, 230.0, 252.0),
-                span("Right details starts", 330.0, 238.0, 500.0, 252.0),
-                span("Left details continues", 72.0, 256.0, 248.0, 270.0),
-                span("Right details continues", 330.0, 256.0, 520.0, 270.0),
+                common::span("Left intro starts", 72.0, 120.0, 230.0, 134.0),
+                common::span("Right intro starts", 330.0, 120.0, 500.0, 134.0),
+                common::span("Left intro continues", 72.0, 138.0, 248.0, 152.0),
+                common::span("Right intro continues", 330.0, 138.0, 520.0, 152.0),
+                common::span("Typical performance", 72.0, 196.0, 250.0, 212.0),
+                common::span("curves", 258.0, 196.0, 430.0, 212.0),
+                common::span("Left details starts", 72.0, 238.0, 230.0, 252.0),
+                common::span("Right details starts", 330.0, 238.0, 500.0, 252.0),
+                common::span("Left details continues", 72.0, 256.0, 248.0, 270.0),
+                common::span("Right details continues", 330.0, 256.0, 520.0, 270.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1188,7 +1036,6 @@ fn positioned_native_spans_preserve_narrow_gutter_columns_before_centered_page_n
     let artifact = parse_extracted_pages(
         "doc-narrow-gutter-columns-footer".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
             dimensions: PageDimensions::new(595.276, 841.89),
             native_text: concat!(
                 "4172\n",
@@ -1201,19 +1048,15 @@ fn positioned_native_spans_preserve_narrow_gutter_columns_before_centered_page_n
             )
             .to_string(),
             native_spans: vec![
-                span("4172", 287.0, 778.0, 310.0, 786.0),
-                span("Left column first line", 72.0, 66.0, 289.0, 76.0),
-                span("Left column second line", 72.0, 80.0, 290.0, 90.0),
-                span("Left column third line", 72.0, 94.0, 288.0, 104.0),
-                span("Right column first line", 306.0, 66.0, 522.0, 76.0),
-                span("Right column second line", 306.0, 80.0, 524.0, 90.0),
-                span("Right column third line", 306.0, 94.0, 520.0, 104.0),
+                common::span("4172", 287.0, 778.0, 310.0, 786.0),
+                common::span("Left column first line", 72.0, 66.0, 289.0, 76.0),
+                common::span("Left column second line", 72.0, 80.0, 290.0, 90.0),
+                common::span("Left column third line", 72.0, 94.0, 288.0, 104.0),
+                common::span("Right column first line", 306.0, 66.0, 522.0, 76.0),
+                common::span("Right column second line", 306.0, 80.0, 524.0, 90.0),
+                common::span("Right column third line", 306.0, 94.0, 520.0, 104.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1235,56 +1078,51 @@ fn positioned_character_spans_reflow_into_readable_words() {
     let artifact = parse_extracted_pages(
         "doc-positioned-character-spans".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "Adjustable Low Dropout 300mA Linear Regulator\nFeatures".to_string(),
             native_spans: vec![
-                span("A", 72.0, 90.0, 78.0, 98.0),
-                span("d", 78.5, 90.4, 84.0, 98.0),
-                span("j", 84.5, 90.1, 87.0, 98.0),
-                span("u", 88.0, 91.8, 94.0, 99.5),
-                span("s", 95.0, 91.6, 100.0, 99.5),
-                span("t", 101.0, 90.6, 104.0, 98.0),
-                span("a", 105.0, 91.6, 111.0, 99.5),
-                span("b", 112.0, 90.4, 118.0, 98.0),
-                span("l", 119.0, 90.4, 121.0, 98.0),
-                span("e ", 122.0, 91.5, 130.0, 99.5),
-                span("L", 137.0, 90.2, 143.0, 98.0),
-                span("o", 144.0, 91.5, 150.0, 99.5),
-                span("w ", 151.0, 91.8, 160.0, 99.5),
-                span("D", 167.0, 90.2, 174.0, 98.0),
-                span("r", 175.0, 91.8, 179.0, 99.5),
-                span("o", 180.0, 91.5, 186.0, 99.5),
-                span("p", 187.0, 91.5, 193.0, 99.5),
-                span("o", 194.0, 91.5, 200.0, 99.5),
-                span("u", 201.0, 91.8, 207.0, 99.5),
-                span("t ", 208.0, 90.6, 213.0, 98.0),
-                span("3", 220.0, 90.1, 226.0, 98.0),
-                span("0", 227.0, 90.1, 233.0, 98.0),
-                span("0", 234.0, 90.1, 240.0, 98.0),
-                span("m", 241.0, 91.5, 250.0, 99.5),
-                span("A ", 251.0, 90.2, 260.0, 98.0),
-                span("Linear", 267.0, 91.5, 306.0, 99.5),
-                span("Regulator", 313.0, 91.5, 370.0, 99.5),
-                span("F", 72.0, 129.0, 79.0, 137.0),
-                span("e", 80.0, 131.1, 87.0, 139.0),
-                span("a", 88.0, 131.1, 95.0, 139.0),
-                span("t", 96.0, 129.3, 101.0, 137.0),
-                span("u", 102.0, 131.3, 109.0, 139.0),
-                span("r", 110.0, 131.2, 116.0, 139.0),
-                span("e", 117.0, 131.1, 124.0, 139.0),
-                span("s", 125.0, 131.1, 132.0, 139.0),
+                common::span("A", 72.0, 90.0, 78.0, 98.0),
+                common::span("d", 78.5, 90.4, 84.0, 98.0),
+                common::span("j", 84.5, 90.1, 87.0, 98.0),
+                common::span("u", 88.0, 91.8, 94.0, 99.5),
+                common::span("s", 95.0, 91.6, 100.0, 99.5),
+                common::span("t", 101.0, 90.6, 104.0, 98.0),
+                common::span("a", 105.0, 91.6, 111.0, 99.5),
+                common::span("b", 112.0, 90.4, 118.0, 98.0),
+                common::span("l", 119.0, 90.4, 121.0, 98.0),
+                common::span("e ", 122.0, 91.5, 130.0, 99.5),
+                common::span("L", 137.0, 90.2, 143.0, 98.0),
+                common::span("o", 144.0, 91.5, 150.0, 99.5),
+                common::span("w ", 151.0, 91.8, 160.0, 99.5),
+                common::span("D", 167.0, 90.2, 174.0, 98.0),
+                common::span("r", 175.0, 91.8, 179.0, 99.5),
+                common::span("o", 180.0, 91.5, 186.0, 99.5),
+                common::span("p", 187.0, 91.5, 193.0, 99.5),
+                common::span("o", 194.0, 91.5, 200.0, 99.5),
+                common::span("u", 201.0, 91.8, 207.0, 99.5),
+                common::span("t ", 208.0, 90.6, 213.0, 98.0),
+                common::span("3", 220.0, 90.1, 226.0, 98.0),
+                common::span("0", 227.0, 90.1, 233.0, 98.0),
+                common::span("0", 234.0, 90.1, 240.0, 98.0),
+                common::span("m", 241.0, 91.5, 250.0, 99.5),
+                common::span("A ", 251.0, 90.2, 260.0, 98.0),
+                common::span("Linear", 267.0, 91.5, 306.0, 99.5),
+                common::span("Regulator", 313.0, 91.5, 370.0, 99.5),
+                common::span("F", 72.0, 129.0, 79.0, 137.0),
+                common::span("e", 80.0, 131.1, 87.0, 139.0),
+                common::span("a", 88.0, 131.1, 95.0, 139.0),
+                common::span("t", 96.0, 129.3, 101.0, 137.0),
+                common::span("u", 102.0, 131.3, 109.0, 139.0),
+                common::span("r", 110.0, 131.2, 116.0, 139.0),
+                common::span("e", 117.0, 131.1, 124.0, 139.0),
+                common::span("s", 125.0, 131.1, 132.0, 139.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 native_span_count: 35,
                 native_text_bytes: 62,
                 glyph_count: 58,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1306,31 +1144,26 @@ fn positioned_overlapping_fragments_do_not_duplicate_prefix_text() {
     let artifact = parse_extracted_pages(
         "doc-positioned-overlap-duplicates".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "Wide Operating Voltage Typical dropout for load".to_string(),
             native_spans: vec![
-                span("Wide Operating ", 72.0, 100.0, 160.0, 112.0),
-                span("Vo", 164.0, 100.0, 170.0, 112.0),
-                span("Vo", 169.6, 101.0, 174.5, 113.0),
-                span("ltage ", 175.0, 100.0, 198.0, 112.0),
-                span("Ty", 212.0, 100.0, 219.0, 112.0),
-                span("Typical ", 218.5, 101.0, 248.0, 113.0),
-                span("dropout ", 252.0, 100.0, 290.0, 112.0),
-                span("fo", 294.0, 100.0, 301.0, 112.0),
-                span("for ", 300.5, 101.0, 314.0, 113.0),
-                span("load", 318.0, 100.0, 338.0, 112.0),
+                common::span("Wide Operating ", 72.0, 100.0, 160.0, 112.0),
+                common::span("Vo", 164.0, 100.0, 170.0, 112.0),
+                common::span("Vo", 169.6, 101.0, 174.5, 113.0),
+                common::span("ltage ", 175.0, 100.0, 198.0, 112.0),
+                common::span("Ty", 212.0, 100.0, 219.0, 112.0),
+                common::span("Typical ", 218.5, 101.0, 248.0, 113.0),
+                common::span("dropout ", 252.0, 100.0, 290.0, 112.0),
+                common::span("fo", 294.0, 100.0, 301.0, 112.0),
+                common::span("for ", 300.5, 101.0, 314.0, 113.0),
+                common::span("load", 318.0, 100.0, 338.0, 112.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 native_span_count: 10,
                 native_text_bytes: 48,
                 glyph_count: 43,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1352,28 +1185,23 @@ fn positioned_table_spans_preserve_rows_when_table_recovery_runs() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "Item\nTotal\nAlpha\n10\nBeta\n20".to_string(),
             native_spans: vec![
-                span("Item", 72.0, 100.0, 130.0, 114.0),
-                span("Total", 220.0, 100.0, 280.0, 114.0),
-                span("Alpha", 72.0, 132.0, 140.0, 146.0),
-                span("10", 220.0, 132.0, 246.0, 146.0),
-                span("Beta", 72.0, 164.0, 132.0, 178.0),
-                span("20", 220.0, 164.0, 246.0, 178.0),
+                common::span("Item", 72.0, 100.0, 130.0, 114.0),
+                common::span("Total", 220.0, 100.0, 280.0, 114.0),
+                common::span("Alpha", 72.0, 132.0, 140.0, 146.0),
+                common::span("10", 220.0, 132.0, 246.0, 146.0),
+                common::span("Beta", 72.0, 164.0, 132.0, 178.0),
+                common::span("20", 220.0, 164.0, 246.0, 178.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 6,
                 native_text_bytes: 28,
                 glyph_count: 22,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1393,29 +1221,24 @@ fn positioned_table_spans_preserve_empty_cells_when_rows_omit_blank_columns() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-empty-cells".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "Part\nValue\nNote\nA\nmissing value\nB\n2".to_string(),
             native_spans: vec![
-                span("Part", 72.0, 100.0, 130.0, 114.0),
-                span("Value", 220.0, 100.0, 280.0, 114.0),
-                span("Note", 360.0, 100.0, 420.0, 114.0),
-                span("A", 72.0, 132.0, 92.0, 146.0),
-                span("missing value", 360.0, 132.0, 470.0, 146.0),
-                span("B", 72.0, 164.0, 92.0, 178.0),
-                span("2", 220.0, 164.0, 240.0, 178.0),
+                common::span("Part", 72.0, 100.0, 130.0, 114.0),
+                common::span("Value", 220.0, 100.0, 280.0, 114.0),
+                common::span("Note", 360.0, 100.0, 420.0, 114.0),
+                common::span("A", 72.0, 132.0, 92.0, 146.0),
+                common::span("missing value", 360.0, 132.0, 470.0, 146.0),
+                common::span("B", 72.0, 164.0, 92.0, 178.0),
+                common::span("2", 220.0, 164.0, 240.0, 178.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 7,
                 native_text_bytes: 39,
                 glyph_count: 32,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1444,8 +1267,6 @@ fn positioned_table_recovery_merges_same_line_fragmented_cells() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-same-line-fragments".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter\n",
                 "Symbol\n",
@@ -1467,35 +1288,32 @@ fn positioned_table_recovery_merges_same_line_fragmented_cells() {
             )
             .to_string(),
             native_spans: vec![
-                span("Parameter", 72.0, 100.0, 140.0, 114.0),
-                span("Symbol", 220.0, 100.0, 270.0, 114.0),
-                span("Typ", 300.0, 100.0, 330.0, 114.0),
-                span("Max", 360.0, 100.0, 390.0, 114.0),
-                span("Unit", 420.0, 100.0, 450.0, 114.0),
-                span("Input", 72.0, 132.0, 110.0, 146.0),
-                span("voltage", 114.0, 132.0, 168.0, 146.0),
-                span("VIN", 220.0, 132.0, 248.0, 146.0),
-                span("3.3", 300.0, 132.0, 326.0, 146.0),
-                span("5.5", 360.0, 132.0, 386.0, 146.0),
-                span("V", 420.0, 132.0, 430.0, 146.0),
-                span("Quiescent", 72.0, 164.0, 138.0, 178.0),
-                span("current", 142.0, 164.0, 194.0, 178.0),
-                span("IQ", 220.0, 164.0, 238.0, 178.0),
-                span("35", 300.0, 164.0, 318.0, 178.0),
-                span("60", 360.0, 164.0, 378.0, 178.0),
-                span("uA", 420.0, 164.0, 440.0, 178.0),
+                common::span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                common::span("Symbol", 220.0, 100.0, 270.0, 114.0),
+                common::span("Typ", 300.0, 100.0, 330.0, 114.0),
+                common::span("Max", 360.0, 100.0, 390.0, 114.0),
+                common::span("Unit", 420.0, 100.0, 450.0, 114.0),
+                common::span("Input", 72.0, 132.0, 110.0, 146.0),
+                common::span("voltage", 114.0, 132.0, 168.0, 146.0),
+                common::span("VIN", 220.0, 132.0, 248.0, 146.0),
+                common::span("3.3", 300.0, 132.0, 326.0, 146.0),
+                common::span("5.5", 360.0, 132.0, 386.0, 146.0),
+                common::span("V", 420.0, 132.0, 430.0, 146.0),
+                common::span("Quiescent", 72.0, 164.0, 138.0, 178.0),
+                common::span("current", 142.0, 164.0, 194.0, 178.0),
+                common::span("IQ", 220.0, 164.0, 238.0, 178.0),
+                common::span("35", 300.0, 164.0, 318.0, 178.0),
+                common::span("60", 360.0, 164.0, 378.0, 178.0),
+                common::span("uA", 420.0, 164.0, 440.0, 178.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 17,
                 native_text_bytes: 92,
                 glyph_count: 75,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1535,8 +1353,6 @@ fn positioned_table_recovery_merges_wrapped_descriptor_cells() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-wrapped-descriptors".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter\n",
                 "Symbol\n",
@@ -1558,35 +1374,32 @@ fn positioned_table_recovery_merges_wrapped_descriptor_cells() {
             )
             .to_string(),
             native_spans: vec![
-                span("Parameter", 72.0, 100.0, 140.0, 114.0),
-                span("Symbol", 220.0, 100.0, 270.0, 114.0),
-                span("Typ", 300.0, 100.0, 330.0, 114.0),
-                span("Max", 360.0, 100.0, 390.0, 114.0),
-                span("Unit", 420.0, 100.0, 450.0, 114.0),
-                span("Input", 72.0, 132.0, 110.0, 146.0),
-                span("VIN", 220.0, 132.0, 248.0, 146.0),
-                span("3.3", 300.0, 132.0, 326.0, 146.0),
-                span("5.5", 360.0, 132.0, 386.0, 146.0),
-                span("V", 420.0, 132.0, 430.0, 146.0),
-                span("voltage", 72.0, 148.0, 126.0, 162.0),
-                span("Quiescent", 72.0, 188.0, 138.0, 202.0),
-                span("IQ", 220.0, 188.0, 238.0, 202.0),
-                span("35", 300.0, 188.0, 318.0, 202.0),
-                span("60", 360.0, 188.0, 378.0, 202.0),
-                span("uA", 420.0, 188.0, 440.0, 202.0),
-                span("current", 72.0, 204.0, 124.0, 218.0),
+                common::span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                common::span("Symbol", 220.0, 100.0, 270.0, 114.0),
+                common::span("Typ", 300.0, 100.0, 330.0, 114.0),
+                common::span("Max", 360.0, 100.0, 390.0, 114.0),
+                common::span("Unit", 420.0, 100.0, 450.0, 114.0),
+                common::span("Input", 72.0, 132.0, 110.0, 146.0),
+                common::span("VIN", 220.0, 132.0, 248.0, 146.0),
+                common::span("3.3", 300.0, 132.0, 326.0, 146.0),
+                common::span("5.5", 360.0, 132.0, 386.0, 146.0),
+                common::span("V", 420.0, 132.0, 430.0, 146.0),
+                common::span("voltage", 72.0, 148.0, 126.0, 162.0),
+                common::span("Quiescent", 72.0, 188.0, 138.0, 202.0),
+                common::span("IQ", 220.0, 188.0, 238.0, 202.0),
+                common::span("35", 300.0, 188.0, 318.0, 202.0),
+                common::span("60", 360.0, 188.0, 378.0, 202.0),
+                common::span("uA", 420.0, 188.0, 440.0, 202.0),
+                common::span("current", 72.0, 204.0, 124.0, 218.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 17,
                 native_text_bytes: 92,
                 glyph_count: 75,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1626,8 +1439,6 @@ fn positioned_table_recovery_merges_multi_cell_wrapped_continuations() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-multi-cell-continuation".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter\n",
                 "Symbol\n",
@@ -1644,30 +1455,27 @@ fn positioned_table_recovery_merges_multi_cell_wrapped_continuations() {
             )
             .to_string(),
             native_spans: vec![
-                span("Parameter", 72.0, 100.0, 140.0, 114.0),
-                span("Symbol", 180.0, 100.0, 230.0, 114.0),
-                span("Condition", 260.0, 100.0, 330.0, 114.0),
-                span("Typ", 380.0, 100.0, 410.0, 114.0),
-                span("Max", 440.0, 100.0, 470.0, 114.0),
-                span("Input", 72.0, 132.0, 110.0, 146.0),
-                span("VIN", 180.0, 132.0, 208.0, 146.0),
-                span("No", 260.0, 132.0, 278.0, 146.0),
-                span("3.3", 380.0, 132.0, 406.0, 146.0),
-                span("5.5", 440.0, 132.0, 466.0, 146.0),
-                span("voltage", 72.0, 148.0, 126.0, 162.0),
-                span("load", 260.0, 148.0, 294.0, 162.0),
+                common::span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                common::span("Symbol", 180.0, 100.0, 230.0, 114.0),
+                common::span("Condition", 260.0, 100.0, 330.0, 114.0),
+                common::span("Typ", 380.0, 100.0, 410.0, 114.0),
+                common::span("Max", 440.0, 100.0, 470.0, 114.0),
+                common::span("Input", 72.0, 132.0, 110.0, 146.0),
+                common::span("VIN", 180.0, 132.0, 208.0, 146.0),
+                common::span("No", 260.0, 132.0, 278.0, 146.0),
+                common::span("3.3", 380.0, 132.0, 406.0, 146.0),
+                common::span("5.5", 440.0, 132.0, 466.0, 146.0),
+                common::span("voltage", 72.0, 148.0, 126.0, 162.0),
+                common::span("load", 260.0, 148.0, 294.0, 162.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 12,
                 native_text_bytes: 72,
                 glyph_count: 58,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1706,8 +1514,6 @@ fn positioned_table_recovery_preserves_interior_condition_note_rows() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-interior-condition-note".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter\n",
                 "Symbol\n",
@@ -1730,36 +1536,33 @@ fn positioned_table_recovery_preserves_interior_condition_note_rows() {
             )
             .to_string(),
             native_spans: vec![
-                span("Parameter", 72.0, 100.0, 140.0, 114.0),
-                span("Symbol", 180.0, 100.0, 230.0, 114.0),
-                span("Condition", 260.0, 100.0, 330.0, 114.0),
-                span("Typ", 380.0, 100.0, 410.0, 114.0),
-                span("Max", 440.0, 100.0, 470.0, 114.0),
-                span("Input voltage", 72.0, 132.0, 160.0, 146.0),
-                span("VIN", 180.0, 132.0, 208.0, 146.0),
-                span("3.3", 380.0, 132.0, 406.0, 146.0),
-                span("5.5", 440.0, 132.0, 466.0, 146.0),
-                span("VIN = VOUT + 1V", 260.0, 164.0, 366.0, 178.0),
-                span("Output current", 72.0, 196.0, 168.0, 210.0),
-                span("IOUT", 180.0, 196.0, 216.0, 210.0),
-                span("100", 380.0, 196.0, 410.0, 210.0),
-                span("150", 440.0, 196.0, 470.0, 210.0),
-                span("Shutdown current", 72.0, 228.0, 184.0, 242.0),
-                span("ISD", 180.0, 228.0, 208.0, 242.0),
-                span("0.1", 380.0, 228.0, 406.0, 242.0),
-                span("1.0", 440.0, 228.0, 466.0, 242.0),
+                common::span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                common::span("Symbol", 180.0, 100.0, 230.0, 114.0),
+                common::span("Condition", 260.0, 100.0, 330.0, 114.0),
+                common::span("Typ", 380.0, 100.0, 410.0, 114.0),
+                common::span("Max", 440.0, 100.0, 470.0, 114.0),
+                common::span("Input voltage", 72.0, 132.0, 160.0, 146.0),
+                common::span("VIN", 180.0, 132.0, 208.0, 146.0),
+                common::span("3.3", 380.0, 132.0, 406.0, 146.0),
+                common::span("5.5", 440.0, 132.0, 466.0, 146.0),
+                common::span("VIN = VOUT + 1V", 260.0, 164.0, 366.0, 178.0),
+                common::span("Output current", 72.0, 196.0, 168.0, 210.0),
+                common::span("IOUT", 180.0, 196.0, 216.0, 210.0),
+                common::span("100", 380.0, 196.0, 410.0, 210.0),
+                common::span("150", 440.0, 196.0, 470.0, 210.0),
+                common::span("Shutdown current", 72.0, 228.0, 184.0, 242.0),
+                common::span("ISD", 180.0, 228.0, 208.0, 242.0),
+                common::span("0.1", 380.0, 228.0, 406.0, 242.0),
+                common::span("1.0", 440.0, 228.0, 466.0, 242.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 18,
                 native_text_bytes: 150,
                 glyph_count: 118,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1808,8 +1611,6 @@ fn positioned_table_recovery_merges_same_column_wrapped_header_rows() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-wrapped-header".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Output\n",
                 "Load\n",
@@ -1830,34 +1631,31 @@ fn positioned_table_recovery_merges_same_column_wrapped_header_rows() {
             )
             .to_string(),
             native_spans: vec![
-                span("Output", 72.0, 100.0, 120.0, 114.0),
-                span("Load", 180.0, 100.0, 220.0, 114.0),
-                span("Current", 300.0, 100.0, 360.0, 114.0),
-                span("Unit", 420.0, 100.0, 450.0, 114.0),
-                span("Voltage", 72.0, 116.0, 128.0, 130.0),
-                span("Regulation", 180.0, 116.0, 250.0, 130.0),
-                span("Limit", 300.0, 116.0, 340.0, 130.0),
-                span("mA", 420.0, 116.0, 442.0, 130.0),
-                span("3.3V", 72.0, 152.0, 108.0, 166.0),
-                span("0-100mA", 180.0, 152.0, 246.0, 166.0),
-                span("150", 300.0, 152.0, 330.0, 166.0),
-                span("mA", 420.0, 152.0, 442.0, 166.0),
-                span("5.0V", 72.0, 184.0, 108.0, 198.0),
-                span("0-50mA", 180.0, 184.0, 238.0, 198.0),
-                span("100", 300.0, 184.0, 330.0, 198.0),
-                span("mA", 420.0, 184.0, 442.0, 198.0),
+                common::span("Output", 72.0, 100.0, 120.0, 114.0),
+                common::span("Load", 180.0, 100.0, 220.0, 114.0),
+                common::span("Current", 300.0, 100.0, 360.0, 114.0),
+                common::span("Unit", 420.0, 100.0, 450.0, 114.0),
+                common::span("Voltage", 72.0, 116.0, 128.0, 130.0),
+                common::span("Regulation", 180.0, 116.0, 250.0, 130.0),
+                common::span("Limit", 300.0, 116.0, 340.0, 130.0),
+                common::span("mA", 420.0, 116.0, 442.0, 130.0),
+                common::span("3.3V", 72.0, 152.0, 108.0, 166.0),
+                common::span("0-100mA", 180.0, 152.0, 246.0, 166.0),
+                common::span("150", 300.0, 152.0, 330.0, 166.0),
+                common::span("mA", 420.0, 152.0, 442.0, 166.0),
+                common::span("5.0V", 72.0, 184.0, 108.0, 198.0),
+                common::span("0-50mA", 180.0, 184.0, 238.0, 198.0),
+                common::span("100", 300.0, 184.0, 330.0, 198.0),
+                common::span("mA", 420.0, 184.0, 442.0, 198.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 16,
                 native_text_bytes: 112,
                 glyph_count: 91,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1906,28 +1704,23 @@ fn positioned_table_recovery_does_not_merge_compact_text_data_rows_into_header()
     let artifact = parse_extracted_pages(
         "doc-positioned-table-text-data-rows".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "Name\nStatus\nAlpha\nGood\nBeta\nBetter".to_string(),
             native_spans: vec![
-                span("Name", 72.0, 100.0, 112.0, 114.0),
-                span("Status", 220.0, 100.0, 270.0, 114.0),
-                span("Alpha", 72.0, 116.0, 120.0, 130.0),
-                span("Good", 220.0, 116.0, 260.0, 130.0),
-                span("Beta", 72.0, 148.0, 112.0, 162.0),
-                span("Better", 220.0, 148.0, 270.0, 162.0),
+                common::span("Name", 72.0, 100.0, 112.0, 114.0),
+                common::span("Status", 220.0, 100.0, 270.0, 114.0),
+                common::span("Alpha", 72.0, 116.0, 120.0, 130.0),
+                common::span("Good", 220.0, 116.0, 260.0, 130.0),
+                common::span("Beta", 72.0, 148.0, 112.0, 162.0),
+                common::span("Better", 220.0, 148.0, 270.0, 162.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 6,
                 native_text_bytes: 41,
                 glyph_count: 35,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -1965,8 +1758,6 @@ fn positioned_table_recovery_preserves_cross_column_section_rows() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-section-row".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter\n",
                 "Symbol\n",
@@ -1992,39 +1783,36 @@ fn positioned_table_recovery_preserves_cross_column_section_rows() {
             )
             .to_string(),
             native_spans: vec![
-                span("Parameter", 72.0, 100.0, 140.0, 114.0),
-                span("Symbol", 220.0, 100.0, 270.0, 114.0),
-                span("Typ", 300.0, 100.0, 330.0, 114.0),
-                span("Max", 360.0, 100.0, 390.0, 114.0),
-                span("Unit", 420.0, 100.0, 450.0, 114.0),
-                span("Input voltage", 72.0, 132.0, 160.0, 146.0),
-                span("VIN", 220.0, 132.0, 248.0, 146.0),
-                span("3.3", 300.0, 132.0, 326.0, 146.0),
-                span("5.5", 360.0, 132.0, 386.0, 146.0),
-                span("V", 420.0, 132.0, 430.0, 146.0),
-                span("Protection features", 72.0, 164.0, 450.0, 178.0),
-                span("Current limit", 72.0, 196.0, 160.0, 210.0),
-                span("ILIM", 220.0, 196.0, 252.0, 210.0),
-                span("650", 300.0, 196.0, 326.0, 210.0),
-                span("900", 360.0, 196.0, 386.0, 210.0),
-                span("mA", 420.0, 196.0, 440.0, 210.0),
-                span("Thermal shutdown", 72.0, 220.0, 184.0, 234.0),
-                span("TSD", 220.0, 220.0, 248.0, 234.0),
-                span("150", 300.0, 220.0, 326.0, 234.0),
-                span("175", 360.0, 220.0, 386.0, 234.0),
-                span("C", 420.0, 220.0, 430.0, 234.0),
+                common::span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                common::span("Symbol", 220.0, 100.0, 270.0, 114.0),
+                common::span("Typ", 300.0, 100.0, 330.0, 114.0),
+                common::span("Max", 360.0, 100.0, 390.0, 114.0),
+                common::span("Unit", 420.0, 100.0, 450.0, 114.0),
+                common::span("Input voltage", 72.0, 132.0, 160.0, 146.0),
+                common::span("VIN", 220.0, 132.0, 248.0, 146.0),
+                common::span("3.3", 300.0, 132.0, 326.0, 146.0),
+                common::span("5.5", 360.0, 132.0, 386.0, 146.0),
+                common::span("V", 420.0, 132.0, 430.0, 146.0),
+                common::span("Protection features", 72.0, 164.0, 450.0, 178.0),
+                common::span("Current limit", 72.0, 196.0, 160.0, 210.0),
+                common::span("ILIM", 220.0, 196.0, 252.0, 210.0),
+                common::span("650", 300.0, 196.0, 326.0, 210.0),
+                common::span("900", 360.0, 196.0, 386.0, 210.0),
+                common::span("mA", 420.0, 196.0, 440.0, 210.0),
+                common::span("Thermal shutdown", 72.0, 220.0, 184.0, 234.0),
+                common::span("TSD", 220.0, 220.0, 248.0, 234.0),
+                common::span("150", 300.0, 220.0, 326.0, 234.0),
+                common::span("175", 360.0, 220.0, 386.0, 234.0),
+                common::span("C", 420.0, 220.0, 430.0, 234.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 21,
                 native_text_bytes: 142,
                 glyph_count: 112,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -2073,8 +1861,6 @@ fn positioned_table_recovery_preserves_first_column_section_rows() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-first-column-section-row".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter\n",
                 "Symbol\n",
@@ -2100,39 +1886,36 @@ fn positioned_table_recovery_preserves_first_column_section_rows() {
             )
             .to_string(),
             native_spans: vec![
-                span("Parameter", 72.0, 100.0, 140.0, 114.0),
-                span("Symbol", 220.0, 100.0, 270.0, 114.0),
-                span("Typ", 300.0, 100.0, 330.0, 114.0),
-                span("Max", 360.0, 100.0, 390.0, 114.0),
-                span("Unit", 420.0, 100.0, 450.0, 114.0),
-                span("Input voltage", 72.0, 132.0, 160.0, 146.0),
-                span("VIN", 220.0, 132.0, 248.0, 146.0),
-                span("3.3", 300.0, 132.0, 326.0, 146.0),
-                span("5.5", 360.0, 132.0, 386.0, 146.0),
-                span("V", 420.0, 132.0, 430.0, 146.0),
-                span("Protection features", 72.0, 164.0, 184.0, 178.0),
-                span("Current limit", 72.0, 196.0, 160.0, 210.0),
-                span("ILIM", 220.0, 196.0, 252.0, 210.0),
-                span("650", 300.0, 196.0, 326.0, 210.0),
-                span("900", 360.0, 196.0, 386.0, 210.0),
-                span("mA", 420.0, 196.0, 440.0, 210.0),
-                span("Thermal shutdown", 72.0, 220.0, 184.0, 234.0),
-                span("TSD", 220.0, 220.0, 248.0, 234.0),
-                span("150", 300.0, 220.0, 326.0, 234.0),
-                span("175", 360.0, 220.0, 386.0, 234.0),
-                span("C", 420.0, 220.0, 430.0, 234.0),
+                common::span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                common::span("Symbol", 220.0, 100.0, 270.0, 114.0),
+                common::span("Typ", 300.0, 100.0, 330.0, 114.0),
+                common::span("Max", 360.0, 100.0, 390.0, 114.0),
+                common::span("Unit", 420.0, 100.0, 450.0, 114.0),
+                common::span("Input voltage", 72.0, 132.0, 160.0, 146.0),
+                common::span("VIN", 220.0, 132.0, 248.0, 146.0),
+                common::span("3.3", 300.0, 132.0, 326.0, 146.0),
+                common::span("5.5", 360.0, 132.0, 386.0, 146.0),
+                common::span("V", 420.0, 132.0, 430.0, 146.0),
+                common::span("Protection features", 72.0, 164.0, 184.0, 178.0),
+                common::span("Current limit", 72.0, 196.0, 160.0, 210.0),
+                common::span("ILIM", 220.0, 196.0, 252.0, 210.0),
+                common::span("650", 300.0, 196.0, 326.0, 210.0),
+                common::span("900", 360.0, 196.0, 386.0, 210.0),
+                common::span("mA", 420.0, 196.0, 440.0, 210.0),
+                common::span("Thermal shutdown", 72.0, 220.0, 184.0, 234.0),
+                common::span("TSD", 220.0, 220.0, 248.0, 234.0),
+                common::span("150", 300.0, 220.0, 326.0, 234.0),
+                common::span("175", 360.0, 220.0, 386.0, 234.0),
+                common::span("C", 420.0, 220.0, 430.0, 234.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 21,
                 native_text_bytes: 142,
                 glyph_count: 112,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -2181,8 +1964,6 @@ fn positioned_table_recovery_preserves_fragmented_first_column_section_rows() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-fragmented-first-column-section-row".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter\n",
                 "Symbol\n",
@@ -2209,40 +1990,37 @@ fn positioned_table_recovery_preserves_fragmented_first_column_section_rows() {
             )
             .to_string(),
             native_spans: vec![
-                span("Parameter", 72.0, 100.0, 140.0, 114.0),
-                span("Symbol", 220.0, 100.0, 270.0, 114.0),
-                span("Typ", 300.0, 100.0, 330.0, 114.0),
-                span("Max", 360.0, 100.0, 390.0, 114.0),
-                span("Unit", 420.0, 100.0, 450.0, 114.0),
-                span("Input voltage", 72.0, 132.0, 160.0, 146.0),
-                span("VIN", 220.0, 132.0, 248.0, 146.0),
-                span("3.3", 300.0, 132.0, 326.0, 146.0),
-                span("5.5", 360.0, 132.0, 386.0, 146.0),
-                span("V", 420.0, 132.0, 430.0, 146.0),
-                span("Protection", 72.0, 164.0, 138.0, 178.0),
-                span("features", 142.0, 164.0, 194.0, 178.0),
-                span("Current limit", 72.0, 196.0, 160.0, 210.0),
-                span("ILIM", 220.0, 196.0, 252.0, 210.0),
-                span("650", 300.0, 196.0, 326.0, 210.0),
-                span("900", 360.0, 196.0, 386.0, 210.0),
-                span("mA", 420.0, 196.0, 440.0, 210.0),
-                span("Thermal shutdown", 72.0, 220.0, 184.0, 234.0),
-                span("TSD", 220.0, 220.0, 248.0, 234.0),
-                span("150", 300.0, 220.0, 326.0, 234.0),
-                span("175", 360.0, 220.0, 386.0, 234.0),
-                span("C", 420.0, 220.0, 430.0, 234.0),
+                common::span("Parameter", 72.0, 100.0, 140.0, 114.0),
+                common::span("Symbol", 220.0, 100.0, 270.0, 114.0),
+                common::span("Typ", 300.0, 100.0, 330.0, 114.0),
+                common::span("Max", 360.0, 100.0, 390.0, 114.0),
+                common::span("Unit", 420.0, 100.0, 450.0, 114.0),
+                common::span("Input voltage", 72.0, 132.0, 160.0, 146.0),
+                common::span("VIN", 220.0, 132.0, 248.0, 146.0),
+                common::span("3.3", 300.0, 132.0, 326.0, 146.0),
+                common::span("5.5", 360.0, 132.0, 386.0, 146.0),
+                common::span("V", 420.0, 132.0, 430.0, 146.0),
+                common::span("Protection", 72.0, 164.0, 138.0, 178.0),
+                common::span("features", 142.0, 164.0, 194.0, 178.0),
+                common::span("Current limit", 72.0, 196.0, 160.0, 210.0),
+                common::span("ILIM", 220.0, 196.0, 252.0, 210.0),
+                common::span("650", 300.0, 196.0, 326.0, 210.0),
+                common::span("900", 360.0, 196.0, 386.0, 210.0),
+                common::span("mA", 420.0, 196.0, 440.0, 210.0),
+                common::span("Thermal shutdown", 72.0, 220.0, 184.0, 234.0),
+                common::span("TSD", 220.0, 220.0, 248.0, 234.0),
+                common::span("150", 300.0, 220.0, 326.0, 234.0),
+                common::span("175", 360.0, 220.0, 386.0, 234.0),
+                common::span("C", 420.0, 220.0, 430.0, 234.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 22,
                 native_text_bytes: 142,
                 glyph_count: 112,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -2291,30 +2069,25 @@ fn positioned_table_recovery_preserves_surrounding_text_blocks() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-with-context".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "SUMMARY TABLE\nItem\nTotal\nAlpha\n10\nBeta\n20\nSource note".to_string(),
             native_spans: vec![
-                span("SUMMARY TABLE", 72.0, 72.0, 210.0, 86.0),
-                span("Item", 72.0, 120.0, 130.0, 134.0),
-                span("Total", 220.0, 120.0, 280.0, 134.0),
-                span("Alpha", 72.0, 146.0, 140.0, 160.0),
-                span("10", 220.0, 146.0, 246.0, 160.0),
-                span("Beta", 72.0, 172.0, 132.0, 186.0),
-                span("20", 220.0, 172.0, 246.0, 186.0),
-                span("Source note", 72.0, 230.0, 190.0, 244.0),
+                common::span("SUMMARY TABLE", 72.0, 72.0, 210.0, 86.0),
+                common::span("Item", 72.0, 120.0, 130.0, 134.0),
+                common::span("Total", 220.0, 120.0, 280.0, 134.0),
+                common::span("Alpha", 72.0, 146.0, 140.0, 160.0),
+                common::span("10", 220.0, 146.0, 246.0, 160.0),
+                common::span("Beta", 72.0, 172.0, 132.0, 186.0),
+                common::span("20", 220.0, 172.0, 246.0, 186.0),
+                common::span("Source note", 72.0, 230.0, 190.0, 244.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 8,
                 native_text_bytes: 61,
                 glyph_count: 47,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -2337,8 +2110,6 @@ fn positioned_table_recovery_keeps_top_caption_outside_table_grid() {
     let artifact = parse_extracted_pages(
         "doc-positioned-table-top-caption".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "ELECTRICAL CHARACTERISTICS\n",
                 "Parameter\n",
@@ -2359,34 +2130,31 @@ fn positioned_table_recovery_keeps_top_caption_outside_table_grid() {
             )
             .to_string(),
             native_spans: vec![
-                span("ELECTRICAL CHARACTERISTICS", 72.0, 72.0, 450.0, 86.0),
-                span("Parameter", 72.0, 120.0, 140.0, 134.0),
-                span("Symbol", 220.0, 120.0, 270.0, 134.0),
-                span("Typ", 300.0, 120.0, 330.0, 134.0),
-                span("Max", 360.0, 120.0, 390.0, 134.0),
-                span("Unit", 420.0, 120.0, 450.0, 134.0),
-                span("Input voltage", 72.0, 152.0, 160.0, 166.0),
-                span("VIN", 220.0, 152.0, 248.0, 166.0),
-                span("3.3", 300.0, 152.0, 326.0, 166.0),
-                span("5.5", 360.0, 152.0, 386.0, 166.0),
-                span("V", 420.0, 152.0, 430.0, 166.0),
-                span("Current limit", 72.0, 184.0, 160.0, 198.0),
-                span("ILIM", 220.0, 184.0, 252.0, 198.0),
-                span("650", 300.0, 184.0, 326.0, 198.0),
-                span("900", 360.0, 184.0, 386.0, 198.0),
-                span("mA", 420.0, 184.0, 440.0, 198.0),
+                common::span("ELECTRICAL CHARACTERISTICS", 72.0, 72.0, 450.0, 86.0),
+                common::span("Parameter", 72.0, 120.0, 140.0, 134.0),
+                common::span("Symbol", 220.0, 120.0, 270.0, 134.0),
+                common::span("Typ", 300.0, 120.0, 330.0, 134.0),
+                common::span("Max", 360.0, 120.0, 390.0, 134.0),
+                common::span("Unit", 420.0, 120.0, 450.0, 134.0),
+                common::span("Input voltage", 72.0, 152.0, 160.0, 166.0),
+                common::span("VIN", 220.0, 152.0, 248.0, 166.0),
+                common::span("3.3", 300.0, 152.0, 326.0, 166.0),
+                common::span("5.5", 360.0, 152.0, 386.0, 166.0),
+                common::span("V", 420.0, 152.0, 430.0, 166.0),
+                common::span("Current limit", 72.0, 184.0, 160.0, 198.0),
+                common::span("ILIM", 220.0, 184.0, 252.0, 198.0),
+                common::span("650", 300.0, 184.0, 326.0, 198.0),
+                common::span("900", 360.0, 184.0, 386.0, 198.0),
+                common::span("mA", 420.0, 184.0, 440.0, 198.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 16,
                 native_text_bytes: 138,
                 glyph_count: 108,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -2431,8 +2199,6 @@ fn text_table_recovery_keeps_leading_caption_outside_table_grid() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-text-table-leading-caption".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "ELECTRICAL CHARACTERISTICS\n",
                 "Parameter Symbol Typ Max Unit\n",
@@ -2440,18 +2206,14 @@ fn text_table_recovery_keeps_leading_caption_outside_table_grid() {
                 "Current limit ILIM 650 900 mA"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 4,
                 native_text_bytes: 124,
                 glyph_count: 99,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -2489,26 +2251,20 @@ fn text_table_recovery_merges_leading_descriptor_cells_from_header_columns() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-text-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter Symbol Typ Max Unit\n",
                 "Input voltage VIN 3.3 5.5 V\n",
                 "Quiescent current IQ 35 60 uA"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 3,
                 native_text_bytes: 90,
                 glyph_count: 70,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -2542,8 +2298,6 @@ fn text_table_recovery_extracts_embedded_pin_function_tables() {
     let artifact = parse_extracted_pages(
         "doc-embedded-pin-function-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Figure 2. Typical Application Circuit of FP6183\n",
                 "Note1: To prevent oscillation, use minimum 1uF capacitors.\n",
@@ -2557,18 +2311,14 @@ fn text_table_recovery_extracts_embedded_pin_function_tables() {
                 "pad EP The exposed pad must be soldered to a large PCB area and connected to GND."
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 10,
                 native_text_bytes: 372,
                 glyph_count: 295,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -2625,8 +2375,6 @@ fn text_table_recovery_merges_split_pin_function_rows_from_pdfium_text() {
     let artifact = parse_extracted_pages(
         "doc-pdfium-split-pin-function-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Figure 2. Typical Application Circuit of FP6183\n",
                 "Note1: To prevent oscillation, it is recommended to use minimum 1uF capacitors.\n",
@@ -2650,19 +2398,15 @@ fn text_table_recovery_merges_split_pin_function_rows_from_pdfium_text() {
                 "Error Amp Current Limit"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 20,
                 native_text_bytes: 560,
                 glyph_count: 440,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
-        }],
+            ..common::page(0)
+            }],
     );
 
     let page = &artifact.pages[0];
@@ -2719,8 +2463,6 @@ fn text_table_recovery_extracts_split_pin_number_name_function_tables() {
     let artifact = parse_extracted_pages(
         "doc-split-pin-number-name-function-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Operating Waveforms (Cont.)\n",
                 "Pin Description\n",
@@ -2738,19 +2480,15 @@ fn text_table_recovery_extracts_split_pin_number_name_function_tables() {
                 "CH2 : VOUT , 2V/div"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 14,
                 native_text_bytes: 430,
                 glyph_count: 335,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
-        }],
+            ..common::page(0)
+            }],
     );
 
     let page = &artifact.pages[0];
@@ -2801,8 +2539,6 @@ fn text_table_recovery_extracts_fragmented_symbol_rating_tables() {
     let artifact = parse_extracted_pages(
         "doc-fragmented-symbol-rating-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Copyright ANPEC Electronics Corp.\n",
                 "Rev. A.1 - Jan., 2013\n",
@@ -2834,18 +2570,14 @@ fn text_table_recovery_extracts_fragmented_symbol_rating_tables() {
                 "Absolute Maximum Ratings (Note 1)"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.38,
                 native_span_count: 22,
                 native_text_bytes: 430,
                 glyph_count: 360,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -2904,8 +2636,6 @@ fn text_table_recovery_extracts_bullet_leader_spec_tables() {
     let artifact = parse_extracted_pages(
         "doc-bullet-leader-spec-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "FP6183\n",
                 "Absolute Maximum Ratings\n",
@@ -2928,19 +2658,15 @@ fn text_table_recovery_extracts_bullet_leader_spec_tables() {
                 "Recommended Operating Conditions"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.46,
                 native_span_count: 18,
                 native_text_bytes: 1040,
                 glyph_count: 890,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
-        }],
+            ..common::page(0)
+            }],
     );
 
     let page = &artifact.pages[0];
@@ -2999,8 +2725,6 @@ fn text_table_recovery_extracts_electrical_characteristics_tables() {
     let artifact = parse_extracted_pages(
         "doc-electrical-characteristics-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "APL5324\n",
                 "Electrical Characteristics\n",
@@ -3041,18 +2765,14 @@ fn text_table_recovery_extracts_electrical_characteristics_tables() {
                 " SET Input Bias Current VSET=0.8V -100 - 100 nA\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.52,
                 native_span_count: 40,
                 native_text_bytes: 1800,
                 glyph_count: 1400,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -3214,8 +2934,6 @@ fn text_table_recovery_extracts_parameter_symbol_conditions_tables() {
     let artifact = parse_extracted_pages(
         "doc-parameter-symbol-conditions-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "FP6183\n",
                 "Electrical Characteristics\n",
@@ -3254,19 +2972,15 @@ fn text_table_recovery_extracts_parameter_symbol_conditions_tables() {
                 "Note 4: except EN pull down current (IEN).\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.50,
                 native_span_count: 48,
                 native_text_bytes: 1650,
                 glyph_count: 1250,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
-        }],
+            ..common::page(0)
+            }],
     );
 
     let page = &artifact.pages[0];
@@ -3404,8 +3118,6 @@ fn text_table_recovery_extracts_awinic_parameter_test_condition_tables() {
     let artifact = parse_extracted_pages(
         "doc-awinic-electrical-characteristics-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Electrical Characteristics\n",
                 "VIN=VOUT(SET)+1V, VCE>1V, IOUT=1mA, CIN=COUT=1µF, TA=25°C\n",
@@ -3467,18 +3179,14 @@ fn text_table_recovery_extracts_awinic_parameter_test_condition_tables() {
                 "Typical Characteristics\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.50,
                 native_span_count: 44,
                 native_text_bytes: 940,
                 glyph_count: 720,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -3634,8 +3342,6 @@ fn text_table_recovery_extracts_reflow_profile_tables() {
     let artifact = parse_extracted_pages(
         "doc-reflow-profile-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "APL5324\n",
                 "Classification Reflow Profiles\n",
@@ -3672,19 +3378,15 @@ fn text_table_recovery_extracts_reflow_profile_tables() {
                 "Table 1. SnPb Eutectic Process – Classification Temperatures (Tc)"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.50,
                 native_span_count: 36,
                 native_text_bytes: 1350,
                 glyph_count: 1050,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
-        }],
+            ..common::page(0)
+            }],
     );
 
     let page = &artifact.pages[0];
@@ -3760,8 +3462,6 @@ fn text_table_recovery_extracts_classification_temperature_tables() {
     let artifact = parse_extracted_pages(
         "doc-classification-temperature-tables".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Table 1. SnPb Eutectic Process – Classification Temperatures (Tc)\n",
                 "Package\n",
@@ -3791,18 +3491,14 @@ fn text_table_recovery_extracts_classification_temperature_tables() {
                 "SOLDERABILITY JESD-22, B102 5 Sec, 245°C"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.50,
                 native_span_count: 22,
                 native_text_bytes: 760,
                 glyph_count: 640,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -3859,8 +3555,6 @@ fn text_table_recovery_extracts_package_pin_description_tables() {
     let artifact = parse_extracted_pages(
         "doc-package-pin-description-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "AP7354\n",
                 "Pin Description\n",
@@ -3882,19 +3576,15 @@ fn text_table_recovery_extracts_package_pin_description_tables() {
                 "EN GND"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 16,
                 native_text_bytes: 720,
                 glyph_count: 560,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
-        }],
+            ..common::page(0)
+            }],
     );
 
     let page = &artifact.pages[0];
@@ -3953,8 +3643,6 @@ fn text_table_recovery_extracts_part_number_ordering_tables() {
     let artifact = parse_extracted_pages(
         "doc-part-number-ordering-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Part Number VOUT Package Identification Code\n",
                 "AP7354-11FS4-7 1.1V X2-DFN1010-4 (Type B) A8M\n",
@@ -3962,18 +3650,14 @@ fn text_table_recovery_extracts_part_number_ordering_tables() {
                 "AP7354D-33FS4-7 3.3V X2-DFN1010-4 (Type B) A9H\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 4,
                 native_text_bytes: 230,
                 glyph_count: 185,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4009,26 +3693,20 @@ fn text_table_recovery_merges_two_column_descriptor_value_rows() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-two-column-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter Max\n",
                 "Input voltage 5.5\n",
                 "Quiescent current 60"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 3,
                 native_text_bytes: 58,
                 glyph_count: 45,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4062,8 +3740,6 @@ fn text_table_recovery_merges_wrapped_descriptor_lines_from_header_columns() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-wrapped-text-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter Symbol Typ Max Unit\n",
                 "Input\n",
@@ -4072,18 +3748,14 @@ fn text_table_recovery_merges_wrapped_descriptor_lines_from_header_columns() {
                 "current IQ 35 60 uA"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 5,
                 native_text_bytes: 92,
                 glyph_count: 72,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4117,8 +3789,6 @@ fn text_table_recovery_preserves_header_guided_section_rows() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-section-row".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter Symbol Typ Max Unit\n",
                 "Input voltage VIN 3.3 5.5 V\n",
@@ -4127,18 +3797,14 @@ fn text_table_recovery_preserves_header_guided_section_rows() {
                 "Thermal shutdown TSD 150 175 C"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 5,
                 native_text_bytes: 156,
                 glyph_count: 124,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4174,8 +3840,6 @@ fn text_table_recovery_merges_trailing_descriptor_continuations_from_header_colu
     let artifact = parse_extracted_pages(
         "doc-header-guided-trailing-continuation".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter Symbol Typ Max Unit\n",
                 "Output voltage VOUT 3.3 5.5 V\n",
@@ -4183,18 +3847,14 @@ fn text_table_recovery_merges_trailing_descriptor_continuations_from_header_colu
                 "Quiescent current IQ 35 60 uA"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 4,
                 native_text_bytes: 114,
                 glyph_count: 91,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4234,8 +3894,6 @@ fn text_table_recovery_preserves_trailing_blank_cells_from_header_columns() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-trailing-blank".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Parameter Symbol Typ Max Unit\n",
                 "Input voltage VIN 3.3 5.5 V\n",
@@ -4243,18 +3901,14 @@ fn text_table_recovery_preserves_trailing_blank_cells_from_header_columns() {
                 "Current limit ILIM 650 900 mA"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 4,
                 native_text_bytes: 123,
                 glyph_count: 99,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4289,8 +3943,6 @@ fn text_table_recovery_extracts_budget_projection_rows() {
     let artifact = parse_extracted_pages(
         "doc-budget-projection-table".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "Account and Subfunction Code\n",
                 "Actual 2026 2027 2028\n",
@@ -4306,19 +3958,15 @@ fn text_table_recovery_extracts_budget_projection_rows() {
                 "Page 2 / 516"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 12,
                 native_text_bytes: 420,
                 glyph_count: 360,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
-        }],
+            ..common::page(0)
+            }],
     );
 
     let page = &artifact.pages[0];
@@ -4392,26 +4040,20 @@ fn text_table_recovery_does_not_treat_wrapped_prose_as_header_guided_table() {
     let artifact = parse_extracted_pages(
         "doc-header-guided-prose".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "The quick brown\n",
                 "fox jumps over the lazy\n",
                 "dog keeps running nearby"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 3,
                 native_text_bytes: 72,
                 glyph_count: 58,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4426,8 +4068,6 @@ fn text_table_recovery_does_not_treat_datasheet_description_prose_as_table() {
     let artifact = parse_extracted_pages(
         "doc-datasheet-description-prose".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "General Description\n",
                 "AW37030YXXX is a low dropout voltage regulator\n",
@@ -4435,18 +4075,14 @@ fn text_table_recovery_does_not_treat_datasheet_description_prose_as_table() {
                 "good load/line transient response and smooth soft-start.\n"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 4,
                 native_text_bytes: 180,
                 glyph_count: 150,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4464,8 +4100,6 @@ fn positioned_bullet_list_rows_are_not_recovered_as_tables() {
     let artifact = parse_extracted_pages(
         "doc-positioned-bullet-list".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "·\n",
                 "Portable and Battery\n",
@@ -4475,23 +4109,20 @@ fn positioned_bullet_list_rows_are_not_recovered_as_tables() {
             )
             .to_string(),
             native_spans: vec![
-                span("·", 72.0, 456.0, 78.0, 467.0),
-                span("Portable and Battery", 96.0, 458.0, 178.0, 466.0),
-                span("Powered Equipment", 178.0, 458.0, 272.0, 467.0),
-                span("·", 72.0, 474.0, 78.0, 485.0),
-                span("Notebook and Personal Computers", 96.0, 476.0, 244.0, 485.0),
+                common::span("·", 72.0, 456.0, 78.0, 467.0),
+                common::span("Portable and Battery", 96.0, 458.0, 178.0, 466.0),
+                common::span("Powered Equipment", 178.0, 458.0, 272.0, 467.0),
+                common::span("·", 72.0, 474.0, 78.0, 485.0),
+                common::span("Notebook and Personal Computers", 96.0, 476.0, 244.0, 485.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 5,
                 native_text_bytes: 91,
                 glyph_count: 83,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4510,8 +4141,6 @@ fn positioned_bullet_marker_rows_absorb_following_text_rows() {
     let artifact = parse_extracted_pages(
         "doc-positioned-bullet-list-split-markers".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "·\n",
                 "Cellular Phones\n",
@@ -4521,23 +4150,20 @@ fn positioned_bullet_marker_rows_absorb_following_text_rows() {
             )
             .to_string(),
             native_spans: vec![
-                span("·", 72.0, 100.0, 78.0, 111.0),
-                span("Cellular Phones", 96.0, 116.0, 180.0, 124.0),
-                span("·", 72.0, 138.0, 78.0, 149.0),
-                span("Portable and Battery", 96.0, 154.0, 178.0, 162.0),
-                span("Powered Equipment", 96.0, 166.0, 190.0, 175.0),
+                common::span("·", 72.0, 100.0, 78.0, 111.0),
+                common::span("Cellular Phones", 96.0, 116.0, 180.0, 124.0),
+                common::span("·", 72.0, 138.0, 78.0, 149.0),
+                common::span("Portable and Battery", 96.0, 154.0, 178.0, 162.0),
+                common::span("Powered Equipment", 96.0, 166.0, 190.0, 175.0),
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 5,
                 native_text_bytes: 70,
                 glyph_count: 62,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4556,8 +4182,6 @@ fn marker_only_list_lines_are_normalized_into_list_items() {
     let artifact = parse_extracted_pages(
         "doc-marker-only-list-lines".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "·\n",
                 "Cellular Phones\n",
@@ -4568,18 +4192,14 @@ fn marker_only_list_lines_are_normalized_into_list_items() {
                 "Notebook and Personal Computers"
             )
             .to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 1,
                 native_text_bytes: 110,
                 glyph_count: 98,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4599,34 +4219,22 @@ fn repeated_margin_blocks_are_classified_as_headers_and_footers() {
         "doc-repeated-margins".to_string(),
         vec![
             ExtractedPage {
-                page_index: 0,
-                dimensions: PageDimensions::new(612.0, 792.0),
                 native_text: "DATASHEET HEADER\nFirst page body\nCONFIDENTIAL FOOTER".to_string(),
                 native_spans: vec![
-                    span("DATASHEET HEADER", 72.0, 24.0, 240.0, 38.0),
-                    span("First page body", 72.0, 120.0, 260.0, 134.0),
-                    span("CONFIDENTIAL FOOTER", 72.0, 754.0, 260.0, 768.0),
+                    common::span("DATASHEET HEADER", 72.0, 24.0, 240.0, 38.0),
+                    common::span("First page body", 72.0, 120.0, 260.0, 134.0),
+                    common::span("CONFIDENTIAL FOOTER", 72.0, 754.0, 260.0, 768.0),
                 ],
-                ruling_lines: Vec::new(),
-                image_artifacts: Vec::new(),
-                signals: native_signals(0),
-                ocr_text: None,
-                timings: PageTimings::default(),
+                ..common::page(0)
             },
             ExtractedPage {
-                page_index: 1,
-                dimensions: PageDimensions::new(612.0, 792.0),
                 native_text: "DATASHEET HEADER\nSecond page body\nCONFIDENTIAL FOOTER".to_string(),
                 native_spans: vec![
-                    span("DATASHEET HEADER", 72.0, 24.0, 240.0, 38.0),
-                    span("Second page body", 72.0, 120.0, 280.0, 134.0),
-                    span("CONFIDENTIAL FOOTER", 72.0, 754.0, 260.0, 768.0),
+                    common::span("DATASHEET HEADER", 72.0, 24.0, 240.0, 38.0),
+                    common::span("Second page body", 72.0, 120.0, 280.0, 134.0),
+                    common::span("CONFIDENTIAL FOOTER", 72.0, 754.0, 260.0, 768.0),
                 ],
-                ruling_lines: Vec::new(),
-                image_artifacts: Vec::new(),
-                signals: native_signals(1),
-                ocr_text: None,
-                timings: PageTimings::default(),
+                ..common::page(1)
             },
         ],
     );
@@ -4654,14 +4262,14 @@ fn two_column_page_with_banner_and_centered_page_number_preserves_column_reading
     // clean columns. The banner and page number must become their own bands
     // instead of defeating the column split.
     let mut native_spans = vec![
-        span(
+        common::span(
             "Paper Title Spanning Both Columns",
             100.0,
             40.0,
             500.0,
             55.0,
         ),
-        span("Author One Author Two", 150.0, 60.0, 450.0, 72.0),
+        common::span("Author One Author Two", 150.0, 60.0, 450.0, 72.0),
     ];
     let mut left_lines = Vec::new();
     let mut right_lines = Vec::new();
@@ -4669,12 +4277,12 @@ fn two_column_page_with_banner_and_centered_page_number_preserves_column_reading
         let y0 = 100.0 + row as f32 * 15.0;
         let left_text = format!("left column line {row}");
         let right_text = format!("right column line {row}");
-        native_spans.push(span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
-        native_spans.push(span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
+        native_spans.push(common::span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
+        native_spans.push(common::span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
         left_lines.push(left_text);
         right_lines.push(right_text);
     }
-    native_spans.push(span("42", 296.0, 720.0, 316.0, 730.0));
+    native_spans.push(common::span("42", 296.0, 720.0, 316.0, 730.0));
 
     let native_text = native_spans
         .iter()
@@ -4684,15 +4292,9 @@ fn two_column_page_with_banner_and_centered_page_number_preserves_column_reading
     let artifact = parse_extracted_pages(
         "doc-two-column-banner".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text,
             native_spans,
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4738,14 +4340,14 @@ fn unresolved_two_column_evidence_flags_layout_uncertain() {
         } else {
             (311.0, 340.0)
         };
-        native_spans.push(span(
+        native_spans.push(common::span(
             &format!("tight left line {row}"),
             60.0,
             y0,
             left_x1,
             y0 + 10.0,
         ));
-        native_spans.push(span(
+        native_spans.push(common::span(
             &format!("tight right line {row}"),
             right_x0,
             y0,
@@ -4762,15 +4364,9 @@ fn unresolved_two_column_evidence_flags_layout_uncertain() {
     let artifact = parse_extracted_pages(
         "doc-unresolved-columns".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text,
             native_spans,
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4793,7 +4389,7 @@ fn single_column_page_is_not_split_or_flagged_by_column_row_bands() {
     let mut native_spans = Vec::new();
     for row in 0..10 {
         let y0 = 100.0 + row as f32 * 15.0;
-        native_spans.push(span(
+        native_spans.push(common::span(
             &format!("full width prose line {row}"),
             60.0,
             y0,
@@ -4810,15 +4406,9 @@ fn single_column_page_is_not_split_or_flagged_by_column_row_bands() {
     let artifact = parse_extracted_pages(
         "doc-single-column".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text,
             native_spans,
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
-            signals: native_signals(0),
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4846,8 +4436,8 @@ fn table_routed_two_column_prose_is_not_recovered_as_fake_tables() {
         let y0 = 100.0 + row as f32 * 15.0;
         let left_text = format!("left prose line {row} keeps flowing body text alive");
         let right_text = format!("right prose line {row} keeps flowing body text alive");
-        native_spans.push(span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
-        native_spans.push(span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
+        native_spans.push(common::span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
+        native_spans.push(common::span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
         left_lines.push(left_text);
         right_lines.push(right_text);
     }
@@ -4860,21 +4450,16 @@ fn table_routed_two_column_prose_is_not_recovered_as_fake_tables() {
     let artifact = parse_extracted_pages(
         "doc-table-routed-two-column-prose".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text,
             native_spans,
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 24,
                 native_text_bytes: 1100,
                 glyph_count: 1000,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -4931,33 +4516,28 @@ fn ruled_grid_recovers_invoice_style_table() {
     let artifact = parse_extracted_pages(
         "doc-ruled-grid-invoice".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
-            native_text: String::new(),
             native_spans: vec![
-                span("Invoice summary", 60.0, 35.0, 200.0, 50.0),
-                span("Item", 60.0, 105.0, 120.0, 115.0),
-                span("Qty", 210.0, 105.0, 240.0, 115.0),
-                span("Amount", 360.0, 105.0, 420.0, 115.0),
-                span("Widget A", 60.0, 135.0, 140.0, 155.0),
-                span("2", 210.0, 135.0, 230.0, 155.0),
-                span("$10.00", 360.0, 135.0, 420.0, 155.0),
-                span("Widget B", 60.0, 165.0, 140.0, 185.0),
-                span("1", 210.0, 165.0, 230.0, 185.0),
-                span("$5.00", 360.0, 165.0, 420.0, 185.0),
-                span("Thank you for your business.", 60.0, 395.0, 300.0, 410.0),
+                common::span("Invoice summary", 60.0, 35.0, 200.0, 50.0),
+                common::span("Item", 60.0, 105.0, 120.0, 115.0),
+                common::span("Qty", 210.0, 105.0, 240.0, 115.0),
+                common::span("Amount", 360.0, 105.0, 420.0, 115.0),
+                common::span("Widget A", 60.0, 135.0, 140.0, 155.0),
+                common::span("2", 210.0, 135.0, 230.0, 155.0),
+                common::span("$10.00", 360.0, 135.0, 420.0, 155.0),
+                common::span("Widget B", 60.0, 165.0, 140.0, 185.0),
+                common::span("1", 210.0, 165.0, 230.0, 185.0),
+                common::span("$5.00", 360.0, 165.0, 420.0, 185.0),
+                common::span("Thank you for your business.", 60.0, 395.0, 300.0, 410.0),
             ],
             ruling_lines: invoice_style_ruling_lines(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 11,
                 native_text_bytes: 120,
                 glyph_count: 90,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -5009,30 +4589,25 @@ fn ruled_grid_preserves_blank_cells() {
     let artifact = parse_extracted_pages(
         "doc-ruled-grid-blank-cell".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
-            native_text: String::new(),
             native_spans: vec![
-                span("Item", 60.0, 105.0, 120.0, 115.0),
-                span("Qty", 210.0, 105.0, 240.0, 115.0),
-                span("Amount", 360.0, 105.0, 420.0, 115.0),
-                span("Widget A", 60.0, 135.0, 140.0, 155.0),
-                span("$10.00", 360.0, 135.0, 420.0, 155.0),
-                span("Widget B", 60.0, 165.0, 140.0, 185.0),
-                span("1", 210.0, 165.0, 230.0, 185.0),
-                span("$5.00", 360.0, 165.0, 420.0, 185.0),
+                common::span("Item", 60.0, 105.0, 120.0, 115.0),
+                common::span("Qty", 210.0, 105.0, 240.0, 115.0),
+                common::span("Amount", 360.0, 105.0, 420.0, 115.0),
+                common::span("Widget A", 60.0, 135.0, 140.0, 155.0),
+                common::span("$10.00", 360.0, 135.0, 420.0, 155.0),
+                common::span("Widget B", 60.0, 165.0, 140.0, 185.0),
+                common::span("1", 210.0, 165.0, 230.0, 185.0),
+                common::span("$5.00", 360.0, 165.0, 420.0, 185.0),
             ],
             ruling_lines: invoice_style_ruling_lines(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 8,
                 native_text_bytes: 80,
                 glyph_count: 60,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -5050,12 +4625,9 @@ fn scattered_form_boxes_do_not_form_a_ruled_grid() {
     let artifact = parse_extracted_pages(
         "doc-scattered-form-boxes".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
-            native_text: String::new(),
             native_spans: vec![
-                span("Name:", 72.0, 100.0, 130.0, 114.0),
-                span("Date:", 72.0, 200.0, 130.0, 214.0),
+                common::span("Name:", 72.0, 100.0, 130.0, 114.0),
+                common::span("Date:", 72.0, 200.0, 130.0, 214.0),
             ],
             ruling_lines: vec![
                 ExtractedRulingLine {
@@ -5083,16 +4655,14 @@ fn scattered_form_boxes_do_not_form_a_ruled_grid() {
                     end: 230.0,
                 },
             ],
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 2,
                 native_text_bytes: 20,
                 glyph_count: 12,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -5110,32 +4680,27 @@ fn wrapped_cell_text_joins_within_a_ruled_cell() {
     let artifact = parse_extracted_pages(
         "doc-ruled-grid-wrapped-cell".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
-            native_text: String::new(),
             native_spans: vec![
-                span("Item", 60.0, 105.0, 120.0, 115.0),
-                span("Qty", 210.0, 105.0, 240.0, 115.0),
-                span("Amount", 360.0, 105.0, 420.0, 115.0),
-                span("long description", 60.0, 135.0, 170.0, 145.0),
-                span("continued here", 60.0, 148.0, 170.0, 158.0),
-                span("2", 210.0, 140.0, 230.0, 155.0),
-                span("$10.00", 360.0, 135.0, 420.0, 155.0),
-                span("Widget B", 60.0, 165.0, 140.0, 185.0),
-                span("1", 210.0, 165.0, 230.0, 185.0),
-                span("$5.00", 360.0, 165.0, 420.0, 185.0),
+                common::span("Item", 60.0, 105.0, 120.0, 115.0),
+                common::span("Qty", 210.0, 105.0, 240.0, 115.0),
+                common::span("Amount", 360.0, 105.0, 420.0, 115.0),
+                common::span("long description", 60.0, 135.0, 170.0, 145.0),
+                common::span("continued here", 60.0, 148.0, 170.0, 158.0),
+                common::span("2", 210.0, 140.0, 230.0, 155.0),
+                common::span("$10.00", 360.0, 135.0, 420.0, 155.0),
+                common::span("Widget B", 60.0, 165.0, 140.0, 185.0),
+                common::span("1", 210.0, 165.0, 230.0, 185.0),
+                common::span("$5.00", 360.0, 165.0, 420.0, 185.0),
             ],
             ruling_lines: invoice_style_ruling_lines(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 10,
                 native_text_bytes: 100,
                 glyph_count: 80,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -5178,36 +4743,31 @@ fn column_ruled_table_without_row_rules_recovers_rows_from_text() {
     let artifact = parse_extracted_pages(
         "doc-column-ruled-no-row-rules".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
-            native_text: String::new(),
             native_spans: vec![
-                span("Preamble text above the table.", 60.0, 40.0, 300.0, 55.0),
-                span("Date", 60.0, 110.0, 100.0, 120.0),
-                span("Description", 170.0, 110.0, 260.0, 120.0),
-                span("Amount", 370.0, 110.0, 430.0, 120.0),
-                span("2026-01-05", 60.0, 140.0, 130.0, 150.0),
-                span("Consulting services", 170.0, 140.0, 310.0, 150.0),
-                span("$1,200.00", 370.0, 140.0, 440.0, 150.0),
-                span("2026-01-12", 60.0, 180.0, 130.0, 190.0),
-                span("Design review", 170.0, 180.0, 280.0, 190.0),
-                span("$800.00", 370.0, 180.0, 430.0, 190.0),
-                span("2026-01-19", 60.0, 220.0, 130.0, 230.0),
-                span("Implementation", 170.0, 220.0, 290.0, 230.0),
-                span("$2,400.00", 370.0, 220.0, 440.0, 230.0),
-                span("Closing text below the table.", 60.0, 340.0, 300.0, 355.0),
+                common::span("Preamble text above the table.", 60.0, 40.0, 300.0, 55.0),
+                common::span("Date", 60.0, 110.0, 100.0, 120.0),
+                common::span("Description", 170.0, 110.0, 260.0, 120.0),
+                common::span("Amount", 370.0, 110.0, 430.0, 120.0),
+                common::span("2026-01-05", 60.0, 140.0, 130.0, 150.0),
+                common::span("Consulting services", 170.0, 140.0, 310.0, 150.0),
+                common::span("$1,200.00", 370.0, 140.0, 440.0, 150.0),
+                common::span("2026-01-12", 60.0, 180.0, 130.0, 190.0),
+                common::span("Design review", 170.0, 180.0, 280.0, 190.0),
+                common::span("$800.00", 370.0, 180.0, 430.0, 190.0),
+                common::span("2026-01-19", 60.0, 220.0, 130.0, 230.0),
+                common::span("Implementation", 170.0, 220.0, 290.0, 230.0),
+                common::span("$2,400.00", 370.0, 220.0, 440.0, 230.0),
+                common::span("Closing text below the table.", 60.0, 340.0, 300.0, 355.0),
             ],
             ruling_lines,
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 14,
                 native_text_bytes: 200,
                 glyph_count: 150,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -5262,7 +4822,7 @@ fn side_by_side_tables_split_into_one_table_per_body_column() {
     ];
     for (y0, texts, xs) in table_rows {
         for (text, x0) in texts.iter().zip(xs.iter()) {
-            native_spans.push(span(text, *x0, y0, x0 + 35.0, y0 + 10.0));
+            native_spans.push(common::span(text, *x0, y0, x0 + 35.0, y0 + 10.0));
         }
     }
 
@@ -5274,7 +4834,7 @@ fn side_by_side_tables_split_into_one_table_per_body_column() {
     ];
     for (y0, texts, xs) in right_table_rows {
         for (text, x0) in texts.iter().zip(xs.iter()) {
-            native_spans.push(span(text, *x0, y0, x0 + 35.0, y0 + 10.0));
+            native_spans.push(common::span(text, *x0, y0, x0 + 35.0, y0 + 10.0));
         }
     }
 
@@ -5282,8 +4842,8 @@ fn side_by_side_tables_split_into_one_table_per_body_column() {
         let y0 = 220.0 + row as f32 * 15.0;
         let left_text = format!("left prose line {row} keeps flowing body text alive");
         let right_text = format!("right prose line {row} keeps flowing body text alive");
-        native_spans.push(span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
-        native_spans.push(span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
+        native_spans.push(common::span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
+        native_spans.push(common::span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
     }
 
     let native_text = native_spans
@@ -5294,21 +4854,16 @@ fn side_by_side_tables_split_into_one_table_per_body_column() {
     let artifact = parse_extracted_pages(
         "doc-side-by-side-tables".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text,
             native_spans,
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 40,
                 native_text_bytes: 900,
                 glyph_count: 800,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -5382,7 +4937,7 @@ fn full_width_table_is_not_split_by_body_columns() {
     ];
     for (y0, texts, xs) in table_rows {
         for (text, x0) in texts.iter().zip(xs.iter()) {
-            native_spans.push(span(text, *x0, y0, x0 + 35.0, y0 + 10.0));
+            native_spans.push(common::span(text, *x0, y0, x0 + 35.0, y0 + 10.0));
         }
     }
 
@@ -5390,8 +4945,8 @@ fn full_width_table_is_not_split_by_body_columns() {
         let y0 = 220.0 + row as f32 * 15.0;
         let left_text = format!("left prose line {row} keeps flowing body text alive");
         let right_text = format!("right prose line {row} keeps flowing body text alive");
-        native_spans.push(span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
-        native_spans.push(span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
+        native_spans.push(common::span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
+        native_spans.push(common::span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
     }
 
     let native_text = native_spans
@@ -5402,21 +4957,16 @@ fn full_width_table_is_not_split_by_body_columns() {
     let artifact = parse_extracted_pages(
         "doc-full-width-table-two-column".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text,
             native_spans,
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
                 native_span_count: 40,
                 native_text_bytes: 900,
                 glyph_count: 800,
-                ..native_signals(0)
+                ..common::signals(0)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -5446,31 +4996,4 @@ fn full_width_table_is_not_split_by_body_columns() {
     assert!(cell_texts.contains(&"SST-2"));
     assert!(table_blocks[0].bbox.x0 <= 70.0);
     assert!(table_blocks[0].bbox.x1 >= 500.0);
-}
-
-fn span(text: &str, x0: f32, y0: f32, x1: f32, y1: f32) -> ExtractedTextSpan {
-    ExtractedTextSpan {
-        text: text.to_string(),
-        bbox: BBox { x0, y0, x1, y1 },
-    }
-}
-
-fn native_signals(page_index: u32) -> PageSignals {
-    PageSignals {
-        page_index,
-        dimensions: PageDimensions::new(612.0, 792.0),
-        native_span_count: 4,
-        native_text_bytes: 120,
-        glyph_count: 100,
-        image_area_ratio: 0.0,
-        duplicate_char_ratio: 0.0,
-        bbox_overlap_ratio: 0.0,
-        broken_encoding_ratio: 0.0,
-        rotation_degrees: 0,
-        table_line_density: 0.0,
-        annotation_count: 0,
-        form_field_count: 0,
-        huge_object_count: 0,
-        span_geometry_capped: false,
-    }
 }

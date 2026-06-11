@@ -1,3 +1,5 @@
+mod common;
+
 use glyphrush_core::{
     BBox, ExtractedImage, ExtractedPage, ExtractedTextSpan, LayoutBlockKind, PageDimensions,
     PageQuality, PageRoute, PageSignals, PageTimings, SpanProvenance, parse_extracted_pages,
@@ -8,34 +10,19 @@ fn native_text_input_becomes_a_native_span_with_fast_path_quality() {
     let artifact = parse_extracted_pages(
         "doc-native".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "Glyphrush reads native text first.".to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
-                page_index: 0,
-                dimensions: PageDimensions::new(612.0, 792.0),
                 native_span_count: 1,
                 native_text_bytes: 35,
                 glyph_count: 35,
                 image_area_ratio: 0.01,
-                duplicate_char_ratio: 0.0,
-                bbox_overlap_ratio: 0.0,
-                broken_encoding_ratio: 0.0,
-                rotation_degrees: 0,
-                table_line_density: 0.0,
-                annotation_count: 0,
-                form_field_count: 0,
-                huge_object_count: 0,
-                span_geometry_capped: false,
+                ..PageSignals::zeroed(0, PageDimensions::new(612.0, 792.0))
             },
-            ocr_text: None,
             timings: PageTimings {
                 native_extract_us: 123,
                 ..PageTimings::default()
             },
+            ..common::page(0)
         }],
     );
 
@@ -57,18 +44,16 @@ fn native_text_input_becomes_a_native_span_with_fast_path_quality() {
 
 #[test]
 fn extracted_page_signals_are_preserved_in_page_artifact() {
+    let dimensions = PageDimensions::new(300.0, 400.0);
     let artifact = parse_extracted_pages(
         "doc-signals".to_string(),
         vec![ExtractedPage {
             page_index: 2,
-            dimensions: PageDimensions::new(300.0, 400.0),
+            dimensions: dimensions.clone(),
             native_text: "Signal text".to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
                 page_index: 2,
-                dimensions: PageDimensions::new(300.0, 400.0),
+                dimensions: dimensions.clone(),
                 native_span_count: 3,
                 native_text_bytes: 11,
                 glyph_count: 10,
@@ -78,13 +63,10 @@ fn extracted_page_signals_are_preserved_in_page_artifact() {
                 broken_encoding_ratio: 0.02,
                 rotation_degrees: 90,
                 table_line_density: 0.31,
-                annotation_count: 0,
                 form_field_count: 1,
-                huge_object_count: 0,
-                span_geometry_capped: false,
+                ..PageSignals::zeroed(2, dimensions)
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -105,8 +87,6 @@ fn backend_native_spans_are_preserved_with_bounding_boxes() {
     let artifact = parse_extracted_pages(
         "doc-spans".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "First line\nSecond line".to_string(),
             native_spans: vec![
                 ExtractedTextSpan {
@@ -128,27 +108,14 @@ fn backend_native_spans_are_preserved_with_bounding_boxes() {
                     },
                 },
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
-                page_index: 0,
-                dimensions: PageDimensions::new(612.0, 792.0),
                 native_span_count: 2,
                 native_text_bytes: 22,
                 glyph_count: 19,
                 image_area_ratio: 0.01,
-                duplicate_char_ratio: 0.0,
-                bbox_overlap_ratio: 0.0,
-                broken_encoding_ratio: 0.0,
-                rotation_degrees: 0,
-                table_line_density: 0.0,
-                annotation_count: 0,
-                form_field_count: 0,
-                huge_object_count: 0,
-                span_geometry_capped: false,
+                ..PageSignals::zeroed(0, PageDimensions::new(612.0, 792.0))
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -172,11 +139,7 @@ fn extracted_image_artifacts_are_preserved_without_pixel_payloads() {
     let artifact = parse_extracted_pages(
         "doc-image-artifacts".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "Image-backed page".to_string(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
             image_artifacts: vec![ExtractedImage {
                 bbox: BBox {
                     x0: 0.0,
@@ -188,24 +151,13 @@ fn extracted_image_artifacts_are_preserved_without_pixel_payloads() {
                 source_name: Some("Im1".to_string()),
             }],
             signals: PageSignals {
-                page_index: 0,
-                dimensions: PageDimensions::new(612.0, 792.0),
                 native_span_count: 1,
                 native_text_bytes: 17,
                 glyph_count: 15,
                 image_area_ratio: 1.0,
-                duplicate_char_ratio: 0.0,
-                bbox_overlap_ratio: 0.0,
-                broken_encoding_ratio: 0.0,
-                rotation_degrees: 0,
-                table_line_density: 0.0,
-                annotation_count: 0,
-                form_field_count: 0,
-                huge_object_count: 0,
-                span_geometry_capped: false,
+                ..PageSignals::zeroed(0, PageDimensions::new(612.0, 792.0))
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -222,11 +174,6 @@ fn image_only_pages_expose_figure_layout_without_faking_text() {
     let artifact = parse_extracted_pages(
         "doc-image-only".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
-            native_text: String::new(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
             image_artifacts: vec![ExtractedImage {
                 bbox: BBox {
                     x0: 12.0,
@@ -238,24 +185,10 @@ fn image_only_pages_expose_figure_layout_without_faking_text() {
                 source_name: Some("ScanImage".to_string()),
             }],
             signals: PageSignals {
-                page_index: 0,
-                dimensions: PageDimensions::new(612.0, 792.0),
-                native_span_count: 0,
-                native_text_bytes: 0,
-                glyph_count: 0,
                 image_area_ratio: 0.86,
-                duplicate_char_ratio: 0.0,
-                bbox_overlap_ratio: 0.0,
-                broken_encoding_ratio: 0.0,
-                rotation_degrees: 0,
-                table_line_density: 0.0,
-                annotation_count: 0,
-                form_field_count: 0,
-                huge_object_count: 0,
-                span_geometry_capped: false,
+                ..PageSignals::zeroed(0, PageDimensions::new(612.0, 792.0))
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -277,31 +210,15 @@ fn image_only_pages_expose_figure_layout_without_faking_text() {
 #[test]
 fn page_fingerprint_changes_when_native_span_geometry_changes() {
     let without_geometry = ExtractedPage {
-        page_index: 0,
-        dimensions: PageDimensions::new(612.0, 792.0),
         native_text: "Same text".to_string(),
-        native_spans: Vec::new(),
-        ruling_lines: Vec::new(),
-        image_artifacts: Vec::new(),
         signals: PageSignals {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_span_count: 1,
             native_text_bytes: 9,
             glyph_count: 8,
             image_area_ratio: 0.01,
-            duplicate_char_ratio: 0.0,
-            bbox_overlap_ratio: 0.0,
-            broken_encoding_ratio: 0.0,
-            rotation_degrees: 0,
-            table_line_density: 0.0,
-            annotation_count: 0,
-            form_field_count: 0,
-            huge_object_count: 0,
-            span_geometry_capped: false,
+            ..PageSignals::zeroed(0, PageDimensions::new(612.0, 792.0))
         },
-        ocr_text: None,
-        timings: PageTimings::default(),
+        ..common::page(0)
     };
     let with_geometry = ExtractedPage {
         native_spans: vec![ExtractedTextSpan {
@@ -334,8 +251,6 @@ fn positioned_native_spans_split_layout_blocks_by_geometry_gaps() {
     let artifact = parse_extracted_pages(
         "doc-span-layout-gaps".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!(
                 "First paragraph line\n",
                 "Second paragraph line\n",
@@ -371,27 +286,14 @@ fn positioned_native_spans_split_layout_blocks_by_geometry_gaps() {
                     },
                 },
             ],
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
-                page_index: 0,
-                dimensions: PageDimensions::new(612.0, 792.0),
                 native_span_count: 3,
                 native_text_bytes: 54,
                 glyph_count: 51,
                 image_area_ratio: 0.01,
-                duplicate_char_ratio: 0.0,
-                bbox_overlap_ratio: 0.0,
-                broken_encoding_ratio: 0.0,
-                rotation_degrees: 0,
-                table_line_density: 0.0,
-                annotation_count: 0,
-                form_field_count: 0,
-                huge_object_count: 0,
-                span_geometry_capped: false,
+                ..PageSignals::zeroed(0, PageDimensions::new(612.0, 792.0))
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -417,31 +319,11 @@ fn scanned_like_input_is_flagged_for_ocr_without_faking_text_success() {
     let artifact = parse_extracted_pages(
         "doc-scan".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
-            native_text: String::new(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
-                page_index: 0,
-                dimensions: PageDimensions::new(612.0, 792.0),
-                native_span_count: 0,
-                native_text_bytes: 0,
-                glyph_count: 0,
                 image_area_ratio: 0.91,
-                duplicate_char_ratio: 0.0,
-                bbox_overlap_ratio: 0.0,
-                broken_encoding_ratio: 0.0,
-                rotation_degrees: 0,
-                table_line_density: 0.0,
-                annotation_count: 0,
-                form_field_count: 0,
-                huge_object_count: 0,
-                span_geometry_capped: false,
+                ..PageSignals::zeroed(0, PageDimensions::new(612.0, 792.0))
             },
-            ocr_text: None,
-            timings: PageTimings::default(),
+            ..common::page(0)
         }],
     );
 
@@ -466,34 +348,16 @@ fn ocr_text_is_merged_with_provenance_for_required_pages() {
     let artifact = parse_extracted_pages(
         "doc-ocr".to_string(),
         vec![ExtractedPage {
-            page_index: 0,
-            dimensions: PageDimensions::new(612.0, 792.0),
-            native_text: String::new(),
-            native_spans: Vec::new(),
-            ruling_lines: Vec::new(),
-            image_artifacts: Vec::new(),
             signals: PageSignals {
-                page_index: 0,
-                dimensions: PageDimensions::new(612.0, 792.0),
-                native_span_count: 0,
-                native_text_bytes: 0,
-                glyph_count: 0,
                 image_area_ratio: 0.93,
-                duplicate_char_ratio: 0.0,
-                bbox_overlap_ratio: 0.0,
-                broken_encoding_ratio: 0.0,
-                rotation_degrees: 0,
-                table_line_density: 0.0,
-                annotation_count: 0,
-                form_field_count: 0,
-                huge_object_count: 0,
-                span_geometry_capped: false,
+                ..PageSignals::zeroed(0, PageDimensions::new(612.0, 792.0))
             },
             ocr_text: Some("OCR recovered this page.".to_string()),
             timings: PageTimings {
                 ocr_us: 456,
                 ..PageTimings::default()
             },
+            ..common::page(0)
         }],
     );
 
