@@ -11,3 +11,4 @@ __pycache__/
 /test/**/*.PDF
 !/test/v0/**/*.pdf
 !/test/v0/**/*.PDF
+/bindings/wasm/pkg/
