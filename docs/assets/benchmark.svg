@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="300" viewBox="0 0 760 300" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <style>
+    .label { font-size: 14px; fill: #57606a; }
+    .value { font-size: 13px; font-weight: 600; fill: #24292f; }
+    .title { font-size: 15px; font-weight: 600; fill: #24292f; }
+    .sub   { font-size: 12px; fill: #57606a; }
+    @media (prefers-color-scheme: dark) {
+      .label { fill: #8b949e; }
+      .value { fill: #e6edf3; }
+      .title { fill: #e6edf3; }
+      .sub   { fill: #8b949e; }
+    }
+  </style>
+  <text x="10" y="24" class="title">Native-text extraction throughput, quality-gated (925-page v0 corpus)</text>
+  <text x="10" y="42" class="sub">pages per second, longer is better; every run must pass the same labeled content checks</text>
+
+  <!-- Glyphrush 430.2 -->
+  <text x="10" y="84" class="label">Glyphrush (PDFium)</text>
+  <rect x="160" y="70" width="520" height="20" rx="4" fill="#2da44e"/>
+  <text x="688" y="85" class="value">430 pages/s</text>
+
+  <!-- LiteParse no-ocr 264.3 -->
+  <text x="10" y="124" class="label">LiteParse --no-ocr</text>
+  <rect x="160" y="110" width="319" height="20" rx="4" fill="#8b949e"/>
+  <text x="487" y="125" class="value">264 pages/s</text>
+
+  <!-- PyMuPDF 146.8 -->
+  <text x="10" y="164" class="label">PyMuPDF</text>
+  <rect x="160" y="150" width="177" height="20" rx="4" fill="#8b949e"/>
+  <text x="345" y="165" class="value">147 pages/s</text>
+
+  <!-- pdfplumber 11.6 -->
+  <text x="10" y="204" class="label">pdfplumber</text>
+  <rect x="160" y="190" width="14" height="20" rx="4" fill="#8b949e"/>
+  <text x="182" y="205" class="value">11.6 pages/s</text>
+
+  <!-- LiteParse default 6.4 -->
+  <text x="10" y="244" class="label">LiteParse (default)</text>
+  <rect x="160" y="230" width="8" height="20" rx="4" fill="#8b949e"/>
+  <text x="176" y="245" class="value">6.4 pages/s</text>
+
+  <text x="10" y="284" class="sub">Reproduce: GLYPHRUSH_BENCH_CATEGORY=native-text GLYPHRUSH_BENCH_MANIFEST=test/corpus.v0.json scripts/bench-liteparse.sh</text>
+</svg>
