@@ -32,23 +32,22 @@ Remaining follow-ups (not parity blockers):
 - Add dedicated sidebar/footnote-heavy fixtures beyond the BERT and Watson coverage.
 - Consider estimating asymmetric gutters instead of assuming the column gutter brackets the page center.
 
-### 2. Close `table_recovery` from partial to implemented
+### 2. Close `table_recovery` from partial to implemented — IN PROGRESS
 
-Why it matters: current table support is useful but conservative. LiteParse-style parity requires stronger behavior across invoices, forms, budget tables, datasheets, and academic tables, not just synthetic or narrow table patterns.
+Progress in this pass (false-positive hardening):
 
-Concrete tasks:
+- Positioned table recovery now rejects candidate windows that are really the page's own two-column prose lines (`positioned_window_is_page_column_prose` plus a parallel-prose row guard), so figure-ruling-routed academic pages no longer mangle body prose into fake tables. On the BERT fixture this removed most fake parallel-prose tables while real academic result tables (the SQuAD leaderboard grids) are now recovered.
+- Leftover non-table rows on table-routed two-column pages are split by the page's inferred body columns (`split_spans_by_known_columns`), so short prose segments between recovered tables keep column reading order.
+- Body-column inference requires prose-line medians per column so clusters of short table cells are never mistaken for text columns (protects datasheet grids from the new rejection).
+- Regression-tested by `table_routed_two_column_prose_is_not_recovered_as_fake_tables` and the existing positioned-table fixtures.
 
-- Add labeled table fixtures for invoices, receipts, forms, academic result tables, budget tables, datasheets, and simple ruled tables.
-- Add table structure checks for rows, columns, blank cells, wrapped cells, section rows, captions, footers, repeated headers, and merged-looking header groups.
-- Use vector line/ruling metadata where available instead of relying only on text geometry.
-- Improve multi-page table continuation handling, repeated headers, and caption/prose separation.
-- Keep false positives low by requiring table-header or geometry evidence before routing prose into table recovery.
-- Preserve uncertainty flags for partial or ambiguous table structures instead of overclaiming clean recovery.
+Remaining work before flipping parity to implemented:
 
-Exit criteria:
-
-- Labeled table fixtures pass across at least datasheet, invoice/form, budget, and academic categories.
-- Table recovery improves structured output without harming non-table pages or plain text order.
+- Add labeled invoice/receipt fixtures; the v0 corpus covers budget (OMB, labeled `table_structure`), forms (IRS), academic (BERT), and clean-digital schema tables, but no invoice-class fixture.
+- Residual small fake tables remain on figure-diagram pages and label-margin appendix pages (BERT p2/p4/p14); these pages stay flagged `table_uncertain`, so the uncertainty is visible, but the windows should eventually be suppressed or recovered correctly.
+- Use vector line/ruling metadata for cell boundaries instead of only the `table_line_density` routing signal.
+- Improve multi-page table continuation handling and repeated headers (OMB fixture is the natural gate).
+- Label the recovered academic leaderboard tables with human-reviewed `table_structure` expectations once their cell merging stabilizes.
 
 ### 3. Refresh LiteParse benchmark evidence — DONE (narrow claim)
 

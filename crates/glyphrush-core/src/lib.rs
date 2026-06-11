@@ -1087,7 +1087,25 @@ fn layout_blocks_from_positioned_table_runs(
     }
 
     let rows = merge_wrapped_positioned_table_rows(group_positioned_table_rows(span_refs));
-    let ranges = positioned_table_row_ranges(&rows);
+    let candidate_ranges = positioned_table_row_ranges(&rows);
+    let outside_rows = rows
+        .iter()
+        .enumerate()
+        .filter(|(row_index, _)| {
+            !candidate_ranges
+                .iter()
+                .any(|(start, end)| (*start..*end).contains(row_index))
+        })
+        .map(|(_, row)| row.clone())
+        .collect::<Vec<_>>();
+    let body_columns = page_body_columns(&outside_rows, &dimensions)
+        .or_else(|| page_body_columns(&rows, &dimensions));
+    let ranges = candidate_ranges
+        .into_iter()
+        .filter(|(start, end)| {
+            !positioned_window_is_page_column_prose(&rows[*start..*end], body_columns.as_deref())
+        })
+        .collect::<Vec<_>>();
     if ranges.is_empty() {
         if let Some(list_block) = list_block_from_positioned_rows(page_index, 0, &rows) {
             return Some(vec![list_block]);
@@ -1104,6 +1122,7 @@ fn layout_blocks_from_positioned_table_runs(
             page_index,
             &dimensions,
             &rows[row_cursor..start],
+            body_columns.as_deref(),
             &mut next_block_index,
             &mut blocks,
         );
@@ -1120,6 +1139,7 @@ fn layout_blocks_from_positioned_table_runs(
         page_index,
         &dimensions,
         &rows[row_cursor..],
+        body_columns.as_deref(),
         &mut next_block_index,
         &mut blocks,
     );
@@ -1131,6 +1151,7 @@ fn append_positioned_text_blocks_from_rows(
     page_index: u32,
     dimensions: &PageDimensions,
     rows: &[Vec<&TextSpan>],
+    body_columns: Option<&[(f32, f32)]>,
     next_block_index: &mut usize,
     blocks: &mut Vec<LayoutBlock>,
 ) {
@@ -1141,7 +1162,9 @@ fn append_positioned_text_blocks_from_rows(
     }
 
     let spans = rows.iter().flatten().copied().collect::<Vec<&TextSpan>>();
-    for group in group_spans_for_reading_order_from_refs(spans, dimensions) {
+    let groups = split_spans_by_known_columns(&spans, body_columns)
+        .unwrap_or_else(|| group_spans_for_reading_order_from_refs(spans, dimensions));
+    for group in groups {
         if let Some(block) =
             layout_block_from_span_group(page_index, *next_block_index, group, true)
         {
@@ -1149,6 +1172,200 @@ fn append_positioned_text_blocks_from_rows(
             *next_block_index += 1;
         }
     }
+}
+
+/// Splits leftover spans on a table-routed page into the page's known body
+/// columns so short two-column prose segments between recovered tables keep
+/// column reading order instead of interleaving into fake whitespace tables.
+/// Returns None when any span does not fit a single body column.
+fn split_spans_by_known_columns<'a>(
+    spans: &[&'a TextSpan],
+    body_columns: Option<&[(f32, f32)]>,
+) -> Option<Vec<Vec<&'a TextSpan>>> {
+    let columns = body_columns?;
+    if columns.len() < 2 || spans.len() < 2 {
+        return None;
+    }
+
+    let rows = group_positioned_text_rows(spans.to_vec());
+    let row_is_band = rows
+        .iter()
+        .map(|row| !row.iter().all(|span| span_fits_a_column(span, columns)))
+        .collect::<Vec<_>>();
+
+    let mut groups = Vec::new();
+    let mut start = 0;
+    let mut split_any = false;
+    while start < rows.len() {
+        let mut end = start + 1;
+        while end < rows.len() && row_is_band[end] == row_is_band[start] {
+            end += 1;
+        }
+        let segment_spans = rows[start..end]
+            .iter()
+            .flatten()
+            .copied()
+            .collect::<Vec<_>>();
+        if row_is_band[start] {
+            groups.extend(group_span_refs_by_vertical_gaps(segment_spans));
+        } else {
+            let mut per_column: Vec<Vec<&TextSpan>> = vec![Vec::new(); columns.len()];
+            for span in segment_spans {
+                if let Some(column_index) = columns.iter().position(|(column_x0, column_x1)| {
+                    span.bbox.x0 >= column_x0 - 2.0 && span.bbox.x1 <= column_x1 + 2.0
+                }) {
+                    per_column[column_index].push(span);
+                }
+            }
+            let occupied = per_column
+                .iter()
+                .filter(|column| !column.is_empty())
+                .count();
+            if occupied >= 2 {
+                split_any = true;
+            }
+            for column in per_column {
+                if !column.is_empty() {
+                    groups.extend(group_span_refs_by_vertical_gaps(column));
+                }
+            }
+        }
+        start = end;
+    }
+
+    (split_any && !groups.is_empty()).then_some(groups)
+}
+
+fn span_fits_a_column(span: &TextSpan, columns: &[(f32, f32)]) -> bool {
+    columns.iter().any(|(column_x0, column_x1)| {
+        span.bbox.x0 >= column_x0 - 2.0 && span.bbox.x1 <= column_x1 + 2.0
+    })
+}
+
+/// Estimates the x-ranges of the page's body text columns from rows that do
+/// not straddle the page-center gutter. Returns None for single-column or
+/// table-dominated pages.
+fn page_body_columns(
+    rows: &[Vec<&TextSpan>],
+    dimensions: &PageDimensions,
+) -> Option<Vec<(f32, f32)>> {
+    let center = dimensions.width * 0.5;
+    let tolerance = column_row_band_center_tolerance(dimensions);
+    let gutter_zone = tolerance * 3.0;
+    let column_spans = rows
+        .iter()
+        .filter(|row| {
+            !row.iter()
+                .any(|span| span_straddles_center(span, center, tolerance))
+        })
+        .flatten()
+        .copied()
+        .filter(|span| {
+            // Drop spans living entirely inside the gutter zone (diagram
+            // labels, ornaments); they are not body-column evidence and would
+            // otherwise block the column split.
+            span.bbox.x0 < center - gutter_zone || span.bbox.x1 > center + gutter_zone
+        })
+        .collect::<Vec<_>>();
+    if column_spans.len() < 8 {
+        return None;
+    }
+
+    let columns = split_layout_columns(&column_spans, dimensions)?;
+    let ranges = columns
+        .iter()
+        .map(|column| {
+            let x0 = column
+                .iter()
+                .map(|span| span.bbox.x0)
+                .min_by(f32::total_cmp)
+                .unwrap_or(0.0);
+            let x1 = column
+                .iter()
+                .map(|span| span.bbox.x1)
+                .max_by(f32::total_cmp)
+                .unwrap_or(0.0);
+            (x0, x1)
+        })
+        .collect::<Vec<(f32, f32)>>();
+
+    // Body text columns are made of prose lines; clusters of short table
+    // cells must not be mistaken for them. Score the per-row joined text
+    // length inside each inferred column and require prose-line medians.
+    for (column_x0, column_x1) in &ranges {
+        let mut row_lengths = rows
+            .iter()
+            .filter_map(|row| {
+                let chars: usize = row
+                    .iter()
+                    .filter(|span| span.bbox.x0 >= *column_x0 && span.bbox.x1 <= *column_x1)
+                    .map(|span| span.text.trim().chars().count())
+                    .sum();
+                (chars > 0).then_some(chars)
+            })
+            .collect::<Vec<_>>();
+        row_lengths.sort_unstable();
+        let median = row_lengths
+            .get(row_lengths.len().saturating_sub(1) / 2)
+            .copied()
+            .unwrap_or(0);
+        if median < 30 {
+            return None;
+        }
+    }
+
+    Some(ranges)
+}
+
+/// Detects positioned-table candidate windows that are really the page's own
+/// text columns: most rows fill the detected body-column x-ranges edge to
+/// edge like full text lines instead of leaving cell-sized gaps.
+fn positioned_window_is_page_column_prose(
+    window: &[Vec<&TextSpan>],
+    body_columns: Option<&[(f32, f32)]>,
+) -> bool {
+    let Some(body_columns) = body_columns else {
+        return false;
+    };
+    if window.len() < 2 || body_columns.len() < 2 {
+        return false;
+    }
+
+    let filled_rows = window
+        .iter()
+        .filter(|row| positioned_row_fills_body_columns(row, body_columns))
+        .count();
+
+    filled_rows * 2 >= window.len()
+}
+
+fn positioned_row_fills_body_columns(row: &[&TextSpan], body_columns: &[(f32, f32)]) -> bool {
+    let mut filled_any = false;
+    for (column_x0, column_x1) in body_columns {
+        let width = column_x1 - column_x0;
+        if width <= 0.0 {
+            continue;
+        }
+        let mut covered_x0: Option<f32> = None;
+        let mut covered_x1: Option<f32> = None;
+        for span in row {
+            let overlap_x0 = span.bbox.x0.max(*column_x0);
+            let overlap_x1 = span.bbox.x1.min(*column_x1);
+            if overlap_x1 <= overlap_x0 {
+                continue;
+            }
+            covered_x0 = Some(covered_x0.map_or(overlap_x0, |value| value.min(overlap_x0)));
+            covered_x1 = Some(covered_x1.map_or(overlap_x1, |value| value.max(overlap_x1)));
+        }
+        if let (Some(covered_x0), Some(covered_x1)) = (covered_x0, covered_x1) {
+            if covered_x1 - covered_x0 < width * 0.7 {
+                return false;
+            }
+            filled_any = true;
+        }
+    }
+
+    filled_any
 }
 
 fn positioned_table_row_ranges(rows: &[Vec<&TextSpan>]) -> Vec<(usize, usize)> {
@@ -1438,7 +1655,53 @@ fn positioned_table_columns(rows: &[Vec<&TextSpan>]) -> Option<Vec<(f32, f32)>> 
         regular_row_count += 1;
     }
 
-    (regular_row_count >= 2).then_some(columns)
+    if regular_row_count < 2 {
+        return None;
+    }
+
+    if positioned_rows_look_like_parallel_prose(rows) {
+        return None;
+    }
+
+    Some(columns)
+}
+
+/// Rejects positioned "tables" whose rows are dominated by flowing text
+/// fragments without numeric cells, the shape produced by routing body prose
+/// (for example two-column academic papers with figure rulings) into
+/// positioned table recovery. Real tables keep numeric value cells or short
+/// label cells, so they are not rejected by this guard.
+fn positioned_rows_look_like_parallel_prose(rows: &[Vec<&TextSpan>]) -> bool {
+    if rows.len() < 3 {
+        return false;
+    }
+
+    let prose_rows = rows
+        .iter()
+        .filter(|row| positioned_row_looks_like_prose(row))
+        .count();
+
+    prose_rows * 5 >= rows.len() * 3
+}
+
+fn positioned_row_looks_like_prose(row: &[&TextSpan]) -> bool {
+    let mut total_chars = 0;
+    let mut digit_chars = 0;
+    let mut has_long_wordy_cell = false;
+    for span in row {
+        let text = span.text.trim();
+        for character in text.chars() {
+            total_chars += 1;
+            if character.is_ascii_digit() {
+                digit_chars += 1;
+            }
+        }
+        if text.chars().count() >= 35 && text.matches(' ').count() >= 5 {
+            has_long_wordy_cell = true;
+        }
+    }
+
+    total_chars >= 60 && has_long_wordy_cell && digit_chars * 100 <= total_chars * 15
 }
 
 fn positioned_row_column_anchors(row: &[&TextSpan]) -> Vec<(f32, f32)> {

@@ -106,776 +106,6 @@
             "min_recall": 1.0
           }
         ],
-        "table_structure": [
-          {
-            "page": 2,
-            "expected_rows": [
-              [
-                "Masked Sentence A",
-                "Masked Sentence B",
-                "Question",
-                "Paragraph"
-              ],
-              [
-                "Unlabeled Sentence A and B Pair",
-                "",
-                "",
-                "Question Answer Pair"
-              ],
-              [
-                "Pre-training",
-                "",
-                "Fine-Tuning",
-                ""
-              ],
-              [
-                "Figure 1: Overall pre-training and fine-tuning procedures for BERT. Apart from output layers, the same architec\u0002",
-                "",
-                "",
-                ""
-              ],
-              [
-                "tures are used in both pre-training and fine-tuning. The same pre-trained model parameters are used to initialize",
-                "",
-                "",
-                ""
-              ],
-              [
-                "models for different down-stream tasks. During fine-tuning, all parameters are fine-tuned.",
-                "",
-                "",
-                "[CLS] is a special"
-              ],
-              [
-                "tions/answers).",
-                "symbol added in front of every input example, and [SEP] is a special separator token (e.g. separating ques\u0002"
-              ],
-              [
-                "ing and auto-encoder objectives have been used",
-                "mal difference between the pre-trained architec\u0002"
-              ],
-              [
-                "for pre-training such models ( Howard and Ruder ,",
-                "ture and the final downstream architecture."
-              ],
-              [
-                "2.3 Transfer Learning from Supervised Data",
-                "ture is a multi-layer bidirectional Transformer en\u0002"
-              ],
-              [
-                "There has also been work showing effective trans\u0002",
-                "coder based on the original implementation de\u0002"
-              ],
-              [
-                "fer from supervised tasks with large datasets, such",
-                "scribed in Vaswani et al. ( 2017 ) and released in"
-              ],
-              [
-                "as natural language inference ( Conneau et al.",
-                "the tensor2tensor library. 1 Because the use"
-              ],
-              [
-                ",",
-                "of Transformers has become common and our im\u0002"
-              ],
-              [
-                "2017)",
-                "and",
-                "machine",
-                "translation",
-                "(McCann",
-                "et",
-                "al.,"
-              ],
-              [
-                "2017).",
-                "Computer",
-                "vision",
-                "research",
-                "has",
-                "also",
-                "demon\u0002"
-              ],
-              [
-                "strated",
-                "the",
-                "importance",
-                "of",
-                "transfer",
-                "learning",
-                "from"
-              ],
-              [
-                "large",
-                "pre-trained",
-                "models,",
-                "where",
-                "an",
-                "effective",
-                "recipe"
-              ],
-              [
-                "is to fine-tune models pre-trained with Ima\u0002",
-                "Vaswani et al. ( 2017 ) as well as excellent guides"
-              ],
-              [
-                "geNet ( Deng et al. 2009 ; Yosinski et al. 2014 ).",
-                "such as \u201cThe Annotated Transformer.\u201d 2"
-              ],
-              [
-                "We introduce BERT and its detailed implementa\u0002",
-                "We primarily report results on two model sizes:"
-              ],
-              [
-                "tion in this section. There are two steps in our",
-                "BERT BASE (L=12, H=768, A=12, Total Param\u0002"
-              ],
-              [
-                "question-answering example in Figure 1 will serve",
-                "1",
-                "https://github.com/tensorflow/tensor2tensor"
-              ],
-              [
-                "as a running example for this section.",
-                "2 3",
-                "http://nlp.seas.harvard.edu/2018/04/03/attention.html"
-              ],
-              [
-                "A distinctive feature of BERT is its unified ar\u0002",
-                "i.e., 3072 for the H = 768 and 4096 for the H = 1024 ."
-              ],
-              [
-                "chitecture across different tasks. There is mini\u0002",
-                "4 We note that in the literature the bidirectional Trans-"
-              ]
-            ],
-            "min_row_recall": 1.0,
-            "min_cell_recall": 1.0,
-            "min_cell_f1": 1.0
-          },
-          {
-            "page": 4,
-            "expected_rows": [
-              [
-                "The NSP task is closely related to representation\u0002",
-                "(4) a degenerate text- \u2205 pair in text classification"
-              ],
-              [
-                "learning objectives used in Jernite et al. ( 2017 ) and",
-                "or sequence tagging. At the output, the token rep\u0002"
-              ],
-              [
-                "Pre-training data The pre-training procedure",
-                "Compared to pre-training, fine-tuning is rela\u0002"
-              ],
-              [
-                "largely follows the existing literature on language",
-                "tively inexpensive. All of the results in the pa\u0002"
-              ],
-              [
-                "model pre-training. For the pre-training corpus we",
-                "per can be replicated in at most 1 hour on a sin\u0002"
-              ],
-              [
-                "use the BooksCorpus (800M words) ( Zhu et al. ,",
-                "gle Cloud TPU, or a few hours on a GPU, starting"
-              ],
-              [
-                "2015 ) and English Wikipedia (2,500M words).",
-                "from the exact same pre-trained model. 7 We de\u0002"
-              ],
-              [
-                "For Wikipedia we extract only the text passages",
-                "scribe the task-specific details in the correspond\u0002"
-              ],
-              [
-                "and ignore lists, tables, and headers. It is criti\u0002",
-                "ing subsections of Section 4 . More details can be"
-              ],
-              [
-                "cal to use a document-level corpus rather than a",
-                "found in Appendix A.5 ."
-              ],
-              [
-                "3.2 Fine-tuning BERT",
-                "sults on 11 NLP tasks."
-              ],
-              [
-                "Fine-tuning is straightforward since the self\u0002 attention mechanism in the Transformer al\u0002",
-                "4.1 GLUE"
-              ],
-              [
-                "ing, (2) hypothesis-premise pairs in entailment, (3)",
-                "F1 score of 91.0%."
-              ],
-              [
-                "question-passage pairs in question answering, and",
-                "8 See (10) in https://gluebenchmark.com/faq ."
-              ]
-            ],
-            "min_row_recall": 1.0,
-            "min_cell_recall": 1.0,
-            "min_cell_f1": 1.0
-          },
-          {
-            "page": 5,
-            "expected_rows": [
-              [
-                "BERT BASE",
-                "84.6/83.4 71.2 90.5 93.5 52.1 85.8 88.9 66.4 79.6"
-              ],
-              [
-                "BERT LARGE",
-                "86.7/85.9 72.1 92.7 94.9 60.5 86.5 89.3 70.1 82.1"
-              ],
-              [
-                "than the official GLUE score, since we exclude the problematic WNLI set. model, single task. F1 scores are reported for QQP and MRPC, Spearman correlations are reported for STS-B, and",
-                "Table 1: GLUE Test results, scored by the evaluation server ( The number below each task denotes the number of training examples. The \u201cAverage\u201d column is slightly different",
-                "accuracy scores are reported for the other tasks. We exclude entries that use BERT as one of their components.",
-                "https://gluebenchmark.com/leaderboard",
-                "8 BERT and OpenAI GPT are single\u0002",
-                ")."
-              ],
-              [
-                "",
-                "",
-                "We use a batch size of 32 and fine-tune for 3",
-                "",
-                "Wikipedia containing the answer, the task is to",
-                ""
-              ],
-              [
-                "",
-                "",
-                "epochs over the data for all GLUE tasks. For each",
-                "predict the answer text span in the passage.",
-                "",
-                ""
-              ],
-              [
-                "task, we selected the best fine-tuning learning rate (among 5e-5, 4e-5, 3e-5, and 2e-5) on the Dev set.",
-                "ing task, we represent the input question and pas\u0002",
-                "As shown in Figure 1 , in the question answer\u0002"
-              ],
-              [
-                "Additionally, for BERT LARGE we found that fine\u0002",
-                "sage as a single packed sequence, with the ques\u0002",
-                ""
-              ],
-              [
-                "tuning was sometimes unstable on small datasets,",
-                "tion using the A embedding and the passage using"
-              ],
-              [
-                "so we ran several random restarts and selected the",
-                "the B embedding. We only introduce a start vec\u0002"
-              ],
-              [
-                "We find that BERT LARGE significantly outper\u0002",
-                "2018a ; Hu et al. , 2018 ). The top results from the"
-              ],
-              [
-                "forms BERT BASE across all tasks, especially those",
-                "SQuAD leaderboard do not have up-to-date public"
-              ],
-              [
-                "",
-                "The Stanford Question Answering Dataset",
-                "Our best performing system outperforms the top"
-              ],
-              [
-                "(SQuAD v1.1) is a collection of 100k crowd\u0002",
-                "",
-                "leaderboard system by +1.5 F1 in ensembling and"
-              ],
-              [
-                "sourced question/answer pairs (",
-                "Rajpurkar et al. ,",
-                "+1.3 F1 as a single system. In fact, our single"
-              ],
-              [
-                "2016",
-                "). Given a question and a passage from",
-                "BERT model outperforms the top ensemble sys\u0002"
-              ],
-              [
-                "labels, and we only made a single GLUE evaluation server",
-                "9 The GLUE data set distribution does not include the Test",
-                "tem in terms of F1 score. Without TriviaQA fine\u0002"
-              ]
-            ],
-            "min_row_recall": 1.0,
-            "min_cell_recall": 1.0,
-            "min_cell_f1": 1.0
-          },
-          {
-            "page": 6,
-            "expected_rows": [
-              [
-                "System Dev Test",
-                "System Dev Test"
-              ],
-              [
-                "EM F1 EM F1",
-                "ESIM+GloVe 51.9 52.7"
-              ],
-              [
-                "Top Leaderboard Systems (Dec 10th, 2018)",
-                "ESIM+ELMo 59.1 59.2"
-              ],
-              [
-                "Human - - 82.3 91.2",
-                "OpenAI GPT - 78.0"
-              ],
-              [
-                "#1 Ensemble - nlnet - - 86.0 91.7 BERT BASE",
-                "81.6 -"
-              ],
-              [
-                "#2 Ensemble - QANet - - 84.5 90.5 BERT LARGE",
-                "86.6 86.3"
-              ],
-              [
-                "BERT",
-                "(Single) 80.8 88.5 - -",
-                "Ours Table 4: SWAG Dev and Test accuracies. \u2020 Human per\u0002"
-              ],
-              [
-                "BASE",
-                "",
-                ""
-              ],
-              [
-                "BERT",
-                "LARGE (Single) 84.1 90.9 - -",
-                "formance is measured with 100 samples, as reported in"
-              ],
-              [
-                "BERT LARGE (Sgl.+TriviaQA)",
-                "84.2 91.1 85.1 91.8"
-              ],
-              [
-                "BERT LARGE (Ens.+TriviaQA)",
-                "86.2 92.2 87.4 93.2"
-              ],
-              [
-                "System Dev Test",
-                "fine-tuned for 2 epochs with a learning rate of 5e-5"
-              ],
-              [
-                "EM F1 EM F1",
-                "and a batch size of 48."
-              ],
-              [
-                "Top Leaderboard Systems (Dec 10th, 2018)",
-                "The results compared to prior leaderboard en\u0002"
-              ],
-              [
-                "Human 86.3 89.0 86.9 89.5",
-                "tries and top published work ( Sun et al. , 2018 ;"
-              ],
-              [
-                "#1 Single - MIR-MRC (F-Net) - - 74.8 78.0",
-                "Wang et al. , 2018b ) are shown in Table 3 , exclud\u0002"
-              ],
-              [
-                "",
-                "",
-                "unet (Ensemble) - - 71.4 74.9",
-                "ponents. We observe a +5.1 F1 improvement over",
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                "SLQA+ (Single) - 71.4 74.4",
-                "",
-                "the previous best system.",
-                "",
-                ""
-              ],
-              [
-                "Ours",
-                "",
-                "",
-                "",
-                "",
-                "",
-                ""
-              ],
-              [
-                "use BERT as one of their components.",
-                "Table 3: SQuAD 2.0 results. We exclude entries that",
-                "BERT LARGE (Single) 78.7 81.9 80.0 83.1",
-                "pletion examples that evaluate grounded common\u0002",
-                "The Situations With Adversarial Generations",
-                "4.4 SWAG",
-                "(SWAG) dataset contains 113k sentence-pair com\u0002"
-              ],
-              [
-                "tuning data, we only lose 0.1-0.4 F1, still outper\u0002",
-                "tence, the task is to choose the most plausible con\u0002"
-              ],
-              [
-                "forming all existing systems by a wide margin. 12",
-                "tinuation among four choices."
-              ],
-              [
-                "12",
-                "In this section, we perform ablation experiments"
-              ],
-              [
-                "The TriviaQA data we used consists of paragraphs from",
-                "over a number of facets of BERT in order to better"
-              ]
-            ],
-            "min_row_recall": 1.0,
-            "min_cell_recall": 1.0,
-            "min_cell_f1": 1.0
-          },
-          {
-            "page": 8,
-            "expected_rows": [
-              [
-                "mixed results on the downstream task impact of",
-                "System Dev F1 Test F1"
-              ],
-              [
-                "increasing the pre-trained bi-LM size from two",
-                "ELMo ( Peters et al. , 2018a ) 95.7 92.2"
-              ],
-              [
-                "to four layers and Melamud et al. ( 2016 ) men\u0002",
-                "CVT ( Clark et al. , 2018 ) - 92.6"
-              ],
-              [
-                "",
-                "BERT LARGE",
-                "96.6 92.8"
-              ],
-              [
-                "further to 1,000 did not bring further improve\u0002",
-                "BERT BASE",
-                "96.4 92.4"
-              ],
-              [
-                "cation layer is added to the pre-trained model, and",
-                "layer in the output. We use the representation of"
-              ],
-              [
-                "all parameters are jointly fine-tuned on a down\u0002",
-                "the first sub-token as the input to the token-level"
-              ],
-              [
-                "stream task. However, the feature-based approach,",
-                "classifier over the NER label set."
-              ],
-              [
-                "where fixed features are extracted from the pre\u0002",
-                "To ablate the fine-tuning approach, we apply the"
-              ],
-              [
-                "trained model, has certain advantages. First, not",
-                "feature-based approach by extracting the activa\u0002"
-              ],
-              [
-                "all tasks can be easily represented by a Trans\u0002",
-                "tions from one or more layers without fine-tuning"
-              ],
-              [
-                "former encoder architecture, and therefore require",
-                "any parameters of BERT. These contextual em\u0002"
-              ],
-              [
-                "a task-specific model architecture to be added.",
-                "beddings are used as input to a randomly initial\u0002"
-              ],
-              [
-                "Second, there are major computational benefits",
-                "ized two-layer 768-dimensional BiLSTM before"
-              ],
-              [
-                "to pre-compute an expensive representation of the",
-                "the classification layer."
-              ],
-              [
-                "with cheaper models on top of this representation.",
-                "Results are presented in Table 7 . BERT LARGE"
-              ],
-              [
-                "In this section, we compare the two approaches",
-                "performs competitively with state-of-the-art meth\u0002"
-              ],
-              [
-                "by applying BERT to the CoNLL-2003 Named",
-                "ods. The best performing method concatenates the"
-              ],
-              [
-                "Entity Recognition (NER) task ( Tjong Kim Sang",
-                "token representations from the top four hidden lay\u0002"
-              ],
-              [
-                "and De Meulder , 2003 ). In the input to BERT, we",
-                "ers of the pre-trained Transformer, which is only"
-              ],
-              [
-                "use a case-preserving WordPiece model, and we",
-                "0.3 F1 behind fine-tuning the entire model. This"
-              ],
-              [
-                "include the maximal document context provided",
-                "demonstrates that BERT is effective for both fine\u0002"
-              ],
-              [
-                "",
-                "by the data. Following standard practice, we for\u0002",
-                "mulate this as a tagging task but do not use a CRF",
-                "",
-                "tuning and feature-based approaches.",
-                "",
-                "6 Conclusion",
-                ""
-              ],
-              [
-                "",
-                "",
-                "",
-                "Hyperparams Dev Set Accuracy",
-                "",
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "#L #H #A LM (ppl) MNLI-m MRPC SST-2",
-                "",
-                "",
-                "",
-                "Recent empirical improvements due to transfer",
-                "",
-                ""
-              ],
-              [
-                "",
-                "3 768 12 5.84 77.9 79.8 88.4",
-                "",
-                "",
-                "",
-                "learning with language models have demonstrated",
-                "",
-                ""
-              ],
-              [
-                "",
-                "6 768 3 5.24 80.6 82.2 90.7",
-                "",
-                "",
-                "that rich, unsupervised pre-training is an integral",
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "6 768 12 4.68 81.9 84.8 91.3",
-                "",
-                "",
-                "part of many language understanding systems. In",
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                "",
-                "12 768 12 3.99 84.4 86.7 92.9",
-                "",
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                "",
-                "12 1024 16 3.54 85.7 86.9 93.3",
-                "particular, these results enable even low-resource",
-                "",
-                "",
-                ""
-              ],
-              [
-                "",
-                "",
-                "",
-                "24 1024 16 3.23 86.6 87.8 93.7",
-                "tasks to benefit from deep unidirectional architec\u0002 tures. Our major contribution is further general\u0002",
-                "",
-                "",
-                ""
-              ],
-              [
-                "tention heads. \u201cLM (ppl)\u201d is the masked LM perplexity",
-                "number of layers; #H = hidden size; #A = number of at\u0002",
-                "Table 6: Ablation over BERT model size. #L = the",
-                "of held-out training data.",
-                "tures, allowing the same pre-trained model to suc\u0002",
-                "izing these findings to deep",
-                "cessfully tackle a broad set of NLP tasks.",
-                "bidirectional architec\u0002"
-              ]
-            ],
-            "min_row_recall": 1.0,
-            "min_cell_recall": 1.0,
-            "min_cell_f1": 1.0
-          },
-          {
-            "page": 12,
-            "expected_rows": [
-              [
-                "to converge. In Section C.1 we demonstrate that",
-                "epochs over the 3.3 billion word corpus. We"
-              ],
-              [
-                "MLM does converge marginally slower than a left\u0002",
-                "use Adam with learning rate of 1e-4, \u03b2 1 = 0 . 9 ,"
-              ],
-              [
-                "Next Sentence Prediction",
-                "The next sentence vation ( Hendrycks and Gimpel , 2016 ) rather than"
-              ],
-              [
-                "prediction task can be illustrated in the following the standard relu",
-                ", following OpenAI GPT. The"
-              ],
-              [
-                "examples.",
-                "training loss is the sum of the mean masked LM likelihood and the mean next sentence prediction"
-              ],
-              [
-                "embedding and the second receives the B embed\u0002",
-                "For fine-tuning, most model hyperparameters are"
-              ],
-              [
-                "ding. 50% of the time B is the actual next sentence",
-                "the same as in pre-training, with the exception of"
-              ]
-            ],
-            "min_row_recall": 1.0,
-            "min_cell_recall": 1.0,
-            "min_cell_f1": 1.0
-          },
-          {
-            "page": 14,
-            "expected_rows": [
-              [
-                "Class",
-                "Class"
-              ],
-              [
-                "Label",
-                "Label"
-              ],
-              [
-                "with human annotations of their sentiment ( Socher",
-                "RTE",
-                "Recognizing Textual Entailment is a bi\u0002"
-              ],
-              [
-                "et al. , 2013 ).",
-                "nary entailment task similar to MNLI, but with",
-                ""
-              ],
-              [
-                "",
-                "much less training data ( Bentivogli et al. ,",
-                "2009 ). 14"
-              ],
-              [
-                "the goal is to predict whether an English sentence",
-                "WNLI Winograd NLI is a small natural lan\u0002"
-              ],
-              [
-                "is linguistically \u201cacceptable\u201d or not ( Warstadt",
-                "guage inference dataset ( Levesque et al. , 2011 )."
-              ],
-              [
-                "et al. , 2018 ).",
-                "The GLUE webpage notes that there are issues"
-              ],
-              [
-                "for whether the sentences in the pair are semanti\u0002",
-                "task training with MNLI."
-              ],
-              [
-                "cally equivalent ( Dolan and Brockett , 2005 ).",
-                "15 https://gluebenchmark.com/faq"
-              ]
-            ],
-            "min_row_recall": 1.0,
-            "min_cell_recall": 1.0,
-            "min_cell_f1": 1.0
-          },
-          {
-            "page": 15,
-            "expected_rows": [
-              [
-                "C Additional Ablation Studies pears during the fine-tuning stage. We report the",
-                "and fine-tuning, as the [MASK] symbol never ap\u0002"
-              ],
-              [
-                "C.1 Effect of Number of Training Steps",
-                "Dev results for both MNLI and NER. For NER,"
-              ],
-              [
-                "",
-                "",
-                "1.0% additional accuracy on MNLI when",
-                "",
-                "80% 0% 20% 84.1 95.2 94.6"
-              ],
-              [
-                "",
-                "trained on 1M steps compared to 500k steps.",
-                "",
-                "",
-                "80% 20% 0% 84.4 95.2 94.7 0% 20% 80% 83.7 94.8 94.6"
-              ],
-              [
-                "2.",
-                "than every word?",
-                "of words are predicted in each batch rather",
-                "Question: Does MLM pre-training converge slower than LTR pre-training, since only 15% Table 8: Ablation over different masking strategies.",
-                "0% 0% 100% 83.6 94.9 94.6"
-              ],
-              [
-                "Answer: The MLM model does converge",
-                "The results are presented in Table 8 . In the table,"
-              ],
-              [
-                "slightly slower than the LTR model. How\u0002",
-                "M ASK means that we replace the target token with"
-              ],
-              [
-                "strategies. Note that the purpose of the masking strategies",
-                "in Section From the table it can be seen that fine-tuning is",
-                "5.3 ."
-              ],
-              [
-                "is to reduce the mismatch between pre-training",
-                "surprisingly robust to different masking strategies.",
-                ""
-              ]
-            ],
-            "min_row_recall": 1.0,
-            "min_cell_recall": 1.0,
-            "min_cell_f1": 1.0
-          }
-        ],
         "span_bbox": [
           {
             "page": 0,
@@ -1077,14 +307,14 @@
             ],
             "image_artifact_count": 1,
             "layout_block_counts": {
-              "block_count": 27,
+              "block_count": 19,
               "paragraph_blocks": 12,
-              "heading_blocks": 7,
+              "heading_blocks": 6,
               "list_blocks": 0,
-              "table_blocks": 8,
-              "table_rows": 26,
-              "table_cells": 86,
-              "table_cells_with_bbox": 46,
+              "table_blocks": 1,
+              "table_rows": 2,
+              "table_cells": 12,
+              "table_cells_with_bbox": 0,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -1136,14 +366,14 @@
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 16,
-              "paragraph_blocks": 12,
-              "heading_blocks": 0,
+              "block_count": 18,
+              "paragraph_blocks": 14,
+              "heading_blocks": 3,
               "list_blocks": 0,
-              "table_blocks": 4,
-              "table_rows": 14,
-              "table_cells": 28,
-              "table_cells_with_bbox": 28,
+              "table_blocks": 1,
+              "table_rows": 2,
+              "table_cells": 4,
+              "table_cells_with_bbox": 4,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -1168,14 +398,11 @@
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 15,
-              "paragraph_blocks": 9,
+              "block_count": 13,
+              "paragraph_blocks": 13,
               "heading_blocks": 0,
               "list_blocks": 0,
-              "table_blocks": 6,
-              "table_rows": 16,
-              "table_cells": 51,
-              "table_cells_with_bbox": 40,
+              "table_blocks": 0,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -1200,14 +427,14 @@
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 21,
-              "paragraph_blocks": 12,
+              "block_count": 15,
+              "paragraph_blocks": 13,
               "heading_blocks": 0,
-              "list_blocks": 1,
-              "table_blocks": 8,
-              "table_rows": 24,
-              "table_cells": 71,
-              "table_cells_with_bbox": 53,
+              "list_blocks": 0,
+              "table_blocks": 2,
+              "table_rows": 6,
+              "table_cells": 12,
+              "table_cells_with_bbox": 12,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -1255,18 +482,15 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "| mixed results on the downstream task impact of | System Dev F1 Test F1 |"
+              "mixed results on the downstream task impact of"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 13,
-              "paragraph_blocks": 8,
+              "block_count": 10,
+              "paragraph_blocks": 10,
               "heading_blocks": 0,
               "list_blocks": 0,
-              "table_blocks": 5,
-              "table_rows": 32,
-              "table_cells": 126,
-              "table_cells_with_bbox": 71,
+              "table_blocks": 0,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -1372,14 +596,11 @@
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 16,
-              "paragraph_blocks": 11,
+              "block_count": 10,
+              "paragraph_blocks": 8,
               "heading_blocks": 1,
               "list_blocks": 1,
-              "table_blocks": 3,
-              "table_rows": 7,
-              "table_cells": 14,
-              "table_cells_with_bbox": 14,
+              "table_blocks": 0,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -1431,14 +652,14 @@
             ],
             "image_artifact_count": 1,
             "layout_block_counts": {
-              "block_count": 30,
-              "paragraph_blocks": 15,
+              "block_count": 31,
+              "paragraph_blocks": 16,
               "heading_blocks": 11,
               "list_blocks": 0,
               "table_blocks": 4,
-              "table_rows": 10,
-              "table_cells": 23,
-              "table_cells_with_bbox": 17,
+              "table_rows": 9,
+              "table_cells": 21,
+              "table_cells_with_bbox": 15,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -1459,18 +680,15 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "| C Additional Ablation Studies pears during the fine-tuning stage. We report the | and fine-tuning, as the [MASK] symbol never ap\u0002 |"
+              "C Additional Ablation Studies"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 15,
+              "block_count": 12,
               "paragraph_blocks": 10,
               "heading_blocks": 0,
-              "list_blocks": 1,
-              "table_blocks": 4,
-              "table_rows": 9,
-              "table_cells": 29,
-              "table_cells_with_bbox": 22,
+              "list_blocks": 2,
+              "table_blocks": 0,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -1981,19 +1199,15 @@
                 ""
               ],
               [
-                "1 Name of employee (f",
-                "irst name, middle initial, last name)",
+                "1 Name of employee (f irst name, middle initial, last name)",
                 "2 Social security number (SSN)",
                 "7 Name of employer",
-                "",
                 "8 Employer identification number (EIN)"
               ],
               [
                 "3 Street address (including apartment no.)",
                 "",
-                "",
                 "9 Street address (including room or suite no.)",
-                "",
                 "10 Contact telephone number"
               ],
               [
@@ -2087,14 +1301,14 @@
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 19,
+              "block_count": 20,
               "paragraph_blocks": 17,
               "heading_blocks": 0,
               "list_blocks": 0,
-              "table_blocks": 2,
+              "table_blocks": 3,
               "table_rows": 6,
-              "table_cells": 32,
-              "table_cells_with_bbox": 25,
+              "table_cells": 28,
+              "table_cells_with_bbox": 24,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0

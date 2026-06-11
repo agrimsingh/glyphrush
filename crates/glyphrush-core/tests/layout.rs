@@ -4763,6 +4763,75 @@ fn single_column_page_is_not_split_or_flagged_by_column_row_bands() {
     );
 }
 
+#[test]
+fn table_routed_two_column_prose_is_not_recovered_as_fake_tables() {
+    // A two-column prose page that the classifier routed to table recovery
+    // (for example because of figure rulings) must not have its body columns
+    // recovered as parallel-prose "tables"; column reading order must hold.
+    let mut native_spans = Vec::new();
+    let mut left_lines = Vec::new();
+    let mut right_lines = Vec::new();
+    for row in 0..12 {
+        let y0 = 100.0 + row as f32 * 15.0;
+        let left_text = format!("left prose line {row} keeps flowing body text alive");
+        let right_text = format!("right prose line {row} keeps flowing body text alive");
+        native_spans.push(span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
+        native_spans.push(span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
+        left_lines.push(left_text);
+        right_lines.push(right_text);
+    }
+
+    let native_text = native_spans
+        .iter()
+        .map(|span| span.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let artifact = parse_extracted_pages(
+        "doc-table-routed-two-column-prose".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text,
+            native_spans,
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 24,
+                native_text_bytes: 1100,
+                glyph_count: 1000,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert!(
+        page.layout_blocks
+            .iter()
+            .all(|block| block.kind != LayoutBlockKind::Table),
+        "two-column prose must not be recovered as tables: {:?}",
+        page.layout_blocks
+            .iter()
+            .map(|block| (&block.kind, &block.text))
+            .collect::<Vec<_>>()
+    );
+
+    let page_text = page
+        .layout_blocks
+        .iter()
+        .map(|block| block.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let position = |needle: &str| {
+        page_text
+            .find(needle)
+            .unwrap_or_else(|| panic!("missing {needle:?} in {page_text:?}"))
+    };
+    assert!(position(&left_lines[11]) < position(&right_lines[0]));
+}
+
 fn span(text: &str, x0: f32, y0: f32, x1: f32, y1: f32) -> ExtractedTextSpan {
     ExtractedTextSpan {
         text: text.to_string(),
