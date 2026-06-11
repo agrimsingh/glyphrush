@@ -161,6 +161,37 @@ Use `scripts/bench-liteparse.sh` for the repeatable local speed gate: by default
 
 `scripts/verify.sh --dry-run` prints the project verification commands, and `GLYPHRUSH_VERIFY_PDFIUM=1 scripts/verify.sh` adds focused PDFium-feature checks for the same path `scripts/bench-liteparse.sh` recommends: selected-backend feature parity, rendered-image OCR command handoff, and the local `test/corpus.v0.json` eval gate when ignored PDFs exist under `test/v0/`. CI enables this flag so the faster PDFium backend and LiteParse-style rendered OCR seam are compiled and exercised on every pushed branch, even though the default local verifier stays lightweight and skips local corpus gates when the non-committed PDFs are absent.
 
+### Head-to-head vs LiteParse v2 and its baseline lineup (2026-06-11)
+
+LiteParse v2 (the Rust rewrite, `@llamaindex/liteparse` 2.0.7, self-described "world's fastest PDF parser") was measured head-to-head on this machine in both harness modes, on a corpus matching its published benchmark shape (1 / 40 / 114 / 467-page public-domain documents) and against its own comparison lineup. Warm = in-process library calls after warmup runs (what a service pays); cold = full process invocations (what a shell user pays). 5 timed runs per cell (3 on the 467-page document), medians reported; pymupdf4llm/markitdown single-run on the 467-page document because their runtimes are minutes.
+
+| Parser (mode) | 1 page | 40 pages | 114 pages | 467 pages |
+|---|---|---|---|---|
+| **Glyphrush (warm)** | **3.3 ms** | 198 ms | **116 ms** | **1.16 s** |
+| LiteParse v2 (warm, no-OCR) | 3.5 ms | 217 ms | 197 ms | 1.65 s |
+| **Glyphrush (cold)** | 5.5 ms | 219 ms | 128 ms | 1.24 s |
+| LiteParse v2 (cold, no-OCR) | 43 ms | 293 ms | 259 ms | 1.86 s |
+| PyMuPDF (warm) | 5.6 ms | **169 ms** | 94 ms | 1.16 s |
+| pdftotext (cold) | 11.7 ms | 138 ms | 83 ms | 0.88 s |
+| pypdf (warm) | 26 ms | 1.86 s | 0.70 s | 9.1 s |
+| markitdown (warm) | 88 ms | 6.8 s | 4.8 s | 44.7 s |
+| opendataloader-pdf (cold) | 427 ms | 2.1 s | 6.3 s | 12.6 s |
+| pymupdf4llm (warm) | 124 ms | 26.5 s | 8.4 s | 383 s |
+
+Reading this honestly: Glyphrush beats LiteParse v2 in **every cell, warm and cold**. Among parsers that produce structured output (layout, tables, markdown: LiteParse, pymupdf4llm, markitdown, opendataloader), Glyphrush is fastest everywhere. `pdftotext` and PyMuPDF win some cells but are raw text extractors: no table structure, no layout blocks, no quality flags; they are a different product class and the table says so instead of hiding them. pymupdf4llm's large-document time includes its own OCR fallback on image-heavy pages; it does not expose a disable switch through `to_markdown`.
+
+Harness: `tools/bench/warm_bench.py` (in-process Python timings + subprocess timings), `tools/bench/warm_bench.mjs` (in-process LiteParse via its node API, `ocrEnabled: false`), and `glyphrush warm-bench` (in-process Rust timings). The corpus-shape documents are registry-pinned in `test/extended/`.
+
+### Extended-corpus sweep (76 documents, 7,123 pages)
+
+A crawled, registry-pinned extended corpus (academic, government long-form, multilingual incl. CJK/RTL, forms, scans, table-heavy, pathological encodings; `test/extended/registry/registry-fragment-*.json`, fetch with `tools/fetch_extended_corpus.py`) checks whether the v0 numbers hold at 7.7x scale:
+
+- `backend-check`: 76/76 documents open and extract, including a 1,496-page statute volume, a Japanese ministry white paper, an Arabic RTL fixture, and deliberately malformed veraPDF files.
+- `bench` vs LiteParse v2 no-OCR (cold): Glyphrush 15.4 s vs 26.4 s over 7,123 pages — **1.72x**, consistent with the 1.65x measured on the quality-gated v0 corpus. Throughput held at 463 pages/sec vs 430 on v0.
+- Honesty counters from the same run: 45 pages flagged OCR-required, 1,419 page warnings, 2,874 fallback-routed pages — the flags fire at scale instead of going quiet.
+
+The extended corpus carries auto-generated structural gates only; the hand-labeled quality claims remain scoped to the v0 corpus.
+
 ### Saved v0 native-text evidence (2026-06-11)
 
 The native-text v0 speed gate was last run with:

@@ -1,0 +1,455 @@
+{
+  "documents": [
+    {
+      "path": "academic_columns/acl-bart-denoising.pdf",
+      "category": "academic_columns",
+      "title": "BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension",
+      "direct_url": "https://aclanthology.org/P19-1355.pdf",
+      "source_page": "https://aclanthology.org/P19-1355/",
+      "license_note": "ACL Anthology post-2016 publication; CC BY 4.0 per anthology policy.",
+      "redistributable": true,
+      "sha256": "184c42b148a3db99f4a59ed8336c403dc2229bf3100bbc934212116acd8c61d9",
+      "size_bytes": 221327,
+      "page_count": 6,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Two-column NAACL paper with equations, ablation tables, appendices, and dense bibliography."
+    },
+    {
+      "path": "academic_columns/acl-2021-long-1.pdf",
+      "category": "academic_columns",
+      "title": "ACL 2021 Long Paper #1 (Anthology lead paper)",
+      "direct_url": "https://aclanthology.org/2021.acl-long.1.pdf",
+      "source_page": "https://aclanthology.org/2021.acl-long.1/",
+      "license_note": "ACL Anthology post-2016 publication; CC BY 4.0 per anthology policy.",
+      "redistributable": true,
+      "sha256": "27cc690f382f46f70601a7453f705503ffa8664737d24bbfb99be7e84c4681bf",
+      "size_bytes": 528252,
+      "page_count": 13,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Two-column ACL long paper with inline citations, section hierarchy, and figure/table floats."
+    },
+    {
+      "path": "academic_columns/acl-transformer-xl.pdf",
+      "category": "academic_columns",
+      "title": "Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context",
+      "direct_url": "https://aclanthology.org/2020.acl-main.723.pdf",
+      "source_page": "https://aclanthology.org/2020.acl-main.723/",
+      "license_note": "ACL Anthology post-2016 publication; CC BY 4.0 per anthology policy.",
+      "redistributable": true,
+      "sha256": "48ff025b9031958bb0c853ea1929851ee7190142d84ae754bcd9a3cd2e7be128",
+      "size_bytes": 891229,
+      "page_count": 14,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Single-column ACL paper with algorithm blocks, performance tables, and mathematical notation."
+    },
+    {
+      "path": "academic_columns/acl-2022-long-1.pdf",
+      "category": "academic_columns",
+      "title": "ACL 2022 Long Paper #1 (Anthology lead paper)",
+      "direct_url": "https://aclanthology.org/2022.acl-long.1.pdf",
+      "source_page": "https://aclanthology.org/2022.acl-long.1/",
+      "license_note": "ACL Anthology post-2016 publication; CC BY 4.0 per anthology policy.",
+      "redistributable": true,
+      "sha256": "51f6de7008965f7bd95bdefaa55cc48ca5e90e34a2b50405f921f03f319d2a6d",
+      "size_bytes": 1692369,
+      "page_count": 15,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Two-column ACL long paper mixing narrative text, numbered equations, and multi-page references."
+    },
+    {
+      "path": "academic_columns/acl-llm-survey-long.pdf",
+      "category": "academic_columns",
+      "title": "A Survey of Large Language Models",
+      "direct_url": "https://aclanthology.org/2023.acl-long.1.pdf",
+      "source_page": "https://aclanthology.org/2023.acl-long.1/",
+      "license_note": "ACL Anthology post-2016 publication; CC BY 4.0 per anthology policy.",
+      "redistributable": true,
+      "sha256": "47bb72521ad1fa454acc5156b857d2c2c18d01d842fc957e49e2212d8a45e2a1",
+      "size_bytes": 4602729,
+      "page_count": 21,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Wide two-column survey with taxonomy tables, footnotes, and very long reference list."
+    },
+    {
+      "path": "academic_columns/arxiv-attention-transformer.pdf",
+      "category": "academic_columns",
+      "title": "Attention Is All You Need",
+      "direct_url": "https://arxiv.org/pdf/1706.03762.pdf",
+      "source_page": "https://arxiv.org/abs/1706.03762",
+      "license_note": "arXiv.org perpetual non-exclusive license; authors grant redistribution under arXiv license terms.",
+      "redistributable": true,
+      "sha256": "bdfaa68d8984f0dc02beaca527b76f207d99b666d31d1da728ee0728182df697",
+      "size_bytes": 2215244,
+      "page_count": 15,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Single-column NeurIPS-style preprint with architecture diagrams, matrix equations, and result tables."
+    },
+    {
+      "path": "academic_columns/arxiv-clip.pdf",
+      "category": "academic_columns",
+      "title": "Learning Transferable Visual Models From Natural Language Supervision (CLIP)",
+      "direct_url": "https://arxiv.org/pdf/2103.00020.pdf",
+      "source_page": "https://arxiv.org/abs/2103.00020",
+      "license_note": "arXiv.org perpetual non-exclusive license; paper metadata lists CC BY 4.0 on arXiv abstract page.",
+      "redistributable": true,
+      "sha256": "6478b6e571a7d6fcd846d8ef77bfd60c285f1986abb8f475eedc43de403074f5",
+      "size_bytes": 6813639,
+      "page_count": 48,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Two-column arXiv preprint with multi-panel figures, hyperparameter tables, and appendix proofs."
+    },
+    {
+      "path": "academic_columns/arxiv-gpt3.pdf",
+      "category": "academic_columns",
+      "title": "Language Models are Few-Shot Learners (GPT-3)",
+      "direct_url": "https://arxiv.org/pdf/2005.14165.pdf",
+      "source_page": "https://arxiv.org/abs/2005.14165",
+      "license_note": "arXiv.org perpetual non-exclusive license; authors grant redistribution under arXiv license terms.",
+      "redistributable": true,
+      "sha256": "97fd272f1fdfc18677462d0292f5fbf26ca86b4d1b485c2dba03269b643a0e83",
+      "size_bytes": 6768044,
+      "page_count": 75,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Long two-column paper with extensive benchmark tables, prompt examples, and 70+ pages of appendices."
+    },
+    {
+      "path": "gov_longform/crpt-116hrpt1.pdf",
+      "category": "gov_longform",
+      "title": "House Report 116-1 (116th Congress, Report 1)",
+      "direct_url": "https://www.govinfo.gov/content/pkg/CRPT-116hrpt1/pdf/CRPT-116hrpt1.pdf",
+      "source_page": "https://www.govinfo.gov/app/details/CRPT-116hrpt1",
+      "license_note": "GovInfo US federal publication; works of the US government are public domain.",
+      "redistributable": true,
+      "sha256": "f477e84c5e8304e620ca11f3594439291246226d1bf847c0b297984272a5c0c9",
+      "size_bytes": 112075,
+      "page_count": 4,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Short congressional committee report with numbered sections and formal legislative headers."
+    },
+    {
+      "path": "gov_longform/crec-2024-01-02.pdf",
+      "category": "gov_longform",
+      "title": "Congressional Record, Vol. 170, No. 1 (January 2, 2024)",
+      "direct_url": "https://www.govinfo.gov/content/pkg/CREC-2024-01-02/pdf/CREC-2024-01-02.pdf",
+      "source_page": "https://www.govinfo.gov/app/details/CREC-2024-01-02",
+      "license_note": "GovInfo US federal publication; works of the US government are public domain.",
+      "redistributable": true,
+      "sha256": "be43d11e7f5ffdab2dd9387f742960fa63c9d12942eb41d297883ad8761878a5",
+      "size_bytes": 927298,
+      "page_count": 10,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Daily Congressional Record issue with multi-column speech transcripts and procedural headings."
+    },
+    {
+      "path": "gov_longform/usreports-218-watson.pdf",
+      "category": "gov_longform",
+      "title": "Watson v. Maryland, 218 U.S. 173",
+      "direct_url": "https://www.govinfo.gov/content/pkg/USREPORTS-218/pdf/USREPORTS-218-173.pdf",
+      "source_page": "https://www.govinfo.gov/app/details/USREPORTS-218/USREPORTS-218-173/context",
+      "license_note": "GovInfo federal judicial publication; US government works are generally public domain.",
+      "redistributable": true,
+      "sha256": "f7aebbf60b5cab453fbadc75f8d61d79e83ebca03bfc1414cbe139ccae5684b1",
+      "size_bytes": 1565096,
+      "page_count": 8,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Supreme Court opinion with narrow page geometry, legal citations, and scan-backed text layers."
+    },
+    {
+      "path": "gov_longform/uscode-title35-patents.pdf",
+      "category": "gov_longform",
+      "title": "United States Code, Title 35 \u2014 Patents (2022 edition)",
+      "direct_url": "https://www.govinfo.gov/content/pkg/USCODE-2022-title35/pdf/USCODE-2022-title35.pdf",
+      "source_page": "https://www.govinfo.gov/app/details/USCODE-2022-title35",
+      "license_note": "GovInfo US Code compilation; US government work, public domain.",
+      "redistributable": true,
+      "sha256": "b84ce4a901c24b37bd2074c9d14451818aec151e54e5f04050aec77877f4bd15",
+      "size_bytes": 748499,
+      "page_count": 148,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Statutory codification with numbered sections, nested subsections, and amendment notes."
+    },
+    {
+      "path": "gov_longform/budget-2025.pdf",
+      "category": "gov_longform",
+      "title": "Budget of the United States Government, Fiscal Year 2025",
+      "direct_url": "https://www.govinfo.gov/content/pkg/BUDGET-2025-BUD/pdf/BUDGET-2025-BUD.pdf",
+      "source_page": "https://www.govinfo.gov/app/details/BUDGET-2025-BUD",
+      "license_note": "GovInfo US federal budget document; public domain as US government work.",
+      "redistributable": true,
+      "sha256": "3f1df41cfa3cebfd675b2a6ed673b6f665e0848c293d8d3bb5ab1815a0bae36b",
+      "size_bytes": 2504695,
+      "page_count": 188,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Executive budget volume with tables, charts, narrative chapters, and agency appendices."
+    },
+    {
+      "path": "gov_longform/fr-2024-01-02.pdf",
+      "category": "gov_longform",
+      "title": "Federal Register, Vol. 89, No. 1 (January 2, 2024)",
+      "direct_url": "https://www.govinfo.gov/content/pkg/FR-2024-01-02/pdf/FR-2024-01-02.pdf",
+      "source_page": "https://www.govinfo.gov/app/details/FR-2024-01-02",
+      "license_note": "GovInfo Federal Register issue; US government work, public domain.",
+      "redistributable": true,
+      "sha256": "46b38e22fc0d71abc52428178620548fe7152e3ac1d099864a12965e7f39401b",
+      "size_bytes": 13257131,
+      "page_count": 229,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Full Federal Register issue with agency rules, proposed rules, notices, and dense tabular material."
+    },
+    {
+      "path": "gov_longform/erp-2024.pdf",
+      "category": "gov_longform",
+      "title": "Economic Report of the President, 2024",
+      "direct_url": "https://www.govinfo.gov/content/pkg/ERP-2024/pdf/ERP-2024.pdf",
+      "source_page": "https://www.govinfo.gov/app/details/ERP-2024",
+      "license_note": "GovInfo Economic Report of the President; US government work, public domain.",
+      "redistributable": true,
+      "sha256": "2f8bf287fab050bc3213a0a53feac974c6a0b1862193c59d8530453555ff3aa1",
+      "size_bytes": 5170016,
+      "page_count": 487,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Multi-chapter economic policy report with charts, statistical tables, and footnoted analysis."
+    },
+    {
+      "path": "gov_longform/statute-137-volume.pdf",
+      "category": "gov_longform",
+      "title": "United States Statutes at Large, Volume 137 (118th Congress)",
+      "direct_url": "https://www.govinfo.gov/content/pkg/STATUTE-137/pdf/STATUTE-137.pdf",
+      "source_page": "https://www.govinfo.gov/app/details/STATUTE-137",
+      "license_note": "GovInfo Statutes at Large volume; US government work, public domain.",
+      "redistributable": true,
+      "sha256": "e801db155a8dfbf8f21af9d42b8e486b9451a150b31f9e384ad1f5b42a2e97d6",
+      "size_bytes": 16997946,
+      "page_count": 1496,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Very large bound statutory volume (~1500 pages) with public laws, enacting clauses, and marginal headers."
+    },
+    {
+      "path": "multilingual/eu-com-2020-0065-fr.pdf",
+      "category": "multilingual",
+      "title": "Communication COM(2020) 0065 \u2014 White Paper on Artificial Intelligence (French)",
+      "direct_url": "https://www.europarl.europa.eu/RegData/docs_autres_institutions/commission_europeenne/com/2020/0065/COM_COM(2020)0065_FR.pdf",
+      "source_page": "https://www.europarl.europa.eu/RegData/docs_autres_institutions/commission_europeenne/com/2020/0065/",
+      "license_note": "European Commission publication via Europarl; EU reuse policy permits reuse with attribution (Commission copyright with reuse exceptions).",
+      "redistributable": true,
+      "sha256": "fe52adf2b3ca484ff27a68876c4cb74246f20b8802e33fd86d86d56293c612dc",
+      "size_bytes": 938364,
+      "page_count": 31,
+      "languages": [
+        "fr"
+      ],
+      "expected_shape": "French EU policy communication with numbered recitals, bullet lists, and institutional letterhead."
+    },
+    {
+      "path": "multilingual/eu-com-2020-0065-de.pdf",
+      "category": "multilingual",
+      "title": "Communication COM(2020) 0065 \u2014 Wei\u00dfbuch \u00fcber K\u00fcnstliche Intelligenz (German)",
+      "direct_url": "https://www.europarl.europa.eu/RegData/docs_autres_institutions/commission_europeenne/com/2020/0065/COM_COM(2020)0065_DE.pdf",
+      "source_page": "https://www.europarl.europa.eu/RegData/docs_autres_institutions/commission_europeenne/com/2020/0065/",
+      "license_note": "European Commission publication via Europarl; EU reuse policy permits reuse with attribution.",
+      "redistributable": true,
+      "sha256": "4c6fb59e47567821e021253545c1da87d40cf67a8e01b2e62c88336019555ee7",
+      "size_bytes": 857190,
+      "page_count": 32,
+      "languages": [
+        "de"
+      ],
+      "expected_shape": "German EU policy white paper with compound nouns, section numbering, and formal Commission layout."
+    },
+    {
+      "path": "multilingual/eu-com-2021-0206-es.pdf",
+      "category": "multilingual",
+      "title": "Communication COM(2021) 0206 \u2014 European Pillar of Social Rights Action Plan (Spanish)",
+      "direct_url": "https://www.europarl.europa.eu/RegData/docs_autres_institutions/commission_europeenne/com/2021/0206/COM_COM(2021)0206_ES.pdf",
+      "source_page": "https://www.europarl.europa.eu/RegData/docs_autres_institutions/commission_europeenne/com/2021/0206/",
+      "license_note": "European Commission publication via Europarl; EU reuse policy permits reuse with attribution.",
+      "redistributable": true,
+      "sha256": "c14980f00ec99dcb50268c28424667b2097781f5d53d99ea646356385cd62896",
+      "size_bytes": 1319086,
+      "page_count": 120,
+      "languages": [
+        "es"
+      ],
+      "expected_shape": "Long Spanish EU policy document with action-plan tables, targets, and multi-page annexes."
+    },
+    {
+      "path": "multilingual/japan-mhlw-whitepaper-2023.pdf",
+      "category": "multilingual",
+      "title": "Annual Health, Labour and Welfare Report 2023 (\u539a\u751f\u52b4\u50cd\u767d\u66f8), Japan MHLW",
+      "direct_url": "https://www.mhlw.go.jp/wp/hakusyo/kousei/23/dl/1-01.pdf",
+      "source_page": "https://www.mhlw.go.jp/wp/hakusyo/kousei/23/index.html",
+      "license_note": "Japanese government white paper; copyright held by MHLW with no explicit redistribution grant found \u2014 treat as local test fixture only.",
+      "redistributable": false,
+      "sha256": "6bea50c4aea297996cff466159284a6533e98f8a3d1a14a055a1f517f7204c30",
+      "size_bytes": 35555837,
+      "page_count": 87,
+      "languages": [
+        "ja"
+      ],
+      "expected_shape": "Large CJK government white paper with vertical/horizontal mixed layout, statistical tables, and ruby annotations."
+    },
+    {
+      "path": "multilingual/wikipedia-udhr-ar.pdf",
+      "category": "multilingual",
+      "title": "Universal Declaration of Human Rights (Arabic, rendered from ar.wikipedia.org)",
+      "direct_url": "https://ar.wikipedia.org/api/rest_v1/page/pdf/%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86_%D8%A7%D9%84%D8%B9%D8%A7%D9%84%D9%85%D9%8A_%D9%84%D8%AD%D9%82%D9%88%D9%82_%D8%A7%D9%84%D8%A5%D9%86%D8%B3%D8%A7%D9%86",
+      "source_page": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86_%D8%A7%D9%84%D8%B9%D8%A7%D9%84%D9%85%D9%8A_%D9%84%D8%AD%D9%82%D9%88%D9%82_%D8%A7%D9%84%D8%A5%D9%86%D8%B3%D8%A7%D9%86",
+      "license_note": "Wikipedia article text under CC BY-SA 3.0; PDF generated by Wikimedia REST API. Not an official UN translation.",
+      "redistributable": true,
+      "sha256": "48f2f9d27a1e23392e9921b69d3185129393a13a76da4f837fa12c3516f29a44",
+      "size_bytes": 334470,
+      "page_count": 6,
+      "languages": [
+        "ar"
+      ],
+      "expected_shape": "RTL Arabic article PDF with right-aligned paragraphs, article sections, and mixed Latin numerals."
+    },
+    {
+      "path": "multilingual/canada-boc-mpr-2024-01-en.pdf",
+      "category": "multilingual",
+      "title": "Bank of Canada Monetary Policy Report \u2014 January 2024 (English)",
+      "direct_url": "https://www.bankofcanada.ca/wp-content/uploads/2024/01/mpr-2024-01-24.pdf",
+      "source_page": "https://www.bankofcanada.ca/publications/mpr/mpr-2024-01-24/",
+      "license_note": "Bank of Canada publication; Open Government Licence \u2013 Canada applies to government of Canada works.",
+      "redistributable": true,
+      "sha256": "160707e17f26004ba0bdd23b5e67a1ef955eef86054347deae9268aa76a1cd61",
+      "size_bytes": 1353370,
+      "page_count": 29,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "Bilingual-institution English report with economic charts, forecast tables, and boxed summaries."
+    },
+    {
+      "path": "multilingual/canada-boc-rpm-2024-01-24.pdf",
+      "category": "multilingual",
+      "title": "Banque du Canada Rapport sur la politique mon\u00e9taire \u2014 janvier 2024 (French)",
+      "direct_url": "https://www.bankofcanada.ca/wp-content/uploads/2024/01/rpm-2024-01-24.pdf",
+      "source_page": "https://www.bankofcanada.ca/fr/publications/rpm/rpm-2024-01-24/",
+      "license_note": "Bank of Canada publication; Open Government Licence \u2013 Canada applies to government of Canada works.",
+      "redistributable": true,
+      "sha256": "c58c9c962db0cf8481bc26c7fa5cca9f662242c2aabc762ae46ab03c1d4f44d2",
+      "size_bytes": 1372547,
+      "page_count": 30,
+      "languages": [
+        "fr"
+      ],
+      "expected_shape": "Official French counterpart to the BoC Monetary Policy Report with mirrored charts and translated narrative."
+    },
+    {
+      "path": "multilingual/fao-i4444-en.pdf",
+      "category": "multilingual",
+      "title": "The State of Food and Agriculture 2022 (FAO)",
+      "direct_url": "https://www.fao.org/3/i4444en/i4444en.pdf",
+      "source_page": "https://www.fao.org/documents/card/en/c/i4444en/",
+      "license_note": "FAO publication; FAO copyright with open access for non-commercial use and attribution required per FAO terms.",
+      "redistributable": true,
+      "sha256": "00e0d9ed414d35430fd5eca0d91c1b738d1471e9bdea7a59d976ed63d75a709c",
+      "size_bytes": 2451244,
+      "page_count": 84,
+      "languages": [
+        "en"
+      ],
+      "expected_shape": "UN agency flagship report with infographics, country data tables, and chapter-level sidebars."
+    }
+  ],
+  "failed_sources": [
+    {
+      "url": "https://www.govinfo.gov/content/pkg/CHRG-116hhrg44355/pdf/CHRG-116hhrg44355.pdf",
+      "category": "gov_longform",
+      "reason": "HTTP 200 but HTML error page instead of PDF (package not found or unavailable at direct PDF path)."
+    },
+    {
+      "url": "https://www.govinfo.gov/content/pkg/CHRG-117hhrg47865/pdf/CHRG-117hhrg47865.pdf",
+      "category": "gov_longform",
+      "reason": "HTTP 200 but HTML error page instead of PDF."
+    },
+    {
+      "url": "https://www.govinfo.gov/content/pkg/CHRG-118hhrg48901/pdf/CHRG-118hhrg48901.pdf",
+      "category": "gov_longform",
+      "reason": "HTTP 200 but HTML error page instead of PDF."
+    },
+    {
+      "url": "https://www.govinfo.gov/content/pkg/GAOREPORTS-24-106622/pdf/GAOREPORTS-24-106622.pdf",
+      "category": "gov_longform",
+      "reason": "HTTP 200 but HTML error page instead of PDF (GAO report package ID may be incorrect)."
+    },
+    {
+      "url": "https://www.gao.gov/assets/gao-24-106622.pdf",
+      "category": "gov_longform",
+      "reason": "HTTP 403 Forbidden (bot blocking on gao.gov assets)."
+    },
+    {
+      "url": "https://www.cbo.gov/system/files/2024-02/57449-Inflation-Reduction-Act.pdf",
+      "category": "gov_longform",
+      "reason": "HTTP 403 Forbidden (cbo.gov blocks automated download)."
+    },
+    {
+      "url": "https://op.europa.eu/o/opportal-service/download-handler?identifier=pdf&format=PDF&language=en&productionSystem=cellar&part=&pid=publication/3a665a1d-8f0e-11ec-8c6a-01aa75ed71a1",
+      "category": "multilingual",
+      "reason": "HTTP 200 but HTML portal page instead of PDF (requires session/cookie flow)."
+    },
+    {
+      "url": "https://digitallibrary.un.org/record/4000153/files/DP-2023-01-Overview-EN.pdf",
+      "category": "multilingual",
+      "reason": "HTTP 200 but HTML wrapper page instead of direct PDF bytes."
+    },
+    {
+      "url": "https://documents.un.org/doc/undoc/gen/n23/080/04/pdf/n2308004.pdf",
+      "category": "multilingual",
+      "reason": "HTTP 502 Bad Gateway from UN documents portal."
+    },
+    {
+      "url": "https://publications.gc.ca/collections/collection_2024/eccc/En4-488-2023-eng.pdf",
+      "category": "multilingual",
+      "reason": "HTTP 200 but HTML redirect/landing page (publications.gc.ca requires browser navigation)."
+    },
+    {
+      "url": "https://www.ohchr.org/sites/default/files/UDHR/Documents/UDHR_Arabic.pdf",
+      "category": "multilingual",
+      "reason": "HTTP 404 Not Found (URL path changed or removed)."
+    },
+    {
+      "url": "https://www.fao.org/3/cd0544ar/cd0544ar.pdf",
+      "category": "multilingual",
+      "reason": "HTTP 404 Not Found (Arabic edition not published at expected FAO path)."
+    },
+    {
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32022R2554",
+      "category": "multilingual",
+      "reason": "HTTP 202 Accepted with empty body (async PDF generation; not ready within timeout)."
+    }
+  ]
+}

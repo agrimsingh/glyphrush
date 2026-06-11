@@ -9,6 +9,7 @@ import shutil
 import statistics
 import subprocess
 import sys
+import contextlib
 import time
 from pathlib import Path
 from typing import Callable
@@ -72,13 +73,14 @@ def bench_in_process(
     runs: int,
     fn: Callable[[], None],
 ) -> dict:
-    for _ in range(warmup):
-        fn()
-    samples: list[float] = []
-    for _ in range(runs):
-        start = time.perf_counter()
-        fn()
-        samples.append(time.perf_counter() - start)
+    with silenced_stdout():
+        for _ in range(warmup):
+            fn()
+        samples: list[float] = []
+        for _ in range(runs):
+            start = time.perf_counter()
+            fn()
+            samples.append(time.perf_counter() - start)
     return summarize(parser, "in_process", samples)
 
 
@@ -206,6 +208,22 @@ def run_selected(
     if parser == "opendataloader":
         return bench_subprocess(parser, warmup, runs, opendataloader_command(pdf))
     raise KeyError(parser)
+
+
+@contextlib.contextmanager
+def silenced_stdout():
+    """Parser libraries (pymupdf4llm's OCR notices) print to stdout at the C
+    level; redirect fd 1 to /dev/null around in-process calls so the report
+    JSON stays clean."""
+    saved = os.dup(1)
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull, 1)
+    try:
+        yield
+    finally:
+        os.dup2(saved, 1)
+        os.close(saved)
+        os.close(devnull)
 
 
 def main() -> int:

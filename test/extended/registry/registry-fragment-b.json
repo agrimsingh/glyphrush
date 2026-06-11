@@ -1,0 +1,329 @@
+{
+  "documents": [
+    {
+      "path": "forms/irs-fw4-2025.pdf",
+      "category": "forms",
+      "title": "IRS Form W-4, Employee's Withholding Certificate, 2025",
+      "direct_url": "https://www.irs.gov/pub/irs-pdf/fw4.pdf",
+      "source_page": "https://www.irs.gov/forms-pubs/about-form-w-4",
+      "license_note": "IRS / US federal form; works of the US government are generally public domain.",
+      "sha256": "92444d8856ce55d9e25dca8b6d1420634fc68b11e1ab1f760916ea29ddd312b2",
+      "size_bytes": 208845,
+      "expected_shape": "Fillable AcroForm with checkboxes, line numbers, withholding tables, and signature block.",
+      "page_count": 5
+    },
+    {
+      "path": "forms/irs-i1040-instructions-2025.pdf",
+      "category": "forms",
+      "title": "IRS Instructions for Form 1040, 2025 (General Instructions)",
+      "direct_url": "https://www.irs.gov/pub/irs-pdf/i1040gi.pdf",
+      "source_page": "https://www.irs.gov/forms-pubs/about-form-1040",
+      "license_note": "IRS / US federal publication; generally public domain.",
+      "sha256": "482e9c487c608f1bbeaceef35bc3c0933e8b35443cfff447e4279d590468364a",
+      "size_bytes": 4434643,
+      "expected_shape": "Multi-page instruction booklet mixing prose paragraphs, numbered steps, cross-references, and embedded tax tables.",
+      "page_count": 126
+    },
+    {
+      "path": "forms/irs-f941-2025.pdf",
+      "category": "forms",
+      "title": "IRS Form 941, Employer's Quarterly Federal Tax Return, 2025",
+      "direct_url": "https://www.irs.gov/pub/irs-pdf/f941.pdf",
+      "source_page": "https://www.irs.gov/forms-pubs/about-form-941",
+      "license_note": "IRS / US federal form; generally public domain.",
+      "sha256": "38a3d8cf7a455101d52543c8c48e66202bc25c189ead878627e35c797c88e2ad",
+      "size_bytes": 841648,
+      "expected_shape": "Flat quarterly tax form with ruled boxes, line-item amounts, and voucher stub.",
+      "page_count": 3
+    },
+    {
+      "path": "forms/irs-f1120-2024.pdf",
+      "category": "forms",
+      "title": "IRS Form 1120, U.S. Corporation Income Tax Return, 2024",
+      "direct_url": "https://www.irs.gov/pub/irs-pdf/f1120.pdf",
+      "source_page": "https://www.irs.gov/forms-pubs/about-form-1120",
+      "license_note": "IRS / US federal form; generally public domain.",
+      "sha256": "016c7fb4042a565c23a98014b17019af7ddc89e3260dd3f926b84d6688b7be6e",
+      "size_bytes": 340034,
+      "expected_shape": "Multi-page corporate return with schedules, checkboxes, and dense numeric line items.",
+      "page_count": 6
+    },
+    {
+      "path": "forms/gsa-sf1035-voucher.pdf",
+      "category": "forms",
+      "title": "GSA SF-1035, Public Voucher for Purchases and Services Other Than Personal",
+      "direct_url": "https://www.gsa.gov/system/files/SF1035-73.pdf",
+      "source_page": "https://www.gsa.gov/reference/forms/public-voucher-for-purchases-and-services-other-than-personal",
+      "license_note": "GSA / US federal standard form; generally public domain.",
+      "sha256": "2582789255291bf5ee0fc1073c0345b45e282454165637aa5cf25c1eeb39f32d",
+      "size_bytes": 610680,
+      "expected_shape": "Column-ruled voucher grid with quantity, unit price, and amount columns; AcroForm fields.",
+      "page_count": 1
+    },
+    {
+      "path": "forms/opm-sf2809-health-benefits.pdf",
+      "category": "forms",
+      "title": "OPM SF-2809, Health Benefits Election Form",
+      "direct_url": "https://www.opm.gov/forms/pdfimage/SF2809.pdf",
+      "source_page": "https://www.opm.gov/forms/standard-forms/sf2809/",
+      "license_note": "OPM / US federal standard form; generally public domain.",
+      "sha256": "3c03f904312d842dcd8350a03d7ffdd347680853e35587119260786a4939e310",
+      "size_bytes": 152591,
+      "expected_shape": "Multi-page benefits election form with plan tables, checkboxes, and fillable fields.",
+      "page_count": 14
+    },
+    {
+      "path": "scanned/uspto-us4070811-pressure-sensor.pdf",
+      "category": "scanned",
+      "title": "US4070811, Pressure sensor with apertured member for isolating diaphragm",
+      "direct_url": "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/4070811",
+      "source_page": "https://ppubs.uspto.gov/pubwebapp/static/pages/ppubsbasic.html",
+      "license_note": "USPTO patent publication; US government public record. Bulk redistribution terms should be verified before committing binaries.",
+      "sha256": "a5530354bf354c50cfeb5b6fbd7e3a144cf04588fb272d16f8edfefae7beac68",
+      "size_bytes": 361893,
+      "expected_shape": "Short pre-1990 image-only patent (5 pages) with CCITT page scans, column text, and drawing sheets.",
+      "page_count": 5
+    },
+    {
+      "path": "scanned/uspto-us3878504-magnetic-recording.pdf",
+      "category": "scanned",
+      "title": "US3878504, Magnetic recording medium with metallic magnetic powder",
+      "direct_url": "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/3878504",
+      "source_page": "https://ppubs.uspto.gov/pubwebapp/static/pages/ppubsbasic.html",
+      "license_note": "USPTO patent publication; US government public record.",
+      "sha256": "72af6def5b286c485064c1eb20abebd3daac58b7e684706ce3303dda26d54a36",
+      "size_bytes": 490028,
+      "expected_shape": "Medium-length pre-1990 image patent (7 pages) with typed specification and chemical-formula drawings.",
+      "page_count": 7
+    },
+    {
+      "path": "scanned/uspto-us4184040-optical-fiber.pdf",
+      "category": "scanned",
+      "title": "US4184040, Method of producing optical fiber preform",
+      "direct_url": "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/4184040",
+      "source_page": "https://ppubs.uspto.gov/pubwebapp/static/pages/ppubsbasic.html",
+      "license_note": "USPTO patent publication; US government public record.",
+      "sha256": "5885b1c68995398aecd77e451de8d5ce2b770fc458acc19e64837bd7990a6deb",
+      "size_bytes": 346502,
+      "expected_shape": "Compact pre-1990 image patent (4 pages) with process-flow drawings.",
+      "page_count": 4
+    },
+    {
+      "path": "scanned/uspto-us4523187-brake-system.pdf",
+      "category": "scanned",
+      "title": "US4523187, Anti-lock brake control system",
+      "direct_url": "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/4523187",
+      "source_page": "https://ppubs.uspto.gov/pubwebapp/static/pages/ppubsbasic.html",
+      "license_note": "USPTO patent publication; US government public record.",
+      "sha256": "f169414e578840e9004a1c89a67a24703b6b86e05e5f471f52f384971718df4d",
+      "size_bytes": 661596,
+      "expected_shape": "Longer pre-1990 image patent (10 pages) with multi-sheet mechanical drawings and claims.",
+      "page_count": 10
+    },
+    {
+      "path": "scanned/uspto-us4743676-discharge-lamp.pdf",
+      "category": "scanned",
+      "title": "US4743676, Discharge lamp having amorphous metal alloy electrode",
+      "direct_url": "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/4743676",
+      "source_page": "https://ppubs.uspto.gov/pubwebapp/static/pages/ppubsbasic.html",
+      "license_note": "USPTO patent publication; US government public record.",
+      "sha256": "dd64d46c23accdd300bccad83e730f25b89061549e2c82277e1aa738477996a8",
+      "size_bytes": 507253,
+      "expected_shape": "Late-1980s image patent (6 pages) with electro-optical schematic figures.",
+      "page_count": 6
+    },
+    {
+      "path": "tables_heavy/omb-ap-16-1-budget-by-agency.pdf",
+      "category": "tables_heavy",
+      "title": "OMB FY2027 Analytical Perspectives Table 16-1, Federal Budget by Agency and Account",
+      "direct_url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/ap_16-1_fy2027.pdf",
+      "source_page": "https://www.whitehouse.gov/omb/information-resources/budget/analytical-perspectives/",
+      "license_note": "White House / OMB federal publication; generally public domain.",
+      "sha256": "ef5d0d052a6d56cf9d897dae15a652512d1a4ec6da0b95579913927bdfa21903",
+      "size_bytes": 2247644,
+      "expected_shape": "Very long landscape PDF (500+ pages) dominated by repeated budget-account tables with wrapped labels and numeric columns.",
+      "page_count": 516
+    },
+    {
+      "path": "tables_heavy/omb-ap-10-expenditures.pdf",
+      "category": "tables_heavy",
+      "title": "OMB FY2027 Analytical Perspectives, Federal Outlays by Function and Subfunction",
+      "direct_url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/ap_10_expenditures_fy2027.pdf",
+      "source_page": "https://www.whitehouse.gov/omb/information-resources/budget/analytical-perspectives/",
+      "license_note": "White House / OMB federal publication; generally public domain.",
+      "sha256": "e983c6b6e9c1fa0c6c0b083cfe6f25ea61cdede36bced2f12f17145cc6965a30",
+      "size_bytes": 559137,
+      "expected_shape": "Multi-page budget chapter with expenditure tables, subtotals, and footnotes.",
+      "page_count": 38
+    },
+    {
+      "path": "tables_heavy/omb-ap-3-investment.pdf",
+      "category": "tables_heavy",
+      "title": "OMB FY2027 Analytical Perspectives, Federal Investment",
+      "direct_url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/ap_3_investment_fy2027.pdf",
+      "source_page": "https://www.whitehouse.gov/omb/information-resources/budget/analytical-perspectives/",
+      "license_note": "White House / OMB federal publication; generally public domain.",
+      "sha256": "de9927eae0159a955d9801b6a8243237fd6e6f019666a7b1721ec275f28ae893",
+      "size_bytes": 289582,
+      "expected_shape": "Short analytical chapter with investment-spending tables and explanatory prose.",
+      "page_count": 6
+    },
+    {
+      "path": "tables_heavy/treasury-mts-202501.pdf",
+      "category": "tables_heavy",
+      "title": "Treasury Monthly Treasury Statement, January 2025",
+      "direct_url": "https://fiscaldata.treasury.gov/static-data/published-reports/mts/MonthlyTreasuryStatement_202501.pdf",
+      "source_page": "https://fiscaldata.treasury.gov/datasets/monthly-treasury-statement/",
+      "license_note": "US Department of the Treasury publication; generally public domain.",
+      "sha256": "6c39f80675b641970bcadca9372872c3d50f675604429de80a5e4e709dc1a3e9",
+      "size_bytes": 2091254,
+      "expected_shape": "Monthly fiscal report with receipt/outlay summary tables, account schedules, and debt tables.",
+      "page_count": 40
+    },
+    {
+      "path": "tables_heavy/census-p60-280-income-poverty.pdf",
+      "category": "tables_heavy",
+      "title": "Census Bureau P60-280, Income and Poverty in the United States: 2023",
+      "direct_url": "https://www.census.gov/content/dam/Census/library/publications/2023/demo/p60-280.pdf",
+      "source_page": "https://www.census.gov/library/publications/2024/demo/p60-280.html",
+      "license_note": "US Census Bureau publication; generally public domain.",
+      "sha256": "6c5d9798c31150da219cbb3cf35d478cb246e1d874eaf05f0b511336fb3b4537",
+      "size_bytes": 2724508,
+      "expected_shape": "Statistical report with demographic tables, time series, and chart/table hybrids.",
+      "page_count": 67
+    },
+    {
+      "path": "tables_heavy/fed-g17-industrial-production.pdf",
+      "category": "tables_heavy",
+      "title": "Federal Reserve G.17, Industrial Production and Capacity Utilization",
+      "direct_url": "https://www.federalreserve.gov/releases/g17/current/g17.pdf",
+      "source_page": "https://www.federalreserve.gov/releases/g17/",
+      "license_note": "Board of Governors of the Federal Reserve System statistical release; US government work, generally public domain.",
+      "sha256": "30056f96d8b22be92b702d703a931a90bb434b9c7bf936bf3d5ae4ff535186c2",
+      "size_bytes": 296886,
+      "expected_shape": "Statistical release with seasonally adjusted index tables, sector breakdowns, and revision notes.",
+      "page_count": 19
+    },
+    {
+      "path": "pathological/verapdf-isartor-cmap-fail-a.pdf",
+      "category": "pathological",
+      "title": "veraPDF Isartor 6.3.3.3 CMaps fail fixture A",
+      "direct_url": "https://raw.githubusercontent.com/veraPDF/veraPDF-corpus/staging/Isartor%20test%20files/PDFA-1b/6.3%20Fonts/6.3.3%20Composite%20fonts/6.3.3.3%20CMaps/isartor-6-3-3-3-t01-fail-a.pdf",
+      "source_page": "https://github.com/veraPDF/veraPDF-corpus",
+      "license_note": "veraPDF corpus is CC BY 4.0 per repository README.",
+      "sha256": "5e62d4a72a6b1a93110800be3b2ae47534d6564beea4baf2cd5501277ee17787",
+      "size_bytes": 6951,
+      "expected_shape": "Tiny PDF/A-1b CMap conformance failure for composite-font character mapping.",
+      "page_count": 1
+    },
+    {
+      "path": "pathological/verapdf-structure-header-fail-a.pdf",
+      "category": "pathological",
+      "title": "veraPDF 6.1.2 File header fail fixture A",
+      "direct_url": "https://raw.githubusercontent.com/veraPDF/veraPDF-corpus/staging/PDF_A-1b/6.1%20File%20structure/6.1.2%20File%20header/veraPDF%20test%20suite%206-1-2-t01-fail-a.pdf",
+      "source_page": "https://github.com/veraPDF/veraPDF-corpus",
+      "license_note": "veraPDF corpus is CC BY 4.0 per repository README.",
+      "sha256": "058e72e93dae4cec3004b3dcfb1f9aebcd084538bb04cb57a5cd1375d4936920",
+      "size_bytes": 9393,
+      "expected_shape": "Tiny PDF/A-1b file-header structure failure; file begins with leading whitespace before %PDF- header.",
+      "page_count": 1
+    },
+    {
+      "path": "pathological/verapdf-font-tounicode-fail-a.pdf",
+      "category": "pathological",
+      "title": "veraPDF 6.2.11.7.3 ToUnicode / Unicode character map fail fixture A",
+      "direct_url": "https://raw.githubusercontent.com/veraPDF/veraPDF-corpus/staging/PDF_A-2a/6.2%20Graphics/6.2.11%20Fonts/6.2.11.7%20Unicode%20character%20maps/6.2.11.7.3%20Level%20A%20conformance/veraPDF%20test%20suite%206-2-11-7-3-t01-fail-a.pdf",
+      "source_page": "https://github.com/veraPDF/veraPDF-corpus",
+      "license_note": "veraPDF corpus is CC BY 4.0 per repository README.",
+      "sha256": "a605a9c21e3c840fe1d020a4ffddd4af282b96968792719a649c940c5e34429c",
+      "size_bytes": 17056,
+      "expected_shape": "Tiny PDF/A-2a font ToUnicode map failure.",
+      "page_count": 1
+    },
+    {
+      "path": "pathological/verapdf-tagged-pdf-fail-a.pdf",
+      "category": "pathological",
+      "title": "veraPDF 6.8.2.2 Tagged PDF mark information dictionary fail fixture A",
+      "direct_url": "https://raw.githubusercontent.com/veraPDF/veraPDF-corpus/staging/PDF_A-1a/6.8%20Logical%20structure/6.8.2%20Tagged%20PDF/6.8.2.2%20Mark%20information%20dictionary/veraPDF%20test%20suite%206-8-2-2-t01-fail-a.pdf",
+      "source_page": "https://github.com/veraPDF/veraPDF-corpus",
+      "license_note": "veraPDF corpus is CC BY 4.0 per repository README.",
+      "sha256": "0309262185e032bb6ffdd8d87bec909743927d754696c855f0684c4f6d91e6a2",
+      "size_bytes": 3387,
+      "expected_shape": "Tiny tagged-PDF logical-structure failure with MarkInfo issues.",
+      "page_count": 1
+    },
+    {
+      "path": "pathological/verapdf-pdfa-header-pass-a.pdf",
+      "category": "pathological",
+      "title": "veraPDF 6.1.2 File header pass fixture A (PDF/A-1b)",
+      "direct_url": "https://raw.githubusercontent.com/veraPDF/veraPDF-corpus/staging/PDF_A-1b/6.1%20File%20structure/6.1.2%20File%20header/veraPDF%20test%20suite%206-1-2-t01-pass-a.pdf",
+      "source_page": "https://github.com/veraPDF/veraPDF-corpus",
+      "license_note": "veraPDF corpus is CC BY 4.0 per repository README.",
+      "sha256": "66077f449d472a048e3bbf7192aa6d2b0b0ebd6b6d8a6f878f776f69424b6deb",
+      "size_bytes": 4048,
+      "expected_shape": "Tiny valid PDF/A-1b file-header conformance pass example.",
+      "page_count": 1
+    },
+    {
+      "path": "pathological/verapdf-tagged-pdf-pass-a.pdf",
+      "category": "pathological",
+      "title": "veraPDF 6.8.2.2 Tagged PDF pass fixture A",
+      "direct_url": "https://raw.githubusercontent.com/veraPDF/veraPDF-corpus/staging/PDF_A-1a/6.8%20Logical%20structure/6.8.2%20Tagged%20PDF/6.8.2.2%20Mark%20information%20dictionary/veraPDF%20test%20suite%206-8-2-2-t01-pass-a.pdf",
+      "source_page": "https://github.com/veraPDF/veraPDF-corpus",
+      "license_note": "veraPDF corpus is CC BY 4.0 per repository README.",
+      "sha256": "b5d194c0e6d91119f0f99354f3d1078877406b695cecf75fb0b5cb51b18c14fd",
+      "size_bytes": 3447,
+      "expected_shape": "Tiny valid tagged-PDF logical-structure pass example with MarkInfo.",
+      "page_count": 1
+    },
+    {
+      "path": "pathological/pdfassoc-simple-pdf20.pdf",
+      "category": "pathological",
+      "title": "PDF Association Simple PDF 2.0 file",
+      "direct_url": "https://raw.githubusercontent.com/pdf-association/pdf20examples/master/Simple%20PDF%202.0%20file.pdf",
+      "source_page": "https://github.com/pdf-association/pdf20examples",
+      "license_note": "PDF Association pdf20examples repository; examples are CC BY 4.0 per LICENSE.md.",
+      "sha256": "296d2a0b2ce19b606f29265694f194a754fbc61783982b5b8d730e8637482236",
+      "size_bytes": 5211,
+      "expected_shape": "Minimal PDF 2.0 baseline file exercising version header and basic object model.",
+      "page_count": 1
+    }
+  ],
+  "failed_sources": [
+    {
+      "url": "https://www.uscis.gov/sites/default/files/document/forms/i-9.pdf",
+      "category": "forms",
+      "reason": "HTTP 403 from Akamai; non-browser client blocked."
+    },
+    {
+      "url": "https://www.ssa.gov/forms/ssa-89.pdf",
+      "category": "forms",
+      "reason": "HTTP 403; SSA forms CDN blocks automated download."
+    },
+    {
+      "url": "https://www.gsa.gov/system/files/SF1199A-02.pdf",
+      "category": "forms",
+      "reason": "HTTP 404; GSA form filename pattern changed or form retired."
+    },
+    {
+      "url": "https://www.bls.gov/news.release/pdf/empsit.pdf",
+      "category": "tables_heavy",
+      "reason": "HTTP 403 from Akamai; BLS news release PDFs block non-browser clients."
+    },
+    {
+      "url": "https://archive.org/download/gutenberg_1342/1342.pdf",
+      "category": "scanned",
+      "reason": "HTTP 503 from archive.org; service unavailable during crawl window."
+    },
+    {
+      "url": "https://tile.loc.gov/storage-services/service/rbpe/rbpe/067/06701000/06701000.pdf",
+      "category": "scanned",
+      "reason": "LOC tile server returned empty/non-PDF response for direct PDF URL."
+    },
+    {
+      "url": "https://www.govinfo.gov/content/pkg/USREPORTS-390/pdf/USREPORTS-390-107.pdf",
+      "category": "scanned",
+      "reason": "GovInfo returned HTML error page (44 KB) instead of PDF for automated fetch."
+    }
+  ]
+}
