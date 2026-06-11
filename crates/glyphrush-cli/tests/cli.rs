@@ -13,6 +13,8 @@ use std::{
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
+use glyphrush_core::sha256_hex;
+
 #[cfg(feature = "pdfium")]
 #[derive(Debug)]
 struct RenderedOcrHttpObservation {
@@ -6550,7 +6552,7 @@ fn parse_with_cache_dir_reports_miss_then_hit_for_same_pdf() {
     let snapshot: Value =
         serde_json::from_slice(&fs::read(&cache_files[0]).unwrap()).expect("cache snapshot json");
     assert_eq!(snapshot["snapshot_version"], "glyphrush-cache-snapshot-v1");
-    assert_eq!(snapshot["cache_schema"], "glyphrush-cache-v42");
+    assert_eq!(snapshot["cache_schema"], "glyphrush-cache-v43");
     assert_eq!(
         snapshot["cache_key"],
         first["global_diagnostics"]["cache_key"]
@@ -6840,8 +6842,12 @@ fn cache_key_does_not_reuse_prior_schema_artifacts() {
         "glyphrush-cache-v41:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
         env!("CARGO_PKG_VERSION")
     ));
-    let expected_current_key = sha256_hex(format!(
+    let old_v42_key = sha256_hex(format!(
         "glyphrush-cache-v42:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
+        env!("CARGO_PKG_VERSION")
+    ));
+    let expected_current_key = sha256_hex(format!(
+        "glyphrush-cache-v43:glyphrush:{}:lopdf:lopdf-adapter-v0:{fingerprint}:no-sidecar:span-geometry=false",
         env!("CARGO_PKG_VERSION")
     ));
 
@@ -7090,6 +7096,12 @@ fn cache_key_does_not_reuse_prior_schema_artifacts() {
             .as_str()
             .expect("cache key is present"),
         old_v41_key
+    );
+    assert_ne!(
+        json["global_diagnostics"]["cache_key"]
+            .as_str()
+            .expect("cache key is present"),
+        old_v42_key
     );
     assert_eq!(
         json["global_diagnostics"]["cache_key"]
@@ -17545,12 +17557,6 @@ fn minimal_pdf_with_positioned_ruled_table_empty_cells() -> Vec<u8> {
     ]
     .join("\n");
     minimal_pdf_with_stream(&stream)
-}
-
-fn sha256_hex(bytes: impl AsRef<[u8]>) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(bytes.as_ref());
-    format!("{:x}", hasher.finalize())
 }
 
 fn expected_corpus_fingerprint(json: &Value) -> Value {

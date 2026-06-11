@@ -26,16 +26,15 @@ use glyphrush_core::{
     BBox, CacheStatus, DocumentArtifact, DocumentMetadata, ExtractedPage, ImageArtifact,
     LayoutBlockKind, LayoutTable, PageArtifact, PageDimensions, PageQuality, PageQualityReport,
     PageRoute, PageSignals, PageTimings, SpanProvenance, TextSpan, classify_page,
-    parse_extracted_pages,
+    parse_extracted_pages, sha256_hex,
 };
 #[cfg(feature = "pdfium")]
 use glyphrush_core::{
-    ExtractedImage, broken_encoding_ratio, combined_table_line_density, duplicate_char_ratio,
-    image_artifact_coverage_ratio, is_ruling_segment, positioned_bbox_overlap_ratio,
-    ruling_density,
+    ExtractedImage, ExtractedRulingLine, MAX_EXTRACTED_RULING_LINES, RULED_TABLE_SATURATION_SEGMENTS,
+    broken_encoding_ratio, combined_table_line_density, duplicate_char_ratio,
+    image_artifact_coverage_ratio, is_ruling_segment, positioned_bbox_overlap_ratio, ruling_density,
+    ruling_line_from_segment,
 };
-#[cfg(feature = "pdfium")]
-use glyphrush_core::{ExtractedRulingLine, RulingOrientation};
 #[cfg(any(test, feature = "pdfium"))]
 use glyphrush_core::{ExtractedTextSpan, normalize_text_for_span_check};
 use glyphrush_lopdf::{LopdfExtractionOptions, extract_page_by_index, extract_pages};
@@ -49,7 +48,6 @@ use pdfium_render::prelude::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 
 const LOPDF_BACKEND_NAME: &str = "lopdf";
 const LOPDF_BACKEND_VERSION: &str = "lopdf-adapter-v0";
@@ -70,9 +68,7 @@ const FEATURE_PARITY_REQUIRED_SPEED_CLAIMS: [(&str, f64); 2] =
     [("liteparse", 2.0), ("liteparse-no-ocr", 1.5)];
 #[cfg(feature = "pdfium")]
 const MAX_PDFIUM_TEXT_SEGMENT_NATIVE_TEXT_BYTES: u32 = 256 * 1024;
-#[cfg(feature = "pdfium")]
-const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
-const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v42";
+const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v43";
 const CACHE_SNAPSHOT_VERSION: &str = "glyphrush-cache-snapshot-v1";
 const DEFAULT_BASELINE_TIMEOUT_MS: u64 = 120_000;
 const DEFAULT_OCR_TIMEOUT_MS: u64 = 120_000;
@@ -3931,7 +3927,7 @@ fn pdfium_ocr_check_rendered_image_output(
                 wall_us,
                 render_us,
                 output_bytes: output.stdout.len() as u64,
-                stdout_sha256: Some(stdout_sha256(&output.stdout)),
+                stdout_sha256: Some(sha256_hex(&output.stdout)),
                 stdout_line_count: stdout_line_count(&output.stdout),
                 stdout_word_count: stdout_word_count(&output.stdout),
                 stderr_bytes: output.stderr.len() as u64,
@@ -4089,7 +4085,7 @@ fn pdfium_ocr_check_rendered_image_http_output(
                 wall_us,
                 render_us,
                 output_bytes: output_body.len() as u64,
-                stdout_sha256: Some(stdout_sha256(output_body)),
+                stdout_sha256: Some(sha256_hex(output_body)),
                 stdout_line_count: stdout_line_count(output_body),
                 stdout_word_count: stdout_word_count(output_body),
                 stderr_bytes: 0,
@@ -4202,7 +4198,7 @@ fn ocr_http_check_output(
                 wall_us: response.wall_us,
                 render_us: 0,
                 output_bytes: output_body.len() as u64,
-                stdout_sha256: Some(stdout_sha256(output_body)),
+                stdout_sha256: Some(sha256_hex(output_body)),
                 stdout_line_count: stdout_line_count(output_body),
                 stdout_word_count: stdout_word_count(output_body),
                 stderr_bytes: 0,
@@ -4285,7 +4281,7 @@ fn ocr_command_check_output(
                 wall_us: timed_output.wall_us,
                 render_us: 0,
                 output_bytes: output.stdout.len() as u64,
-                stdout_sha256: Some(stdout_sha256(&output.stdout)),
+                stdout_sha256: Some(sha256_hex(&output.stdout)),
                 stdout_line_count: stdout_line_count(&output.stdout),
                 stdout_word_count: stdout_word_count(&output.stdout),
                 stderr_bytes: output.stderr.len() as u64,
@@ -4361,7 +4357,7 @@ fn ocr_sidecar_check_output(
                 wall_us,
                 render_us: 0,
                 output_bytes: output.len() as u64,
-                stdout_sha256: Some(stdout_sha256(&output)),
+                stdout_sha256: Some(sha256_hex(&output)),
                 stdout_line_count: stdout_line_count(&output),
                 stdout_word_count: stdout_word_count(&output),
                 stderr_bytes: 0,
@@ -7143,7 +7139,7 @@ fn smoke_external_baseline_document_probe(
                 timeout_ms,
                 wall_us: timed_output.wall_us,
                 output_bytes: output.stdout.len() as u64,
-                stdout_sha256: Some(stdout_sha256(&output.stdout)),
+                stdout_sha256: Some(sha256_hex(&output.stdout)),
                 stdout_line_count: stdout_line_count(&output.stdout),
                 stdout_word_count: stdout_word_count(&output.stdout),
                 stderr_bytes: output.stderr.len() as u64,
@@ -7288,7 +7284,7 @@ fn run_external_baseline(
                 timeout_ms: timeout.as_millis().min(u64::MAX as u128) as u64,
                 wall_us,
                 output_bytes,
-                stdout_sha256: Some(stdout_sha256(&output.stdout)),
+                stdout_sha256: Some(sha256_hex(&output.stdout)),
                 stdout_line_count: stdout_line_count(&output.stdout),
                 stdout_word_count: stdout_word_count(&output.stdout),
                 stderr_bytes: output.stderr.len() as u64,
@@ -8224,10 +8220,6 @@ fn baseline_table_structure_from_text(
         min_cell_recall,
         min_cell_f1,
     }
-}
-
-fn stdout_sha256(stdout: &[u8]) -> String {
-    sha256_hex(stdout)
 }
 
 fn stdout_line_count(stdout: &[u8]) -> usize {
@@ -11407,7 +11399,9 @@ fn load_pdfium_ocr_if_needed(
     page: &PdfPage<'_>,
 ) -> Result<(Option<String>, u64, u64)> {
     if ocr.command_input != OcrCommandInput::RenderedImage {
-        let (text, ocr_us) = load_ocr_if_needed(source_path, ocr, signals)?;
+        let ocr_start = Instant::now();
+        let text = load_ocr_if_needed(source_path, ocr, signals)?;
+        let ocr_us = ocr_start.elapsed().as_micros().max(1).min(u64::MAX as u128) as u64;
         return Ok((text, 0, ocr_us));
     }
 
@@ -11642,13 +11636,6 @@ fn pdfium_bounds_look_like_ruling(bounds: PdfQuadPoints) -> bool {
 }
 
 #[cfg(feature = "pdfium")]
-const MAX_EXTRACTED_RULING_LINES: usize = 512;
-
-/// Row-vector affine transform (a, b, c, d, e, f): x' = a*x + c*y + e,
-/// y' = b*x + d*y + f. Path segment coordinates are in object space; the
-/// object matrix, composed through nested form XObjects, maps them to page
-/// space.
-#[cfg(feature = "pdfium")]
 type PdfiumRulingTransform = [f32; 6];
 
 #[cfg(feature = "pdfium")]
@@ -11781,38 +11768,6 @@ fn pdfium_collect_object_ruling_lines(
     }
 }
 
-/// Converts a PDF bottom-left-origin segment into a page-local top-left
-/// ruling line. Thin rectangles report their midline as the position.
-#[cfg(feature = "pdfium")]
-fn ruling_line_from_segment(
-    start: (f32, f32),
-    end: (f32, f32),
-    dimensions: &PageDimensions,
-) -> Option<ExtractedRulingLine> {
-    let dx = (start.0 - end.0).abs();
-    let dy = (start.1 - end.1).abs();
-
-    if dy <= dx {
-        let y = dimensions.height - (start.1 + end.1) / 2.0;
-        Some(ExtractedRulingLine {
-            orientation: RulingOrientation::Horizontal,
-            position: y,
-            start: start.0.min(end.0),
-            end: start.0.max(end.0),
-        })
-    } else {
-        let x = (start.0 + end.0) / 2.0;
-        let y0 = dimensions.height - start.1.max(end.1);
-        let y1 = dimensions.height - start.1.min(end.1);
-        Some(ExtractedRulingLine {
-            orientation: RulingOrientation::Vertical,
-            position: x,
-            start: y0,
-            end: y1,
-        })
-    }
-}
-
 #[cfg(feature = "pdfium")]
 fn pdfium_collect_image_artifact(
     object: &PdfPageObject<'_>,
@@ -11914,20 +11869,19 @@ fn load_ocr_if_needed(
     source_path: &Path,
     ocr: OcrOptions<'_>,
     signals: &PageSignals,
-) -> Result<(Option<String>, u64)> {
+) -> Result<Option<String>> {
     if !classify_page(signals).run_ocr {
-        return Ok((None, 0));
+        return Ok(None);
     }
 
     if ocr.command_input == OcrCommandInput::RenderedImage {
         bail!("rendered-image OCR command input requires a rendering backend");
     }
 
-    let ocr_start = Instant::now();
     let text = if let Some(ocr_sidecar) = ocr.sidecar {
         let sidecar_path = ocr_sidecar.join(sidecar_file_name(source_path, signals.page_index));
         if !sidecar_path.exists() {
-            return Ok((None, 0));
+            return Ok(None);
         }
         fs::read_to_string(&sidecar_path)
             .with_context(|| format!("read OCR sidecar {}", sidecar_path.display()))?
@@ -11936,15 +11890,14 @@ fn load_ocr_if_needed(
     } else if let Some(http_url) = ocr.http_url {
         run_ocr_http(http_url, source_path, signals.page_index, ocr.timeout)?
     } else {
-        return Ok((None, 0));
+        return Ok(None);
     };
 
     if text.is_empty() {
-        return Ok((None, 0));
+        return Ok(None);
     }
 
-    let ocr_us = ocr_start.elapsed().as_micros().max(1).min(u64::MAX as u128) as u64;
-    Ok((Some(text), ocr_us))
+    Ok(Some(text))
 }
 
 fn run_ocr_command(
@@ -12352,15 +12305,6 @@ fn parse_whitespace_table_row(line: &str) -> Option<Vec<String>> {
 
 fn format_markdown_table_row(cells: &[String]) -> String {
     format!("| {} |", cells.join(" | "))
-}
-
-fn sha256_hex(input: impl AsRef<[u8]>) -> String {
-    let digest = Sha256::digest(input);
-    let mut output = String::with_capacity(digest.len() * 2);
-    for byte in digest {
-        output.push_str(&format!("{byte:02x}"));
-    }
-    output
 }
 
 #[cfg(test)]

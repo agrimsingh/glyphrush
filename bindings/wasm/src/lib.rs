@@ -1,33 +1,19 @@
 use anyhow::{Context, Result};
-use glyphrush_core::{DocumentMetadata, parse_extracted_pages};
+use glyphrush_core::{DocumentMetadata, parse_extracted_pages, sha256_hex};
 use glyphrush_lopdf::{LopdfExtractionOptions, extract_pages};
 use lopdf::Document;
-use sha2::{Digest, Sha256};
 use wasm_bindgen::prelude::*;
 
 const PARSER_NAME: &str = "glyphrush";
 const LOPDF_BACKEND_NAME: &str = "lopdf";
 const LOPDF_BACKEND_VERSION: &str = "lopdf-adapter-v0";
 
-fn noop_ocr(_signals: &glyphrush_core::PageSignals) -> Result<(Option<String>, u64)> {
-    Ok((None, 0))
-}
-
-fn sha256_hex(input: impl AsRef<[u8]>) -> String {
-    let digest = Sha256::digest(input);
-    let mut output = String::with_capacity(digest.len() * 2);
-    for byte in digest {
-        output.push_str(&format!("{byte:02x}"));
-    }
-    output
+fn noop_ocr(_signals: &glyphrush_core::PageSignals) -> Result<Option<String>> {
+    Ok(None)
 }
 
 fn parse_pdf_bytes_internal(bytes: &[u8], span_geometry: bool) -> Result<String> {
     let document = Document::load_mem(bytes).context("load PDF from bytes")?;
-
-    if document.is_encrypted() {
-        anyhow::bail!("encrypted PDFs are not supported by the v0 CLI without a password");
-    }
 
     let pages = extract_pages(
         &document,

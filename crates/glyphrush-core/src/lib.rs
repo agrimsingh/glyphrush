@@ -525,7 +525,7 @@ pub fn classify_page(signals: &PageSignals) -> RouteDecision {
         run_heavy_layout = true;
     }
 
-    if signals.table_line_density >= 0.25 {
+    if signals.table_line_density >= TABLE_ROUTE_DENSITY_THRESHOLD {
         flags.push(PageQuality::TableUncertain);
         reasons.push("table_line_density".to_string());
         run_table_recovery = true;
@@ -603,6 +603,37 @@ pub struct ExtractedRulingLine {
     pub position: f32,
     pub start: f32,
     pub end: f32,
+}
+
+/// Converts a PDF bottom-left-origin segment into a page-local top-left
+/// ruling line. Thin rectangles report their midline as the position.
+pub fn ruling_line_from_segment(
+    start: (f32, f32),
+    end: (f32, f32),
+    dimensions: &PageDimensions,
+) -> Option<ExtractedRulingLine> {
+    let dx = (start.0 - end.0).abs();
+    let dy = (start.1 - end.1).abs();
+
+    if dy <= dx {
+        let y = dimensions.height - (start.1 + end.1) / 2.0;
+        Some(ExtractedRulingLine {
+            orientation: RulingOrientation::Horizontal,
+            position: y,
+            start: start.0.min(end.0),
+            end: start.0.max(end.0),
+        })
+    } else {
+        let x = (start.0 + end.0) / 2.0;
+        let y0 = dimensions.height - start.1.max(end.1);
+        let y1 = dimensions.height - start.1.min(end.1);
+        Some(ExtractedRulingLine {
+            orientation: RulingOrientation::Vertical,
+            position: x,
+            start: y0,
+            end: y1,
+        })
+    }
 }
 
 pub fn parse_extracted_pages(
@@ -8129,7 +8160,7 @@ fn is_title_case_heading_line(line: &str) -> bool {
         })
 }
 
-fn sha256_hex(input: impl AsRef<[u8]>) -> String {
+pub fn sha256_hex(input: impl AsRef<[u8]>) -> String {
     let digest = Sha256::digest(input);
     let mut output = String::with_capacity(digest.len() * 2);
     for byte in digest {
@@ -8138,8 +8169,9 @@ fn sha256_hex(input: impl AsRef<[u8]>) -> String {
     output
 }
 
-const TABLE_ROUTE_DENSITY_THRESHOLD: f32 = 0.25;
-const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
+pub const TABLE_ROUTE_DENSITY_THRESHOLD: f32 = 0.25;
+pub const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
+pub const MAX_EXTRACTED_RULING_LINES: usize = 512;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
 
 #[derive(Clone, Copy, Debug)]

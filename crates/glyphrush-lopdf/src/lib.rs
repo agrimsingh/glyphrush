@@ -3,10 +3,12 @@ use web_time::Instant;
 
 use anyhow::{Context, Result, anyhow};
 use glyphrush_core::{
-    BBox, ExtractedImage, ExtractedPage, ExtractedTextSpan, NormalizedBBox, PageDimensions,
-    PageSignals, PageTimings, broken_encoding_ratio, combined_table_line_density,
+    BBox, ExtractedImage, ExtractedPage, ExtractedRulingLine, ExtractedTextSpan,
+    MAX_EXTRACTED_RULING_LINES, NormalizedBBox, PageDimensions, PageSignals, PageTimings,
+    RULED_TABLE_SATURATION_SEGMENTS, broken_encoding_ratio, combined_table_line_density,
     duplicate_char_ratio, image_artifact_coverage_ratio, is_ruling_segment,
     normalize_text_for_span_check, positioned_bbox_overlap_ratio, ruling_density,
+    ruling_line_from_segment,
 };
 use lopdf::{Dictionary, Document, Object, ObjectId, content::Content};
 
@@ -16,17 +18,22 @@ pub struct LopdfExtractionOptions {
     pub page_jobs: usize,
 }
 
-pub type OcrLoader<'a> = &'a (dyn Fn(&PageSignals) -> Result<(Option<String>, u64)> + Sync);
+pub type OcrLoader<'a> = &'a (dyn Fn(&PageSignals) -> Result<Option<String>> + Sync);
 
 const MAX_POSITIONED_SPAN_CONTENT_BYTES: usize = 64 * 1024;
 const MAX_POSITIONED_SPAN_NATIVE_TEXT_BYTES: u32 = 4 * 1024;
-const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
+/// Content streams above this size set `huge_object_count`; core only checks `> 0`.
+const HUGE_PAGE_CONTENT_BYTES: usize = 16 * 1024 * 1024;
 
 pub fn extract_pages<'a>(
     document: &Document,
     options: LopdfExtractionOptions,
     ocr: OcrLoader<'a>,
 ) -> Result<Vec<ExtractedPage>> {
+    if document.is_encrypted() {
+        anyhow::bail!("encrypted PDFs are not supported without a password");
+    }
+
     let pages = document.get_pages().into_iter().collect::<Vec<_>>();
     let worker_count = options.page_jobs.max(1).min(pages.len().max(1));
 
@@ -76,6 +83,10 @@ pub fn extract_page_by_index<'a>(
     ocr: OcrLoader<'a>,
     page_index: u32,
 ) -> Result<ExtractedPage> {
+    if document.is_encrypted() {
+        anyhow::bail!("encrypted PDFs are not supported without a password");
+    }
+
     let page_number = page_index
         .checked_add(1)
         .with_context(|| format!("page index {page_index} is too large"))?;
@@ -154,21 +165,28 @@ fn extract_lopdf_page<'a>(
         table_line_density,
         annotation_count: page_annotation_count(document, page_id),
         form_field_count: page_form_field_count(document, page_id),
-        huge_object_count: if content_len > 16 * 1024 * 1024 {
-            65
+        huge_object_count: if content_len > HUGE_PAGE_CONTENT_BYTES {
+            1
         } else {
             0
         },
         span_geometry_capped,
     };
-    let (ocr_text, ocr_us) = ocr(&signals)?;
+    let ocr_start = Instant::now();
+    let ocr_text = ocr(&signals)?;
+    let ocr_us = ocr_start.elapsed().as_micros().max(1).min(u64::MAX as u128) as u64;
+    let ruling_lines = if table_line_density > 0.0 {
+        collect_lopdf_ruling_lines(&content, &dimensions)
+    } else {
+        Vec::new()
+    };
 
     Ok(ExtractedPage {
         page_index,
         dimensions,
         native_text,
         native_spans,
-        ruling_lines: Vec::new(),
+        ruling_lines,
         image_artifacts,
         signals,
         ocr_text,
@@ -1291,6 +1309,145 @@ struct VectorPathState {
     pending_ruling_segments: u32,
 }
 
+#[derive(Default)]
+struct RulingSegmentCollector {
+    current: Option<(f32, f32)>,
+    pending_segments: Vec<(f32, f32, f32, f32)>,
+}
+
+impl RulingSegmentCollector {
+    fn push_segment(&mut self, start: (f32, f32), end: (f32, f32)) {
+        if is_ruling_segment(start, end) {
+            self.pending_segments.push((start.0, start.1, end.0, end.1));
+        }
+    }
+
+    fn flush_stroked(
+        &mut self,
+        ruling_lines: &mut Vec<ExtractedRulingLine>,
+        dimensions: &PageDimensions,
+    ) {
+        for (sx, sy, ex, ey) in self.pending_segments.drain(..) {
+            if ruling_lines.len() >= MAX_EXTRACTED_RULING_LINES {
+                ruling_lines.truncate(MAX_EXTRACTED_RULING_LINES);
+                return;
+            }
+            if let Some(line) = ruling_line_from_segment((sx, sy), (ex, ey), dimensions) {
+                ruling_lines.push(line);
+            }
+        }
+    }
+
+    fn clear(&mut self) {
+        self.current = None;
+        self.pending_segments.clear();
+    }
+}
+
+fn collect_lopdf_ruling_lines(
+    content: &[u8],
+    dimensions: &PageDimensions,
+) -> Vec<ExtractedRulingLine> {
+    let Ok(content) = Content::decode(content) else {
+        return Vec::new();
+    };
+
+    let mut matrix = PdfMatrix::identity();
+    let mut matrix_stack = Vec::new();
+    let mut collector = RulingSegmentCollector::default();
+    let mut ruling_lines = Vec::new();
+
+    for operation in content.operations {
+        if ruling_lines.len() >= MAX_EXTRACTED_RULING_LINES {
+            ruling_lines.truncate(MAX_EXTRACTED_RULING_LINES);
+            break;
+        }
+
+        match operation.operator.as_str() {
+            "q" => matrix_stack.push(matrix),
+            "Q" => {
+                matrix = matrix_stack.pop().unwrap_or_else(PdfMatrix::identity);
+                collector.clear();
+            }
+            "cm" => {
+                if let Some(next) = PdfMatrix::from_operands(&operation.operands) {
+                    matrix = matrix.multiply(next);
+                }
+            }
+            "m" => {
+                collector.current = two_float_operands(&operation.operands)
+                    .map(|(x, y)| matrix.transform_point(x, y));
+            }
+            "l" => {
+                if let (Some(start), Some((x, y))) =
+                    (collector.current, two_float_operands(&operation.operands))
+                {
+                    let end = matrix.transform_point(x, y);
+                    collector.push_segment(start, end);
+                    collector.current = Some(end);
+                }
+            }
+            "re" => {
+                push_rectangle_ruling_segments(&operation.operands, matrix, &mut collector);
+                collector.current = None;
+            }
+            "S" | "s" | "B" | "B*" | "b" | "b*" => {
+                collector.flush_stroked(&mut ruling_lines, dimensions);
+                collector.clear();
+            }
+            "n" | "f" | "F" | "f*" => {
+                collector.clear();
+            }
+            _ => {}
+        }
+    }
+
+    ruling_lines
+}
+
+fn push_rectangle_ruling_segments(
+    operands: &[Object],
+    matrix: PdfMatrix,
+    collector: &mut RulingSegmentCollector,
+) {
+    let Some(x) = operands.first().and_then(float_operand) else {
+        return;
+    };
+    let Some(y) = operands.get(1).and_then(float_operand) else {
+        return;
+    };
+    let Some(width) = operands.get(2).and_then(float_operand) else {
+        return;
+    };
+    let Some(height) = operands.get(3).and_then(float_operand) else {
+        return;
+    };
+
+    for (start, end) in rectangle_ruling_segment_endpoints(x, y, width, height, matrix) {
+        collector.push_segment(start, end);
+    }
+}
+
+fn rectangle_ruling_segment_endpoints(
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    matrix: PdfMatrix,
+) -> [((f32, f32), (f32, f32)); 4] {
+    let lower_left = matrix.transform_point(x, y);
+    let lower_right = matrix.transform_point(x + width, y);
+    let upper_right = matrix.transform_point(x + width, y + height);
+    let upper_left = matrix.transform_point(x, y + height);
+
+    [
+        (lower_left, lower_right),
+        (lower_right, upper_right),
+        (upper_right, upper_left),
+        (upper_left, lower_left),
+    ]
+}
+
 fn ruled_table_line_density(content: &[u8]) -> f32 {
     if let Some(density) = raw_ruled_table_line_density_hint(content) {
         return density;
@@ -1580,20 +1737,10 @@ fn rectangle_ruling_segments_from_values(
     height: f32,
     matrix: PdfMatrix,
 ) -> u32 {
-    let lower_left = matrix.transform_point(x, y);
-    let lower_right = matrix.transform_point(x + width, y);
-    let upper_right = matrix.transform_point(x + width, y + height);
-    let upper_left = matrix.transform_point(x, y + height);
-
-    [
-        (lower_left, lower_right),
-        (lower_right, upper_right),
-        (upper_right, upper_left),
-        (upper_left, lower_left),
-    ]
-    .into_iter()
-    .filter(|(start, end)| is_ruling_segment(*start, *end))
-    .count() as u32
+    rectangle_ruling_segment_endpoints(x, y, width, height, matrix)
+        .into_iter()
+        .filter(|(start, end)| is_ruling_segment(*start, *end))
+        .count() as u32
 }
 
 #[cfg(test)]
@@ -1655,5 +1802,38 @@ mod tests {
         let content = b"q BI /W 1 /H 1 /BPC 1 ID \x00 EI Q";
 
         assert!(raw_image_draw_ops(content).is_none());
+    }
+
+    #[test]
+    fn collect_lopdf_ruling_lines_flips_y_to_page_local_top_left() {
+        let page_height = 792.0;
+        let content = ["72 600 m 360 600 l S", "72 480 m 72 600 l S"].join("\n");
+
+        let dimensions = PageDimensions::new(612.0, page_height);
+        let lines = collect_lopdf_ruling_lines(content.as_bytes(), &dimensions);
+
+        assert_eq!(lines.len(), 2);
+        assert_eq!(
+            lines[0].orientation,
+            glyphrush_core::RulingOrientation::Horizontal
+        );
+        assert!((lines[0].position - (page_height - 600.0)).abs() < 0.01);
+        assert!((lines[0].start - 72.0).abs() < 0.01);
+        assert!((lines[0].end - 360.0).abs() < 0.01);
+        assert_eq!(
+            lines[1].orientation,
+            glyphrush_core::RulingOrientation::Vertical
+        );
+        assert!((lines[1].position - 72.0).abs() < 0.01);
+        assert!((lines[1].start - (page_height - 600.0)).abs() < 0.01);
+        assert!((lines[1].end - (page_height - 480.0)).abs() < 0.01);
+    }
+
+    #[test]
+    fn collect_lopdf_ruling_lines_returns_empty_for_text_only_streams() {
+        let content = b"BT /F1 12 Tf 72 720 Td (line l S re text) Tj ET";
+        let dimensions = PageDimensions::new(612.0, 792.0);
+
+        assert!(collect_lopdf_ruling_lines(content, &dimensions).is_empty());
     }
 }
