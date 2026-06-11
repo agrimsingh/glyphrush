@@ -106,6 +106,23 @@
             "min_recall": 1.0
           }
         ],
+        "table_structure": [
+          {
+            "page": 6,
+            "expected_rows": [
+              [
+                "BERT BASE",
+                "81.6 -"
+              ],
+              [
+                "BERT LARGE",
+                "86.6 86.3"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0
+          }
+        ],
         "span_bbox": [
           {
             "page": 0,
@@ -303,18 +320,18 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "tion of the model architecture and refer readers to"
+              "Unlabeled Sentence A and B Pair"
             ],
             "image_artifact_count": 1,
             "layout_block_counts": {
-              "block_count": 19,
-              "paragraph_blocks": 12,
-              "heading_blocks": 6,
+              "block_count": 26,
+              "paragraph_blocks": 13,
+              "heading_blocks": 10,
               "list_blocks": 0,
-              "table_blocks": 1,
-              "table_rows": 2,
-              "table_cells": 12,
-              "table_cells_with_bbox": 0,
+              "table_blocks": 3,
+              "table_rows": 6,
+              "table_cells": 36,
+              "table_cells_with_bbox": 16,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -366,14 +383,11 @@
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 18,
-              "paragraph_blocks": 14,
-              "heading_blocks": 3,
+              "block_count": 13,
+              "paragraph_blocks": 12,
+              "heading_blocks": 1,
               "list_blocks": 0,
-              "table_blocks": 1,
-              "table_rows": 2,
-              "table_cells": 4,
-              "table_cells_with_bbox": 4,
+              "table_blocks": 0,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -394,12 +408,12 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "The analogous formula is used for the end of the"
+              "We use a batch size of 32 and fine-tune for 3"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 13,
-              "paragraph_blocks": 13,
+              "block_count": 7,
+              "paragraph_blocks": 7,
               "heading_blocks": 0,
               "list_blocks": 0,
               "table_blocks": 0,
@@ -423,7 +437,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "BiDAF+ELMo (Single) - 85.6 - 85.8"
+              "Top Leaderboard Systems (Dec 10th, 2018)"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -486,11 +500,14 @@
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 10,
-              "paragraph_blocks": 10,
+              "block_count": 12,
+              "paragraph_blocks": 11,
               "heading_blocks": 0,
               "list_blocks": 0,
-              "table_blocks": 0,
+              "table_blocks": 1,
+              "table_rows": 2,
+              "table_cells": 4,
+              "table_cells_with_bbox": 4,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -596,9 +613,9 @@
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 10,
-              "paragraph_blocks": 8,
-              "heading_blocks": 1,
+              "block_count": 18,
+              "paragraph_blocks": 15,
+              "heading_blocks": 2,
               "list_blocks": 1,
               "table_blocks": 0,
               "figure_blocks": 0,
@@ -684,8 +701,8 @@
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 12,
-              "paragraph_blocks": 10,
+              "block_count": 13,
+              "paragraph_blocks": 11,
               "heading_blocks": 0,
               "list_blocks": 2,
               "table_blocks": 0,

@@ -5250,6 +5250,204 @@ fn column_ruled_table_without_row_rules_recovers_rows_from_text() {
     );
 }
 
+#[test]
+fn side_by_side_tables_split_into_one_table_per_body_column() {
+    let mut native_spans = Vec::new();
+
+    let table_rows = [
+        (100.0, ["System", "Dev", "Test"], [60.0, 110.0, 160.0]),
+        (120.0, ["ModelA", "81.6", "88.5"], [60.0, 110.0, 160.0]),
+        (140.0, ["ModelB", "80.1", "87.2"], [60.0, 110.0, 160.0]),
+        (160.0, ["ModelC", "79.4", "86.8"], [60.0, 110.0, 160.0]),
+    ];
+    for (y0, texts, xs) in table_rows {
+        for (text, x0) in texts.iter().zip(xs.iter()) {
+            native_spans.push(span(text, *x0, y0, x0 + 35.0, y0 + 10.0));
+        }
+    }
+
+    let right_table_rows = [
+        (100.0, ["System", "Dev", "Test"], [322.0, 372.0, 422.0]),
+        (120.0, ["ModelX", "59.1", "59.2"], [322.0, 372.0, 422.0]),
+        (140.0, ["ModelY", "58.7", "58.9"], [322.0, 372.0, 422.0]),
+        (160.0, ["ModelZ", "57.9", "58.1"], [322.0, 372.0, 422.0]),
+    ];
+    for (y0, texts, xs) in right_table_rows {
+        for (text, x0) in texts.iter().zip(xs.iter()) {
+            native_spans.push(span(text, *x0, y0, x0 + 35.0, y0 + 10.0));
+        }
+    }
+
+    for row in 0..8 {
+        let y0 = 220.0 + row as f32 * 15.0;
+        let left_text = format!("left prose line {row} keeps flowing body text alive");
+        let right_text = format!("right prose line {row} keeps flowing body text alive");
+        native_spans.push(span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
+        native_spans.push(span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
+    }
+
+    let native_text = native_spans
+        .iter()
+        .map(|span| span.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let artifact = parse_extracted_pages(
+        "doc-side-by-side-tables".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text,
+            native_spans,
+            ruling_lines: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 40,
+                native_text_bytes: 900,
+                glyph_count: 800,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_blocks: Vec<_> = page
+        .layout_blocks
+        .iter()
+        .filter(|block| block.kind == LayoutBlockKind::Table)
+        .collect();
+    assert!(
+        table_blocks.len() >= 2,
+        "expected two side-by-side tables, got {:?}",
+        table_blocks
+            .iter()
+            .map(|block| (&block.text, block.bbox.x0, block.bbox.x1))
+            .collect::<Vec<_>>()
+    );
+
+    let left_table = table_blocks
+        .iter()
+        .find(|block| block.bbox.x1 <= 300.0)
+        .expect("left table");
+    let right_table = table_blocks
+        .iter()
+        .find(|block| block.bbox.x0 >= 310.0)
+        .expect("right table");
+
+    assert!(left_table.text.contains("ModelA"));
+    assert!(!left_table.text.contains("ModelX"));
+    assert!(right_table.text.contains("ModelX"));
+    assert!(!right_table.text.contains("ModelA"));
+
+    let left_index = page
+        .layout_blocks
+        .iter()
+        .position(|block| block.block_id == left_table.block_id)
+        .expect("left table block");
+    let right_index = page
+        .layout_blocks
+        .iter()
+        .position(|block| block.block_id == right_table.block_id)
+        .expect("right table block");
+    assert!(left_index < right_index);
+}
+
+#[test]
+fn full_width_table_is_not_split_by_body_columns() {
+    let mut native_spans = Vec::new();
+
+    let table_rows = [
+        (
+            100.0,
+            ["Task", "Score", "Metric", "Rank", "Notes", "Source"],
+            [60.0, 110.0, 160.0, 280.0, 400.0, 470.0],
+        ),
+        (
+            120.0,
+            ["CoLA", "60.5", "MNLI", "84.3", "SST-2", "93.1"],
+            [60.0, 110.0, 160.0, 280.0, 400.0, 470.0],
+        ),
+        (
+            140.0,
+            ["MRPC", "88.9", "QQP", "71.2", "STS-B", "85.8"],
+            [60.0, 110.0, 160.0, 280.0, 400.0, 470.0],
+        ),
+        (
+            160.0,
+            ["RTE", "66.4", "WNLI", "56.3", "Avg", "82.1"],
+            [60.0, 110.0, 160.0, 280.0, 400.0, 470.0],
+        ),
+    ];
+    for (y0, texts, xs) in table_rows {
+        for (text, x0) in texts.iter().zip(xs.iter()) {
+            native_spans.push(span(text, *x0, y0, x0 + 35.0, y0 + 10.0));
+        }
+    }
+
+    for row in 0..8 {
+        let y0 = 220.0 + row as f32 * 15.0;
+        let left_text = format!("left prose line {row} keeps flowing body text alive");
+        let right_text = format!("right prose line {row} keeps flowing body text alive");
+        native_spans.push(span(&left_text, 60.0, y0, 290.0, y0 + 10.0));
+        native_spans.push(span(&right_text, 322.0, y0, 552.0, y0 + 10.0));
+    }
+
+    let native_text = native_spans
+        .iter()
+        .map(|span| span.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let artifact = parse_extracted_pages(
+        "doc-full-width-table-two-column".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text,
+            native_spans,
+            ruling_lines: Vec::new(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 40,
+                native_text_bytes: 900,
+                glyph_count: 800,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_blocks: Vec<_> = page
+        .layout_blocks
+        .iter()
+        .filter(|block| block.kind == LayoutBlockKind::Table)
+        .collect();
+    assert_eq!(
+        table_blocks.len(),
+        1,
+        "full-width table must stay unified: {:?}",
+        table_blocks
+            .iter()
+            .map(|block| (&block.text, block.bbox.x0, block.bbox.x1))
+            .collect::<Vec<_>>()
+    );
+
+    let table = table_blocks[0].table.as_ref().expect("table payload");
+    let cell_texts: Vec<_> = table
+        .rows
+        .iter()
+        .flat_map(|row| row.cells.iter().map(|cell| cell.text.as_str()))
+        .collect();
+    assert!(cell_texts.contains(&"CoLA"));
+    assert!(cell_texts.contains(&"SST-2"));
+    assert!(table_blocks[0].bbox.x0 <= 70.0);
+    assert!(table_blocks[0].bbox.x1 >= 500.0);
+}
+
 fn span(text: &str, x0: f32, y0: f32, x1: f32, y1: f32) -> ExtractedTextSpan {
     ExtractedTextSpan {
         text: text.to_string(),

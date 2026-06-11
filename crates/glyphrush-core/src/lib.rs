@@ -1604,6 +1604,15 @@ fn layout_blocks_from_positioned_table_runs(
         .collect::<Vec<_>>();
     let body_columns = page_body_columns(&outside_rows, &dimensions)
         .or_else(|| page_body_columns(&rows, &dimensions));
+    if let Some(blocks) = layout_side_by_side_positioned_table_blocks(
+        page_index,
+        &dimensions,
+        &rows,
+        body_columns.as_deref(),
+    ) {
+        return Some(blocks);
+    }
+
     let ranges = candidate_ranges
         .into_iter()
         .filter(|(start, end)| {
@@ -1619,36 +1628,230 @@ fn layout_blocks_from_positioned_table_runs(
 
     let mut blocks = Vec::new();
     let mut next_block_index = 0;
-    let mut row_cursor = 0;
-
-    for (start, end) in ranges {
-        append_positioned_text_blocks_from_rows(
-            page_index,
-            &dimensions,
-            &rows[row_cursor..start],
-            body_columns.as_deref(),
-            &mut next_block_index,
-            &mut blocks,
-        );
-        if let Some(table_block) =
-            table_block_from_positioned_rows(page_index, next_block_index, &rows[start..end])
-        {
-            blocks.push(table_block);
-            next_block_index += 1;
-        }
-        row_cursor = end;
-    }
-
-    append_positioned_text_blocks_from_rows(
+    append_table_run_blocks(
         page_index,
         &dimensions,
-        &rows[row_cursor..],
+        &rows,
         body_columns.as_deref(),
         &mut next_block_index,
         &mut blocks,
     );
 
     (!blocks.is_empty()).then_some(blocks)
+}
+
+fn append_table_run_blocks(
+    page_index: u32,
+    dimensions: &PageDimensions,
+    rows: &[Vec<&TextSpan>],
+    body_columns: Option<&[(f32, f32)]>,
+    next_block_index: &mut usize,
+    blocks: &mut Vec<LayoutBlock>,
+) {
+    let candidate_ranges = positioned_table_row_ranges(rows);
+    let ranges = candidate_ranges
+        .into_iter()
+        .filter(|(start, end)| {
+            !positioned_window_is_page_column_prose(&rows[*start..*end], body_columns)
+        })
+        .collect::<Vec<_>>();
+
+    let mut row_cursor = 0;
+    for (start, end) in ranges {
+        append_positioned_text_blocks_from_rows(
+            page_index,
+            dimensions,
+            &rows[row_cursor..start],
+            body_columns,
+            next_block_index,
+            blocks,
+        );
+        if let Some(table_block) =
+            table_block_from_positioned_rows(page_index, *next_block_index, &rows[start..end])
+        {
+            blocks.push(table_block);
+            *next_block_index += 1;
+        }
+        row_cursor = end;
+    }
+
+    append_positioned_text_blocks_from_rows(
+        page_index,
+        dimensions,
+        &rows[row_cursor..],
+        body_columns,
+        next_block_index,
+        blocks,
+    );
+}
+
+fn layout_side_by_side_positioned_table_blocks(
+    page_index: u32,
+    dimensions: &PageDimensions,
+    rows: &[Vec<&TextSpan>],
+    body_columns: Option<&[(f32, f32)]>,
+) -> Option<Vec<LayoutBlock>> {
+    let columns = body_columns?;
+    if columns.len() != 2 || rows.len() < 4 {
+        return None;
+    }
+
+    let (left_rows, right_rows, band_rows) = partition_rows_by_body_columns(rows, columns);
+    if left_rows.len() < 2 || right_rows.len() < 2 {
+        return None;
+    }
+    if band_rows.len() * 5 > rows.len() {
+        return None;
+    }
+
+    let left_ranges = positioned_table_row_ranges(&left_rows);
+    let right_ranges = positioned_table_row_ranges(&right_rows);
+    if left_ranges.is_empty() && right_ranges.is_empty() {
+        return None;
+    }
+
+    let content_top = left_rows
+        .iter()
+        .chain(right_rows.iter())
+        .map(|row| positioned_row_top(row))
+        .min_by(f32::total_cmp)?;
+    let (band_above, band_below): (Vec<_>, Vec<_>) = band_rows
+        .iter()
+        .cloned()
+        .partition(|row| positioned_row_bottom(row) <= content_top + 1.0);
+
+    let mut blocks = Vec::new();
+    let mut next_block_index = 0;
+
+    append_band_rows_as_text_blocks(
+        page_index,
+        dimensions,
+        &band_above,
+        &mut next_block_index,
+        &mut blocks,
+    );
+    append_table_run_blocks(
+        page_index,
+        dimensions,
+        &left_rows,
+        Some(columns),
+        &mut next_block_index,
+        &mut blocks,
+    );
+    append_table_run_blocks(
+        page_index,
+        dimensions,
+        &right_rows,
+        Some(columns),
+        &mut next_block_index,
+        &mut blocks,
+    );
+    append_band_rows_as_text_blocks(
+        page_index,
+        dimensions,
+        &band_below,
+        &mut next_block_index,
+        &mut blocks,
+    );
+
+    (!blocks.is_empty()).then_some(blocks)
+}
+
+type BodyColumnPartitionedRows<'a> = (
+    Vec<Vec<&'a TextSpan>>,
+    Vec<Vec<&'a TextSpan>>,
+    Vec<Vec<&'a TextSpan>>,
+);
+
+fn partition_rows_by_body_columns<'a>(
+    rows: &'a [Vec<&'a TextSpan>],
+    columns: &[(f32, f32)],
+) -> BodyColumnPartitionedRows<'a> {
+    let mut left_rows = Vec::new();
+    let mut right_rows = Vec::new();
+    let mut band_rows = Vec::new();
+
+    for row in rows {
+        let mut left_spans = Vec::new();
+        let mut right_spans = Vec::new();
+        let mut has_unassigned = false;
+
+        for &span in row {
+            let fits_left = span_fits_body_column(span, columns, 0);
+            let fits_right = span_fits_body_column(span, columns, 1);
+            match (fits_left, fits_right) {
+                (true, false) => left_spans.push(span),
+                (false, true) => right_spans.push(span),
+                (true, true) => {
+                    let span_center = (span.bbox.x0 + span.bbox.x1) * 0.5;
+                    let left_center = (columns[0].0 + columns[0].1) * 0.5;
+                    let right_center = (columns[1].0 + columns[1].1) * 0.5;
+                    if (span_center - left_center).abs() <= (span_center - right_center).abs() {
+                        left_spans.push(span);
+                    } else {
+                        right_spans.push(span);
+                    }
+                }
+                (false, false) => has_unassigned = true,
+            }
+        }
+
+        if has_unassigned {
+            band_rows.push(row.clone());
+        } else if !left_spans.is_empty() && !right_spans.is_empty() {
+            left_rows.push(left_spans);
+            right_rows.push(right_spans);
+        } else if !left_spans.is_empty() {
+            left_rows.push(left_spans);
+        } else if !right_spans.is_empty() {
+            right_rows.push(right_spans);
+        } else {
+            band_rows.push(row.clone());
+        }
+    }
+
+    (left_rows, right_rows, band_rows)
+}
+
+fn append_band_rows_as_text_blocks(
+    page_index: u32,
+    _dimensions: &PageDimensions,
+    band_rows: &[Vec<&TextSpan>],
+    next_block_index: &mut usize,
+    blocks: &mut Vec<LayoutBlock>,
+) {
+    if band_rows.is_empty() {
+        return;
+    }
+
+    let spans = band_rows.iter().flatten().copied().collect::<Vec<_>>();
+    for group in group_span_refs_by_vertical_gaps(spans) {
+        if let Some(block) =
+            layout_block_from_span_group(page_index, *next_block_index, group, true)
+        {
+            blocks.push(block);
+            *next_block_index += 1;
+        }
+    }
+}
+
+fn positioned_row_top(row: &[&TextSpan]) -> f32 {
+    row.iter()
+        .map(|span| span.bbox.y0)
+        .min_by(f32::total_cmp)
+        .unwrap_or(0.0)
+}
+
+fn positioned_row_bottom(row: &[&TextSpan]) -> f32 {
+    row.iter()
+        .map(|span| span.bbox.y1)
+        .max_by(f32::total_cmp)
+        .unwrap_or(0.0)
+}
+
+fn span_fits_body_column(span: &TextSpan, columns: &[(f32, f32)], column_index: usize) -> bool {
+    let (column_x0, column_x1) = columns[column_index];
+    span.bbox.x0 >= column_x0 - 2.0 && span.bbox.x1 <= column_x1 + 2.0
 }
 
 fn append_positioned_text_blocks_from_rows(
@@ -1844,6 +2047,19 @@ fn positioned_window_is_page_column_prose(
 }
 
 fn positioned_row_fills_body_columns(row: &[&TextSpan], body_columns: &[(f32, f32)]) -> bool {
+    // Prose lines never end in a standalone numeric fragment; leaderboard or
+    // result-table rows that happen to span the column width do.
+    if row.len() >= 2
+        && let Some(last) = row.last()
+    {
+        let text = last.text.trim();
+        let digits = text.chars().filter(|ch| ch.is_ascii_digit()).count();
+        let letters = text.chars().filter(|ch| ch.is_alphabetic()).count();
+        if digits > 0 && letters == 0 {
+            return false;
+        }
+    }
+
     let mut filled_any = false;
     for (column_x0, column_x1) in body_columns {
         let width = column_x1 - column_x0;

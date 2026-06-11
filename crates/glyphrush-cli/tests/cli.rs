@@ -205,8 +205,8 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         env!("CARGO_PKG_VERSION")
     );
     assert_eq!(json["summary"]["target_capability_count"], 13);
-    assert_eq!(json["summary"]["implemented"], 8);
-    assert_eq!(json["summary"]["partial"], 2);
+    assert_eq!(json["summary"]["implemented"], 9);
+    assert_eq!(json["summary"]["partial"], 1);
     assert_eq!(json["summary"]["planned"], 2);
     assert_eq!(json["summary"]["not_planned"], 1);
     assert_eq!(
@@ -243,7 +243,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(json["readiness"]["liteparse_capabilities"]["target"], 13);
     assert_eq!(
         json["readiness"]["remaining_partial"],
-        serde_json::json!(["page_render_for_ocr", "table_recovery"])
+        serde_json::json!(["page_render_for_ocr"])
     );
     assert_eq!(
         json["readiness"]["remaining_planned"],
@@ -307,7 +307,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     );
 
     let table_recovery = capability(capabilities, "table_recovery");
-    assert_eq!(table_recovery["glyphrush_status"], "partial");
+    assert_eq!(table_recovery["glyphrush_status"], "implemented");
     assert!(
         table_recovery["notes"]
             .as_str()
@@ -1596,12 +1596,12 @@ fn feature_parity_counts_pdfium_ocr_runtime_caps_and_cache_as_implemented() {
         serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
 
     assert_eq!(json["selected_backend"], "pdfium");
-    assert_eq!(json["summary"]["implemented"], 9);
-    assert_eq!(json["summary"]["partial"], 1);
+    assert_eq!(json["summary"]["implemented"], 10);
+    assert_eq!(json["summary"]["partial"], 0);
     assert_eq!(json["summary"]["planned"], 2);
     assert_eq!(
         json["readiness"]["remaining_partial"],
-        serde_json::json!(["table_recovery"])
+        serde_json::json!([])
     );
     assert_eq!(
         json["readiness"]["remaining_planned"],

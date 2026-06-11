@@ -32,7 +32,13 @@ Remaining follow-ups (not parity blockers):
 - Add dedicated sidebar/footnote-heavy fixtures beyond the BERT and Watson coverage.
 - Consider estimating asymmetric gutters instead of assuming the column gutter brackets the page center.
 
-### 2. Close `table_recovery` from partial to implemented — IN PROGRESS
+### 2. Close `table_recovery` from partial to implemented — DONE
+
+Status: implemented. Side-by-side per-column tables on two-column academic pages now split into one table per body column instead of mashing into one grid, and the prose-window filter exempts rows ending in standalone numeric fragments so in-column result tables survive. All four exit-criteria categories pass with hand-checked labels: datasheet (synthetic positioned/text fixtures), invoice/form (SF-1035 voucher, 18 rows), budget (OMB), and academic (BERT SWAG result table, values verified against the paper). Two-level header groups, merged cells, and cross-page continuation stitching remain conservative under `table_uncertain` flags and are tracked in P2 advanced table semantics.
+
+Earlier progress notes for this item follow.
+
+#### Earlier pass notes
 
 Progress in this pass (false-positive hardening):
 
