@@ -3112,11 +3112,11 @@ fn liteparse_feature_parity_capabilities(
             id: "mupdf_backend",
             area: "backend",
             liteparse: "pdfium_core",
-            glyphrush: "mupdf_adapter_candidate",
-            glyphrush_status: FeatureParityStatus::Planned,
+            glyphrush: "mupdf_adapter_rejected_on_license",
+            glyphrush_status: FeatureParityStatus::NotPlanned,
             hot_path: false,
             quality_guard: "backend_check_reports_adapter_status",
-            notes: "MuPDF remains a comparison candidate, not the current fast path.",
+            notes: "MuPDF is AGPL-3.0 licensed while Glyphrush is MIT; wiring it as a shipped backend would constrain every downstream distribution, and the BSD-licensed PDFium adapter already provides the measured native-text fast path with rendered-image OCR handoff. Rejected deliberately rather than left as an open promise; backend-check continues to report the adapter slot so the decision stays visible.",
         },
         FeatureParityCapability {
             id: "bundled_builtin_ocr",
@@ -3401,7 +3401,7 @@ fn backend_check_output<B: PdfBackend + Sync>(
             },
             limitations: vec![
                 "adapter_not_implemented",
-                "license_packaging_spike_required",
+                "rejected_agpl_license_incompatible_with_mit_distribution",
             ],
         },
     ];
@@ -3417,7 +3417,7 @@ fn backend_check_output<B: PdfBackend + Sync>(
         selected_backend,
         enabled_backend_count,
         candidate_backend_count: backends.len(),
-        decision_gate: "pdfium_mupdf_spike_required_before_backend_lock_in",
+        decision_gate: "mupdf_rejected_on_agpl_license_pdfium_is_the_fast_path",
         backends,
         smoke: smoke_pdf.map(|path| backend_smoke_output(backend, path, jobs)),
     }

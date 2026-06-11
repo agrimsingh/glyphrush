@@ -96,7 +96,7 @@ Remaining follow-up (not blocking): memory/queue-bound checks for very large sca
 - Packaging: define macOS and Linux CLI builds, PDFium runtime behavior, version metadata, and install-size limits.
 - Python package: keep it thin over the native CLI or stable core ABI, with artifact parity tests against the CLI.
 - Node package: keep it thin over the same artifact model after the CLI/core API stabilizes.
-- MuPDF spike: compare text span quality, license implications, packaging, rendering, and thread safety against PDFium before wiring it as a real backend.
+- MuPDF spike — RESOLVED (rejected): MuPDF is AGPL-3.0 while Glyphrush is MIT; shipping it as a backend would constrain every downstream distribution, and the BSD-licensed PDFium adapter already provides the measured native-text fast path plus rendered-image OCR handoff. Converted to `not_planned` in the parity matrix with the rationale recorded; `backend-check` keeps the adapter slot visible as rejected.
 - Debug overlays: add HTML or image overlays for bbox, reading-order, table-grid, and OCR-merge diagnostics.
 
 ## P2: Later Work

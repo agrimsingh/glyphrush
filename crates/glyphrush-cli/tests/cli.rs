@@ -97,7 +97,7 @@ fn backend_check_reports_lopdf_and_pending_pdfium_mupdf_candidates() {
     assert_eq!(json["candidate_backend_count"], 3);
     assert_eq!(
         json["decision_gate"],
-        "pdfium_mupdf_spike_required_before_backend_lock_in"
+        "mupdf_rejected_on_agpl_license_pdfium_is_the_fast_path"
     );
 
     let backends = json["backends"].as_array().unwrap();
@@ -207,8 +207,8 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(json["summary"]["target_capability_count"], 13);
     assert_eq!(json["summary"]["implemented"], 9);
     assert_eq!(json["summary"]["partial"], 1);
-    assert_eq!(json["summary"]["planned"], 2);
-    assert_eq!(json["summary"]["not_planned"], 1);
+    assert_eq!(json["summary"]["planned"], 1);
+    assert_eq!(json["summary"]["not_planned"], 2);
     assert_eq!(
         json["quality_policy"],
         "adaptive_fallback_no_silent_failure"
@@ -247,11 +247,11 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     );
     assert_eq!(
         json["readiness"]["remaining_planned"],
-        serde_json::json!(["wasm_bindings", "mupdf_backend"])
+        serde_json::json!(["wasm_bindings"])
     );
     assert_eq!(
         json["readiness"]["not_planned_by_design"],
-        serde_json::json!(["bundled_builtin_ocr"])
+        serde_json::json!(["mupdf_backend", "bundled_builtin_ocr"])
     );
 
     let capabilities = json["capabilities"].as_array().unwrap();
@@ -1598,14 +1598,14 @@ fn feature_parity_counts_pdfium_ocr_runtime_caps_and_cache_as_implemented() {
     assert_eq!(json["selected_backend"], "pdfium");
     assert_eq!(json["summary"]["implemented"], 10);
     assert_eq!(json["summary"]["partial"], 0);
-    assert_eq!(json["summary"]["planned"], 2);
+    assert_eq!(json["summary"]["planned"], 1);
     assert_eq!(
         json["readiness"]["remaining_partial"],
         serde_json::json!([])
     );
     assert_eq!(
         json["readiness"]["remaining_planned"],
-        serde_json::json!(["wasm_bindings", "mupdf_backend"])
+        serde_json::json!(["wasm_bindings"])
     );
 
     let capabilities = json["capabilities"].as_array().unwrap();
