@@ -205,9 +205,9 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         env!("CARGO_PKG_VERSION")
     );
     assert_eq!(json["summary"]["target_capability_count"], 13);
-    assert_eq!(json["summary"]["implemented"], 9);
+    assert_eq!(json["summary"]["implemented"], 10);
     assert_eq!(json["summary"]["partial"], 1);
-    assert_eq!(json["summary"]["planned"], 1);
+    assert_eq!(json["summary"]["planned"], 0);
     assert_eq!(json["summary"]["not_planned"], 2);
     assert_eq!(
         json["quality_policy"],
@@ -238,7 +238,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     assert_eq!(json["readiness"]["hot_path"]["ready"], true);
     assert_eq!(
         json["readiness"]["liteparse_capabilities"]["implemented_or_partial"],
-        10
+        11
     );
     assert_eq!(json["readiness"]["liteparse_capabilities"]["target"], 13);
     assert_eq!(
@@ -247,7 +247,7 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     );
     assert_eq!(
         json["readiness"]["remaining_planned"],
-        serde_json::json!(["wasm_bindings"])
+        serde_json::json!([])
     );
     assert_eq!(
         json["readiness"]["not_planned_by_design"],
@@ -444,8 +444,11 @@ fn feature_parity_reports_liteparse_capability_gaps() {
     );
 
     let wasm = capability(capabilities, "wasm_bindings");
-    assert_eq!(wasm["glyphrush_status"], "planned");
-    assert_eq!(wasm["glyphrush"], "wasm_wrapper_planned_over_native_core");
+    assert_eq!(wasm["glyphrush_status"], "implemented");
+    assert_eq!(
+        wasm["glyphrush"],
+        "wasm_parse_pdf_bytes_over_native_core_artifact"
+    );
 
     let builtin_ocr = capability(capabilities, "bundled_builtin_ocr");
     assert_eq!(builtin_ocr["glyphrush_status"], "not_planned");
@@ -1596,16 +1599,16 @@ fn feature_parity_counts_pdfium_ocr_runtime_caps_and_cache_as_implemented() {
         serde_json::from_slice(&output.stdout).expect("feature-parity output is json");
 
     assert_eq!(json["selected_backend"], "pdfium");
-    assert_eq!(json["summary"]["implemented"], 10);
+    assert_eq!(json["summary"]["implemented"], 11);
     assert_eq!(json["summary"]["partial"], 0);
-    assert_eq!(json["summary"]["planned"], 1);
+    assert_eq!(json["summary"]["planned"], 0);
     assert_eq!(
         json["readiness"]["remaining_partial"],
         serde_json::json!([])
     );
     assert_eq!(
         json["readiness"]["remaining_planned"],
-        serde_json::json!(["wasm_bindings"])
+        serde_json::json!([])
     );
 
     let capabilities = json["capabilities"].as_array().unwrap();

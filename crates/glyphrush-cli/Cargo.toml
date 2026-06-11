@@ -17,6 +17,7 @@ pdfium = ["dep:pdfium-auto", "dep:pdfium-render"]
 anyhow.workspace = true
 clap.workspace = true
 glyphrush-core = { path = "../glyphrush-core" }
+glyphrush-lopdf = { path = "../glyphrush-lopdf" }
 libc.workspace = true
 lopdf.workspace = true
 pdfium-auto = { version = "0.3.0", optional = true }

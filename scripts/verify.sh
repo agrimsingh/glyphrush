@@ -21,6 +21,14 @@ run() {
 run cargo fmt --all -- --check
 run python3 -m unittest discover -s bindings/python/tests
 run node --test bindings/node/test/client.test.mjs
+if command -v wasm-bindgen >/dev/null 2>&1 && rustup target list --installed | grep -q wasm32-unknown-unknown; then
+  run cargo build -q -p glyphrush-cli
+  run bash bindings/wasm/build.sh
+  run node bindings/wasm/test/parity.mjs
+  run node bindings/wasm/test/parity.mjs test/v0/forms/irs-f1040-2025.pdf --span-geometry
+else
+  echo "Skipping wasm parity gate: wasm-bindgen or wasm32 target not installed."
+fi
 run cargo test --workspace
 run cargo clippy --workspace --all-targets -- -D warnings
 run cargo run -q -p glyphrush-cli -- baseline-check --strict --baseline-preset glyphrush-v0
