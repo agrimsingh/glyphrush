@@ -101,7 +101,7 @@ Remaining follow-up (not blocking): memory/queue-bound checks for very large sca
 
 ## P2: Later Work
 
-- WASM wrapper over the same core artifact model.
+- WASM wrapper over the same core artifact model. This is the only remaining `planned` parity capability. Concrete path: extract the lopdf extraction functions (`extract_lopdf_pages`, `extract_lopdf_page`, the content-stream walker, and their signal helpers) from `crates/glyphrush-cli/src/main.rs` into a `glyphrush-lopdf` library crate consumed by both the CLI and a new `bindings/wasm` crate (`wasm-bindgen`, bytes in, the same JSON artifact out, artifact-parity tests against the CLI). The CLI's clap/libc/pdfium dependencies must not leak into the wasm crate. Do this as its own slice; it touches every lopdf call site and all three corpus gates must stay green.
 - HTTP/server wrapper for batch or agent workflows.
 - Richer forms and annotations extraction.
 - Figure/image extraction with captions and provenance.
