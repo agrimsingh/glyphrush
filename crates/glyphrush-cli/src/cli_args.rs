@@ -284,6 +284,14 @@ pub(crate) enum Commands {
         #[arg(long)]
         span_geometry: bool,
     },
+    /// Benchmark utility: time in-process PDF parsing without process startup overhead.
+    WarmBench {
+        pdf: PathBuf,
+        #[arg(long, default_value_t = 5)]
+        runs: usize,
+        #[arg(long, default_value_t = 1)]
+        warmup: usize,
+    },
     Eval {
         manifest: PathBuf,
         #[arg(long)]
@@ -774,6 +782,9 @@ pub(crate) fn run_command<B: PdfBackend + Sync>(backend: &B, command: Commands) 
                 warnings,
                 decision: page.route.clone(),
             })?;
+        }
+        Commands::WarmBench { pdf, runs, warmup } => {
+            run_warm_bench(backend, &pdf, runs, warmup)?;
         }
         Commands::Eval {
             manifest,

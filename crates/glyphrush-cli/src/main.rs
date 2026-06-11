@@ -13,6 +13,7 @@ mod ocr;
 mod output;
 mod parity;
 mod process_util;
+mod warm_bench;
 
 pub(crate) use backend::*;
 #[cfg(feature = "pdfium")]
@@ -29,6 +30,7 @@ pub(crate) use ocr::*;
 pub(crate) use output::*;
 pub(crate) use parity::*;
 pub(crate) use process_util::*;
+pub(crate) use warm_bench::*;
 
 fn main() -> anyhow::Result<()> {
     cli_args::main_impl()

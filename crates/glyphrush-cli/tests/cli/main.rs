@@ -15,3 +15,4 @@ mod manifest;
 mod ocr;
 mod parity;
 mod parse;
+mod warm_bench;
