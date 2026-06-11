@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::Result;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub(crate) const FEATURE_PARITY_REPORT_VERSION: &str = "glyphrush-feature-parity-report-v1";
@@ -213,6 +213,150 @@ pub(crate) struct FeatureParityBenchmarkClaimEvidence {
     pub(crate) status: Option<String>,
 }
 
+#[derive(Debug, Default, Deserialize)]
+struct SavedBenchReport {
+    #[serde(default)]
+    report_version: Option<String>,
+    #[serde(default)]
+    backend: Option<String>,
+    #[serde(default)]
+    quality_status: Option<String>,
+    #[serde(default)]
+    speedup_claims: Vec<SavedBenchSpeedupClaim>,
+    #[serde(default)]
+    quality: Option<SavedBenchQuality>,
+    #[serde(default)]
+    category_summaries: BTreeMap<String, SavedBenchCategorySummary>,
+    #[serde(default)]
+    baselines: Vec<SavedBenchBaseline>,
+    #[serde(default)]
+    documents: Vec<SavedBenchDocument>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct SavedBenchQuality {
+    #[serde(default)]
+    category_summaries: BTreeMap<String, SavedBenchCategorySummary>,
+    #[serde(default)]
+    documents: Vec<SavedBenchQualityDocument>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct SavedBenchCategorySummary {
+    #[serde(default)]
+    document_count: Option<u64>,
+    #[serde(default)]
+    page_count: Option<u64>,
+    #[serde(default)]
+    failed_checks: Option<u64>,
+    #[serde(default)]
+    quality_passed: Option<bool>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct SavedBenchQualityDocument {
+    #[serde(default)]
+    path: Option<String>,
+    #[serde(default)]
+    category: Option<String>,
+    #[serde(default)]
+    document_fingerprint: Option<String>,
+    #[serde(default)]
+    page_count: Option<u64>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct SavedBenchDocument {
+    #[serde(default)]
+    path: Option<String>,
+    #[serde(default)]
+    category: Option<String>,
+    #[serde(default)]
+    document_fingerprint: Option<String>,
+    #[serde(default)]
+    page_count: Option<u64>,
+    #[serde(default)]
+    baselines: Vec<SavedBenchDocumentBaseline>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct SavedBenchDocumentBaseline {
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    quality_status: Option<String>,
+    #[serde(default)]
+    quality: Option<Value>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct SavedBenchBaseline {
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    target: Option<String>,
+    #[serde(default)]
+    quality_status: Option<String>,
+    #[serde(default)]
+    quality_failed_documents: Option<u64>,
+    #[serde(default)]
+    quality_failed_checks: Option<u64>,
+    #[serde(default)]
+    quality_category_summaries: BTreeMap<String, SavedBenchBaselineCategorySummary>,
+    #[serde(default)]
+    quality_failure_samples: Vec<Value>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct SavedBenchBaselineCategorySummary {
+    #[serde(default)]
+    document_count: Option<u64>,
+    #[serde(default)]
+    page_count: Option<u64>,
+    #[serde(default)]
+    failed_documents: Option<u64>,
+    #[serde(default)]
+    failed_checks: Option<u64>,
+    #[serde(default)]
+    quality_failed: Option<bool>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct SavedBenchSpeedupClaim {
+    #[serde(default)]
+    baseline: Option<String>,
+    #[serde(default)]
+    required_glyphrush_speedup: Option<f64>,
+    #[serde(default)]
+    actual_glyphrush_speedup: Option<f64>,
+    #[serde(default)]
+    speed_comparable: Option<bool>,
+    #[serde(default)]
+    speed_passed: Option<bool>,
+    #[serde(default)]
+    glyphrush_quality_checked: Option<bool>,
+    #[serde(default)]
+    glyphrush_quality_passed: Option<bool>,
+    #[serde(default)]
+    baseline_quality_checked: Option<bool>,
+    #[serde(default)]
+    baseline_quality_passed: Option<bool>,
+    #[serde(default)]
+    glyphrush_quality_backed: Option<bool>,
+    #[serde(default)]
+    quality_backed: Option<bool>,
+    #[serde(default)]
+    quality_blocker: Option<String>,
+    #[serde(default)]
+    claim_passed: Option<bool>,
+    #[serde(default)]
+    status: Option<String>,
+}
+
+fn saved_bench_quality_status_is_unchecked(status: &str) -> bool {
+    status.starts_with("not_checked_")
+}
+
 pub(crate) fn feature_parity_output<B: PdfBackend>(
     backend: &B,
     bench_report: Option<&Path>,
@@ -255,7 +399,7 @@ pub(crate) fn feature_parity_benchmark_evidence(
             );
         }
     };
-    let report: Value = match serde_json::from_slice(&report_bytes) {
+    let report: SavedBenchReport = match serde_json::from_slice(&report_bytes) {
         Ok(report) => report,
         Err(error) => {
             return feature_parity_invalid_benchmark_evidence(
@@ -267,15 +411,10 @@ pub(crate) fn feature_parity_benchmark_evidence(
         }
     };
     let claims = report
-        .get("speedup_claims")
-        .and_then(Value::as_array)
-        .map(|claims| {
-            claims
-                .iter()
-                .map(feature_parity_benchmark_claim_evidence)
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
+        .speedup_claims
+        .iter()
+        .map(feature_parity_benchmark_claim_evidence)
+        .collect::<Vec<_>>();
 
     let mut missing_required_claims = Vec::new();
     let mut failed_required_claims = Vec::new();
@@ -334,18 +473,9 @@ pub(crate) fn feature_parity_benchmark_evidence(
 
     FeatureParityBenchmarkEvidence {
         report_path: path.display().to_string(),
-        report_version: report
-            .get("report_version")
-            .and_then(Value::as_str)
-            .map(str::to_string),
-        backend: report
-            .get("backend")
-            .and_then(Value::as_str)
-            .map(str::to_string),
-        quality_status: report
-            .get("quality_status")
-            .and_then(Value::as_str)
-            .map(str::to_string),
+        report_version: report.report_version,
+        backend: report.backend,
+        quality_status: report.quality_status,
         report_valid: true,
         report_error: None,
         quality_categories,
@@ -439,27 +569,28 @@ pub(crate) fn feature_parity_benchmark_coverage_requirement(
     }
 }
 
-pub(crate) fn feature_parity_benchmark_quality_categories(
-    report: &Value,
+fn feature_parity_benchmark_quality_categories(
+    report: &SavedBenchReport,
 ) -> Vec<FeatureParityBenchmarkCategoryEvidence> {
     let summaries = report
-        .get("quality")
-        .and_then(|quality| quality.get("category_summaries"))
-        .or_else(|| report.get("category_summaries"))
-        .and_then(Value::as_object);
-    let Some(summaries) = summaries else {
+        .quality
+        .as_ref()
+        .map(|quality| &quality.category_summaries)
+        .filter(|summaries| !summaries.is_empty())
+        .unwrap_or(&report.category_summaries);
+    if summaries.is_empty() {
         return Vec::new();
-    };
+    }
 
     let mut categories = summaries
         .iter()
         .map(
             |(category, summary)| FeatureParityBenchmarkCategoryEvidence {
                 category: category.clone(),
-                document_count: summary.get("document_count").and_then(Value::as_u64),
-                page_count: summary.get("page_count").and_then(Value::as_u64),
-                failed_checks: summary.get("failed_checks").and_then(Value::as_u64),
-                quality_passed: summary.get("quality_passed").and_then(Value::as_bool),
+                document_count: summary.document_count,
+                page_count: summary.page_count,
+                failed_checks: summary.failed_checks,
+                quality_passed: summary.quality_passed,
             },
         )
         .collect::<Vec<_>>();
@@ -468,41 +599,33 @@ pub(crate) fn feature_parity_benchmark_quality_categories(
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct FeatureParityBenchmarkQualityDocument {
+struct FeatureParityBenchmarkQualityDocument {
     pub(crate) path: Option<String>,
     pub(crate) category: String,
     pub(crate) page_count: u64,
 }
 
-pub(crate) fn feature_parity_benchmark_baseline_quality_unchecked_categories(
-    report: &Value,
+fn feature_parity_benchmark_baseline_quality_unchecked_categories(
+    report: &SavedBenchReport,
 ) -> Vec<FeatureParityBenchmarkBaselineQualityUncheckedCategoryEvidence> {
     let quality_documents = report
-        .get("quality")
-        .and_then(|quality| quality.get("documents"))
-        .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default();
+        .quality
+        .as_ref()
+        .map(|quality| quality.documents.as_slice())
+        .unwrap_or(&[]);
     let quality_by_fingerprint = quality_documents
         .iter()
         .filter_map(|document| {
-            let fingerprint = document.get("document_fingerprint")?.as_str()?;
+            let fingerprint = document.document_fingerprint.as_deref()?;
             Some((
                 fingerprint.to_string(),
                 FeatureParityBenchmarkQualityDocument {
-                    path: document
-                        .get("path")
-                        .and_then(Value::as_str)
-                        .map(str::to_string),
+                    path: document.path.clone(),
                     category: document
-                        .get("category")
-                        .and_then(Value::as_str)
-                        .unwrap_or("uncategorized")
-                        .to_string(),
-                    page_count: document
-                        .get("page_count")
-                        .and_then(Value::as_u64)
-                        .unwrap_or_default(),
+                        .category
+                        .clone()
+                        .unwrap_or_else(|| "uncategorized".to_string()),
+                    page_count: document.page_count.unwrap_or_default(),
                 },
             ))
         })
@@ -510,18 +633,14 @@ pub(crate) fn feature_parity_benchmark_baseline_quality_unchecked_categories(
     let quality_by_path = quality_documents
         .iter()
         .filter_map(|document| {
-            let path = document.get("path")?.as_str()?;
+            let path = document.path.as_deref()?;
             Some(FeatureParityBenchmarkQualityDocument {
                 path: Some(path.to_string()),
                 category: document
-                    .get("category")
-                    .and_then(Value::as_str)
-                    .unwrap_or("uncategorized")
-                    .to_string(),
-                page_count: document
-                    .get("page_count")
-                    .and_then(Value::as_u64)
-                    .unwrap_or_default(),
+                    .category
+                    .clone()
+                    .unwrap_or_else(|| "uncategorized".to_string()),
+                page_count: document.page_count.unwrap_or_default(),
             })
         })
         .collect::<Vec<_>>();
@@ -530,12 +649,12 @@ pub(crate) fn feature_parity_benchmark_baseline_quality_unchecked_categories(
         FeatureParityBenchmarkBaselineQualityUncheckedCategoryEvidence,
     >::new();
 
-    let Some(documents) = report.get("documents").and_then(Value::as_array) else {
+    if report.documents.is_empty() {
         return Vec::new();
-    };
-    for document in documents {
-        let fingerprint = document.get("document_fingerprint").and_then(Value::as_str);
-        let path = document.get("path").and_then(Value::as_str);
+    }
+    for document in &report.documents {
+        let fingerprint = document.document_fingerprint.as_deref();
+        let path = document.path.as_deref();
         let quality_document = fingerprint
             .and_then(|fingerprint| quality_by_fingerprint.get(fingerprint))
             .or_else(|| {
@@ -547,31 +666,28 @@ pub(crate) fn feature_parity_benchmark_baseline_quality_unchecked_categories(
             });
         let category = quality_document
             .map(|quality| quality.category.as_str())
-            .or_else(|| document.get("category").and_then(Value::as_str))
+            .or(document.category.as_deref())
             .unwrap_or("uncategorized");
         let page_count = quality_document
             .map(|quality| quality.page_count)
-            .or_else(|| document.get("page_count").and_then(Value::as_u64))
+            .or(document.page_count)
             .unwrap_or_default();
-        let Some(baselines) = document.get("baselines").and_then(Value::as_array) else {
-            continue;
-        };
 
-        for baseline in baselines {
+        for baseline in &document.baselines {
             if baseline
-                .get("quality")
+                .quality
+                .as_ref()
                 .is_some_and(|quality| !quality.is_null())
             {
                 continue;
             }
-            let Some(quality_status) = baseline.get("quality_status").and_then(Value::as_str)
-            else {
+            let Some(quality_status) = baseline.quality_status.as_deref() else {
                 continue;
             };
-            if !quality_status.starts_with("not_checked_") {
+            if !saved_bench_quality_status_is_unchecked(quality_status) {
                 continue;
             }
-            let Some(baseline_name) = baseline.get("name").and_then(Value::as_str) else {
+            let Some(baseline_name) = baseline.name.as_deref() else {
                 continue;
             };
             let key = (baseline_name.to_string(), category.to_string());
@@ -595,84 +711,60 @@ pub(crate) fn feature_parity_benchmark_baseline_quality_unchecked_categories(
     summaries.into_values().collect()
 }
 
-pub(crate) fn feature_parity_benchmark_baseline_quality_failures(
-    report: &Value,
+fn feature_parity_benchmark_baseline_quality_failures(
+    report: &SavedBenchReport,
 ) -> Vec<FeatureParityBenchmarkBaselineQualityFailureEvidence> {
-    let Some(baselines) = report.get("baselines").and_then(Value::as_array) else {
+    if report.baselines.is_empty() {
         return Vec::new();
-    };
+    }
 
-    let mut failures = baselines
+    let mut failures = report
+        .baselines
         .iter()
         .filter_map(|baseline| {
-            let baseline_name = baseline.get("name")?.as_str()?.to_string();
+            let baseline_name = baseline.name.as_deref()?.to_string();
             let mut failed_categories = baseline
-                .get("quality_category_summaries")
-                .and_then(Value::as_object)
-                .map(|summaries| {
-                    summaries
-                        .iter()
-                        .filter_map(|(category, summary)| {
-                            let failed_documents = summary
-                                .get("failed_documents")
-                                .and_then(Value::as_u64)
-                                .unwrap_or_default();
-                            let failed_checks = summary
-                                .get("failed_checks")
-                                .and_then(Value::as_u64)
-                                .unwrap_or_default();
-                            let quality_failed = summary
-                                .get("quality_failed")
-                                .and_then(Value::as_bool)
-                                .unwrap_or(false);
-                            if failed_documents == 0 && failed_checks == 0 && !quality_failed {
-                                return None;
-                            }
+                .quality_category_summaries
+                .iter()
+                .filter_map(|(category, summary)| {
+                    let failed_documents = summary.failed_documents.unwrap_or_default();
+                    let failed_checks = summary.failed_checks.unwrap_or_default();
+                    let quality_failed = summary.quality_failed.unwrap_or(false);
+                    if failed_documents == 0 && failed_checks == 0 && !quality_failed {
+                        return None;
+                    }
 
-                            Some(
-                                FeatureParityBenchmarkBaselineQualityFailedCategoryEvidence {
-                                    category: category.clone(),
-                                    document_count: summary
-                                        .get("document_count")
-                                        .and_then(Value::as_u64)
-                                        .unwrap_or_default(),
-                                    page_count: summary
-                                        .get("page_count")
-                                        .and_then(Value::as_u64)
-                                        .unwrap_or_default(),
-                                    failed_documents,
-                                    failed_checks,
-                                },
-                            )
-                        })
-                        .collect::<Vec<_>>()
+                    Some(
+                        FeatureParityBenchmarkBaselineQualityFailedCategoryEvidence {
+                            category: category.clone(),
+                            document_count: summary.document_count.unwrap_or_default(),
+                            page_count: summary.page_count.unwrap_or_default(),
+                            failed_documents,
+                            failed_checks,
+                        },
+                    )
                 })
-                .unwrap_or_default();
+                .collect::<Vec<_>>();
             failed_categories.sort_by(|left, right| left.category.cmp(&right.category));
 
             let failure_samples = baseline
-                .get("quality_failure_samples")
-                .and_then(Value::as_array)
-                .map(|samples| samples.iter().take(8).cloned().collect::<Vec<_>>())
-                .unwrap_or_default();
-            let quality_failed_documents = baseline
-                .get("quality_failed_documents")
-                .and_then(Value::as_u64)
-                .unwrap_or_else(|| {
-                    failed_categories
-                        .iter()
-                        .map(|category| category.failed_documents)
-                        .sum()
-                });
-            let quality_failed_checks = baseline
-                .get("quality_failed_checks")
-                .and_then(Value::as_u64)
-                .unwrap_or_else(|| {
-                    failed_categories
-                        .iter()
-                        .map(|category| category.failed_checks)
-                        .sum()
-                });
+                .quality_failure_samples
+                .iter()
+                .take(8)
+                .cloned()
+                .collect::<Vec<_>>();
+            let quality_failed_documents = baseline.quality_failed_documents.unwrap_or_else(|| {
+                failed_categories
+                    .iter()
+                    .map(|category| category.failed_documents)
+                    .sum()
+            });
+            let quality_failed_checks = baseline.quality_failed_checks.unwrap_or_else(|| {
+                failed_categories
+                    .iter()
+                    .map(|category| category.failed_checks)
+                    .sum()
+            });
 
             if quality_failed_documents == 0
                 && quality_failed_checks == 0
@@ -684,14 +776,8 @@ pub(crate) fn feature_parity_benchmark_baseline_quality_failures(
 
             Some(FeatureParityBenchmarkBaselineQualityFailureEvidence {
                 baseline: baseline_name,
-                target: baseline
-                    .get("target")
-                    .and_then(Value::as_str)
-                    .map(str::to_string),
-                quality_status: baseline
-                    .get("quality_status")
-                    .and_then(Value::as_str)
-                    .map(str::to_string),
+                target: baseline.target.clone(),
+                quality_status: baseline.quality_status.clone(),
                 quality_failed_documents,
                 quality_failed_checks,
                 failed_categories,
@@ -703,7 +789,7 @@ pub(crate) fn feature_parity_benchmark_baseline_quality_failures(
     failures
 }
 
-pub(crate) fn feature_parity_paths_match(quality_path: Option<&str>, document_path: &str) -> bool {
+fn feature_parity_paths_match(quality_path: Option<&str>, document_path: &str) -> bool {
     let Some(quality_path) = quality_path else {
         return false;
     };
@@ -712,73 +798,46 @@ pub(crate) fn feature_parity_paths_match(quality_path: Option<&str>, document_pa
         || document_path.ends_with(&format!("/{quality_path}"))
 }
 
-pub(crate) fn feature_parity_benchmark_claim_evidence(
-    value: &Value,
+fn feature_parity_benchmark_claim_evidence(
+    claim: &SavedBenchSpeedupClaim,
 ) -> FeatureParityBenchmarkClaimEvidence {
-    let glyphrush_quality_checked = value
-        .get("glyphrush_quality_checked")
-        .and_then(Value::as_bool);
-    let glyphrush_quality_passed = value
-        .get("glyphrush_quality_passed")
-        .and_then(Value::as_bool);
-    let baseline_quality_checked = value
-        .get("baseline_quality_checked")
-        .and_then(Value::as_bool);
-    let baseline_quality_passed = value
-        .get("baseline_quality_passed")
-        .and_then(Value::as_bool);
-    let glyphrush_quality_backed = value
-        .get("glyphrush_quality_backed")
-        .and_then(Value::as_bool)
+    let glyphrush_quality_checked = claim.glyphrush_quality_checked;
+    let glyphrush_quality_passed = claim.glyphrush_quality_passed;
+    let baseline_quality_checked = claim.baseline_quality_checked;
+    let baseline_quality_passed = claim.baseline_quality_passed;
+    let glyphrush_quality_backed = claim
+        .glyphrush_quality_backed
         .or_else(|| Some(glyphrush_quality_checked? && glyphrush_quality_passed?));
-    let quality_blocker = value
-        .get("quality_blocker")
-        .and_then(Value::as_str)
-        .map(str::to_string)
-        .or_else(|| {
-            if glyphrush_quality_checked == Some(false) {
-                Some("glyphrush_quality_not_checked".to_string())
-            } else if glyphrush_quality_checked == Some(true)
-                && glyphrush_quality_passed == Some(false)
-            {
-                Some("glyphrush_quality_failed".to_string())
-            } else if baseline_quality_checked == Some(false) {
-                Some("baseline_quality_not_checked".to_string())
-            } else if baseline_quality_checked == Some(true)
-                && baseline_quality_passed == Some(false)
-            {
-                Some("baseline_quality_failed".to_string())
-            } else {
-                None
-            }
-        });
+    let quality_blocker = claim.quality_blocker.clone().or_else(|| {
+        if glyphrush_quality_checked == Some(false) {
+            Some("glyphrush_quality_not_checked".to_string())
+        } else if glyphrush_quality_checked == Some(true) && glyphrush_quality_passed == Some(false)
+        {
+            Some("glyphrush_quality_failed".to_string())
+        } else if baseline_quality_checked == Some(false) {
+            Some("baseline_quality_not_checked".to_string())
+        } else if baseline_quality_checked == Some(true) && baseline_quality_passed == Some(false) {
+            Some("baseline_quality_failed".to_string())
+        } else {
+            None
+        }
+    });
 
     FeatureParityBenchmarkClaimEvidence {
-        baseline: value
-            .get("baseline")
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .to_string(),
-        required_glyphrush_speedup: value
-            .get("required_glyphrush_speedup")
-            .and_then(Value::as_f64),
-        actual_glyphrush_speedup: value
-            .get("actual_glyphrush_speedup")
-            .and_then(Value::as_f64),
-        speed_comparable: value.get("speed_comparable").and_then(Value::as_bool),
-        speed_passed: value.get("speed_passed").and_then(Value::as_bool),
+        baseline: claim.baseline.clone().unwrap_or_default(),
+        required_glyphrush_speedup: claim.required_glyphrush_speedup,
+        actual_glyphrush_speedup: claim.actual_glyphrush_speedup,
+        speed_comparable: claim.speed_comparable,
+        speed_passed: claim.speed_passed,
         glyphrush_quality_checked,
         glyphrush_quality_passed,
         baseline_quality_checked,
         baseline_quality_passed,
         glyphrush_quality_backed,
-        quality_backed: value.get("quality_backed").and_then(Value::as_bool),
+        quality_backed: claim.quality_backed,
         quality_blocker,
-        claim_passed: value.get("claim_passed").and_then(Value::as_bool),
-        status: value
-            .get("status")
-            .and_then(Value::as_str)
-            .map(str::to_string),
+        claim_passed: claim.claim_passed,
+        status: claim.status.clone(),
     }
 }
 
@@ -794,7 +853,7 @@ pub(crate) fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Implemented,
             hot_path: false,
             quality_guard: "rendered_image_ocr_check_and_render_page_fallback_counts",
-            notes: "PDFium renders only OCR-routed pages to temporary PPM files for command or HTTP adapters, records render timing and fallback-action counts, and removes temporary image files after OCR returns.",
+            notes: "PDFium renders OCR-routed pages to temporary PPM files for command or HTTP adapters, records render timing and fallback counts, and removes temporary image files after OCR returns.",
         }
     } else {
         FeatureParityCapability {
@@ -858,7 +917,7 @@ pub(crate) fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Implemented,
             hot_path: false,
             quality_guard: "layout_uncertain_flag_reading_order_and_span_bbox_eval",
-            notes: "Glyphrush avoids always-on per-character metadata, preserves full-width bands, fragmented full-width heading rows, fragmented middle cross-column bands, fragmented short section separators, leading, middle, and trailing cross-column bands, conservative short section separators, narrow academic gutters with trailing centered page numbers, column-row bands that keep centered banners, gutter-straddling rows, and trailing page numbers out of column splits, and clearly separated 2-5 column reading order when span geometry is available, seeds bounded span-bbox manifest samples, reports the per-page reading-order strategy as layout_strategy, escalates layout work when signals require it, and flags unresolved multi-column evidence as layout_uncertain with a column_layout_unresolved reason instead of silently interleaving columns. Labeled real-PDF reading-order and span-bbox fixtures gate this in test/corpus.v0.layout.json.",
+            notes: "Glyphrush uses bounded span geometry for column-aware reading order, full-width band handling, and layout_uncertain escalation instead of silent column interleaving. Unresolved multi-column pages are flagged rather than guessed. Labeled real-PDF reading-order and span-bbox fixtures gate this in test/corpus.v0.layout.json.",
         },
         FeatureParityCapability {
             id: "ocr",
@@ -879,7 +938,7 @@ pub(crate) fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Implemented,
             hot_path: false,
             quality_guard: "table_uncertain_flag_and_table_structure_eval",
-            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, key-value metadata rows, embedded pin/function tables, number-first pin-description tables, fragmented symbol/rating tables, bullet/leader spec tables, electrical-characteristics min/typ/max tables, AWINIC parameter/test-condition electrical tables with split frequency ranges, split ppm/degree-C units, ohm values, thermal shutdown rows, and footer exclusion, parameter/symbol/conditions electrical tables with condition continuations and thermal/EN threshold tail rows, reflow-profile Sn-Pb/Pb-free assembly tables, classification-temperature package/volume tables, package pin-description tables, part-number ordering tables, OMB-style budget projection tables, header-guided whitespace rows with table-header cues, same-line or wrapped multi-word descriptor cells, two-column descriptor/value rows, trailing descriptor continuations, header-guided trailing blank cells, header-guided section rows, and prefixed leading delimited/text-table captions outside table grids, aligned whitespace and positioned interior section rows, keeps positioned captions outside table grids, rejects routed description prose without table-header cues, rejects positioned-table windows that are really the page's own two-column prose lines so figure-ruling-routed academic pages keep column reading order instead of fake parallel-prose tables, recovers column-ruled grids from extracted vector ruling lines (composed through nested form XObject transforms) with text-row row structure, blank-cell preservation, wrapped-descriptor merges, and diagram-lattice rejection so filled vouchers and ruled month-grid forms produce structured cells, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, fragmented first-column positioned section rows, interior positioned condition/note rows, multi-cell wrapped continuations, and same-column wrapped header rows when table recovery is routed, splits side-by-side per-column tables on two-column pages instead of mashing them into one grid, and exposes structured grids to eval text anchors. Labeled real-PDF table fixtures pass across datasheet, invoice/form, budget, and academic categories in test/corpus.v0.layout.json and test/corpus.v0.json. Two-level header groups, merged cells, and cross-page continuation stitching remain conservative and are tracked as later advanced-table-semantics work, with table_uncertain flags preserved.",
+            notes: "Conservative table recovery preserves blank cells and structured grids for delimited, whitespace, positioned, and vector-ruled layouts, with explicit table_uncertain flags when evidence is weak. Two-level headers, merged cells, and cross-page stitching remain conservative follow-up work. Labeled real-PDF table fixtures gate this in test/corpus.v0.layout.json and test/corpus.v0.json.",
         },
         FeatureParityCapability {
             id: "artifact_cache_snapshots",
@@ -899,7 +958,7 @@ pub(crate) fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Implemented,
             hot_path: false,
             quality_guard: "bindings_must_share_native_core_artifact",
-            notes: "Dependency-free Python and Node wrappers delegate parse, text and markdown derived-output helpers, inspect-page triage, debug-page, OCR/backend/baseline preflights, feature-parity reports, eval-manifest quality gates, benchmark reports, and manifest generation to the native CLI artifact paths.",
+            notes: "Dependency-free Python and Node wrappers delegate parse, inspect, debug, eval, bench, manifest, and preflight commands to the native CLI artifact paths.",
         },
         FeatureParityCapability {
             id: "wasm_bindings",
@@ -909,7 +968,7 @@ pub(crate) fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Implemented,
             hot_path: false,
             quality_guard: "wasm_must_share_native_core_artifact",
-            notes: "bindings/wasm wraps glyphrush-core and the shared glyphrush-lopdf extraction crate behind wasm-bindgen: PDF bytes in, the identical JSON document artifact out, verified by a deep-equal parity test against the CLI's lopdf backend (only timing and source-mtime fields are exempt). OCR adapters are process/network seams that do not apply to the wasm surface; OCR-required pages keep their requires_ocr flags and warnings exactly like a no-OCR CLI run.",
+            notes: "bindings/wasm exposes the same JSON document artifact as the CLI lopdf backend via wasm-bindgen, verified by deep-equal parity tests (timing and source-mtime exempt). OCR adapters are out of scope; OCR-required pages keep requires_ocr flags like a no-OCR CLI run.",
         },
         FeatureParityCapability {
             id: "mupdf_backend",

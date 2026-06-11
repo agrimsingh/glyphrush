@@ -89,35 +89,13 @@ fn feature_parity_reports_liteparse_capability_gaps() {
 
     let span_geometry = capability(capabilities, "span_geometry_layout");
     assert_eq!(span_geometry["glyphrush_status"], "implemented");
-    assert!(
-        span_geometry["notes"]
-            .as_str()
-            .unwrap()
-            .contains("clearly separated 2-5 column reading order")
+    assert_eq!(
+        span_geometry["glyphrush"],
+        "bounded_span_geometry_and_full_width_aware_layout_blocks"
     );
-    assert!(
-        span_geometry["notes"]
-            .as_str()
-            .unwrap()
-            .contains("fragmented full-width heading rows")
-    );
-    assert!(
-        span_geometry["notes"]
-            .as_str()
-            .unwrap()
-            .contains("fragmented middle cross-column bands")
-    );
-    assert!(
-        span_geometry["notes"]
-            .as_str()
-            .unwrap()
-            .contains("fragmented short section separators")
-    );
-    assert!(
-        span_geometry["notes"]
-            .as_str()
-            .unwrap()
-            .contains("narrow academic gutters")
+    assert_eq!(
+        span_geometry["quality_guard"],
+        "layout_uncertain_flag_reading_order_and_span_bbox_eval"
     );
 
     let cache = capability(capabilities, "artifact_cache_snapshots");
@@ -129,113 +107,13 @@ fn feature_parity_reports_liteparse_capability_gaps() {
 
     let table_recovery = capability(capabilities, "table_recovery");
     assert_eq!(table_recovery["glyphrush_status"], "implemented");
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("aligned whitespace and positioned interior section rows")
+    assert_eq!(
+        table_recovery["glyphrush"],
+        "table_likelihood_and_basic_structure_recovery_with_empty_cell_preservation"
     );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("keeps positioned captions outside table grids")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("fixed-width wrapped descriptor fragments")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("key-value metadata rows")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("header-guided section rows")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("two-column descriptor/value rows")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("prefixed leading delimited/text-table captions outside table grids")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("trailing descriptor continuations")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("header-guided trailing blank cells")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("same-line fragmented positioned cells")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("first-column positioned section rows")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("fragmented first-column positioned section rows")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("same-column wrapped header rows")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("interior positioned condition/note rows")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("embedded pin/function tables")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("package pin-description tables")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("OMB-style budget projection tables")
-    );
-    assert!(
-        table_recovery["notes"]
-            .as_str()
-            .unwrap()
-            .contains("AWINIC parameter/test-condition electrical tables")
+    assert_eq!(
+        table_recovery["quality_guard"],
+        "table_uncertain_flag_and_table_structure_eval"
     );
 
     let ocr = capability(capabilities, "ocr");
@@ -257,11 +135,9 @@ fn feature_parity_reports_liteparse_capability_gaps() {
         bindings["glyphrush"],
         "thin_python_node_parse_inspect_debug_eval_bench_manifest_preflight_wrappers"
     );
-    assert!(
-        bindings["notes"]
-            .as_str()
-            .unwrap()
-            .contains("text and markdown derived-output helpers")
+    assert_eq!(
+        bindings["quality_guard"],
+        "bindings_must_share_native_core_artifact"
     );
 
     let wasm = capability(capabilities, "wasm_bindings");
@@ -1345,11 +1221,9 @@ fn feature_parity_counts_pdfium_ocr_runtime_caps_and_cache_as_implemented() {
         page_render["quality_guard"],
         "rendered_image_ocr_check_and_render_page_fallback_counts"
     );
-    assert!(
-        page_render["notes"]
-            .as_str()
-            .unwrap()
-            .contains("PDFium renders only OCR-routed pages")
+    assert_eq!(
+        page_render["glyphrush"],
+        "pdfium_rendered_image_command_or_http_input"
     );
 
     let ocr = capability(capabilities, "ocr");
