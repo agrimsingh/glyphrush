@@ -30,10 +30,10 @@ use glyphrush_core::{
 };
 #[cfg(feature = "pdfium")]
 use glyphrush_core::{
-    ExtractedImage, ExtractedRulingLine, MAX_EXTRACTED_RULING_LINES, RULED_TABLE_SATURATION_SEGMENTS,
-    broken_encoding_ratio, combined_table_line_density, duplicate_char_ratio,
-    image_artifact_coverage_ratio, is_ruling_segment, positioned_bbox_overlap_ratio, ruling_density,
-    ruling_line_from_segment,
+    ExtractedImage, ExtractedRulingLine, MAX_EXTRACTED_RULING_LINES,
+    RULED_TABLE_SATURATION_SEGMENTS, broken_encoding_ratio, combined_table_line_density,
+    duplicate_char_ratio, image_artifact_coverage_ratio, is_ruling_segment,
+    positioned_bbox_overlap_ratio, ruling_density, ruling_line_from_segment,
 };
 #[cfg(any(test, feature = "pdfium"))]
 use glyphrush_core::{ExtractedTextSpan, normalize_text_for_span_check};
@@ -8038,18 +8038,109 @@ fn manifest_path_key(path: &Path) -> PathBuf {
     })
 }
 
+fn required_text_missing(expected: &[String], actual_text: &str) -> Vec<String> {
+    expected
+        .iter()
+        .filter(|text| !required_text_anchor_matches(actual_text, text))
+        .cloned()
+        .collect()
+}
+
+struct TextRecallScore {
+    word_recall: f64,
+    char_recall: f64,
+    missing_words: Vec<String>,
+}
+
+impl TextRecallScore {
+    fn passed(&self, expectation: &TextRecallExpectation) -> bool {
+        self.word_recall >= expectation.min_word_recall.unwrap_or(1.0)
+            && self.char_recall >= expectation.min_char_recall.unwrap_or(1.0)
+    }
+}
+
+fn text_recall_score(expectation: &TextRecallExpectation, actual_text: &str) -> TextRecallScore {
+    TextRecallScore {
+        word_recall: multiset_recall(
+            normalize_words(&expectation.expected),
+            normalize_words(actual_text),
+        ),
+        char_recall: multiset_recall(
+            normalize_chars(&expectation.expected),
+            normalize_chars(actual_text),
+        ),
+        missing_words: missing_multiset_items(
+            normalize_words(&expectation.expected),
+            normalize_words(actual_text),
+        ),
+    }
+}
+
+struct ReadingOrderOutcome {
+    score: f64,
+    matched: Vec<ReadingOrderMatch>,
+    missing: Vec<String>,
+    inversion_count: usize,
+    inversions: Vec<ReadingOrderInversion>,
+}
+
+fn reading_order_outcome(
+    expectation: &ReadingOrderExpectation,
+    actual_text: &str,
+) -> ReadingOrderOutcome {
+    let positions = expectation
+        .expected_sequence
+        .iter()
+        .map(|snippet| actual_text.find(snippet))
+        .collect::<Vec<_>>();
+    let matched = expectation
+        .expected_sequence
+        .iter()
+        .zip(positions.iter())
+        .filter_map(|(snippet, position)| {
+            position.map(|position| ReadingOrderMatch {
+                snippet: snippet.clone(),
+                position,
+            })
+        })
+        .collect::<Vec<_>>();
+    let missing = expectation
+        .expected_sequence
+        .iter()
+        .zip(positions.iter())
+        .filter(|(_, position)| position.is_none())
+        .map(|(snippet, _)| snippet.clone())
+        .collect::<Vec<_>>();
+    let (score, inversion_count, inversions) =
+        reading_order_score(&expectation.expected_sequence, &positions);
+    ReadingOrderOutcome {
+        score,
+        matched,
+        missing,
+        inversion_count,
+        inversions,
+    }
+}
+
+fn table_structure_thresholds_pass(
+    score: &TableStructureScore,
+    expectation: &TableStructureExpectation,
+) -> bool {
+    score.row_precision >= expectation.min_row_precision.unwrap_or(0.0)
+        && score.row_recall >= expectation.min_row_recall.unwrap_or(1.0)
+        && score.row_f1 >= expectation.min_row_f1.unwrap_or(0.0)
+        && score.cell_precision >= expectation.min_cell_precision.unwrap_or(0.0)
+        && score.cell_recall >= expectation.min_cell_recall.unwrap_or(1.0)
+        && score.cell_f1 >= expectation.min_cell_f1.unwrap_or(0.0)
+}
+
 fn baseline_quality_from_stdout(
     stdout: &[u8],
     expectations: &BaselineQualityExpectations,
 ) -> BaselineQualityOutput {
     let actual_text = String::from_utf8_lossy(stdout);
     let required_text = (!expectations.required_text.is_empty()).then(|| {
-        let missing = expectations
-            .required_text
-            .iter()
-            .filter(|text| !required_text_anchor_matches(&actual_text, text))
-            .cloned()
-            .collect::<Vec<_>>();
+        let missing = required_text_missing(&expectations.required_text, &actual_text);
         BaselineRequiredTextOutput {
             passed: missing.is_empty(),
             expected: expectations.required_text.clone(),
@@ -8057,27 +8148,14 @@ fn baseline_quality_from_stdout(
         }
     });
     let text_recall = expectations.text_recall.as_ref().map(|expectation| {
-        let word_recall = multiset_recall(
-            normalize_words(&expectation.expected),
-            normalize_words(&actual_text),
-        );
-        let char_recall = multiset_recall(
-            normalize_chars(&expectation.expected),
-            normalize_chars(&actual_text),
-        );
-        let min_word_recall = expectation.min_word_recall.unwrap_or(1.0);
-        let min_char_recall = expectation.min_char_recall.unwrap_or(1.0);
-        let missing_words = missing_multiset_items(
-            normalize_words(&expectation.expected),
-            normalize_words(&actual_text),
-        );
+        let score = text_recall_score(expectation, &actual_text);
         BaselineTextRecallOutput {
-            passed: word_recall >= min_word_recall && char_recall >= min_char_recall,
-            word_recall,
-            char_recall,
-            missing_words,
-            min_word_recall,
-            min_char_recall,
+            passed: score.passed(expectation),
+            word_recall: score.word_recall,
+            char_recall: score.char_recall,
+            missing_words: score.missing_words,
+            min_word_recall: expectation.min_word_recall.unwrap_or(1.0),
+            min_char_recall: expectation.min_char_recall.unwrap_or(1.0),
         }
     });
     let reading_order = expectations
@@ -8118,40 +8196,16 @@ fn baseline_reading_order_from_text(
     actual_text: &str,
     expectation: &ReadingOrderExpectation,
 ) -> BaselineReadingOrderOutput {
-    let positions = expectation
-        .expected_sequence
-        .iter()
-        .map(|snippet| actual_text.find(snippet))
-        .collect::<Vec<_>>();
-    let matched = expectation
-        .expected_sequence
-        .iter()
-        .zip(positions.iter())
-        .filter_map(|(snippet, position)| {
-            position.map(|position| ReadingOrderMatch {
-                snippet: snippet.clone(),
-                position,
-            })
-        })
-        .collect::<Vec<_>>();
-    let missing = expectation
-        .expected_sequence
-        .iter()
-        .zip(positions.iter())
-        .filter(|(_, position)| position.is_none())
-        .map(|(snippet, _)| snippet.clone())
-        .collect::<Vec<_>>();
-    let (score, inversion_count, inversions) =
-        reading_order_score(&expectation.expected_sequence, &positions);
+    let outcome = reading_order_outcome(expectation, actual_text);
     let min_score = expectation.min_score.unwrap_or(1.0);
 
     BaselineReadingOrderOutput {
-        passed: score >= min_score,
-        score,
-        matched,
-        missing,
-        inversion_count,
-        inversions,
+        passed: outcome.score >= min_score,
+        score: outcome.score,
+        matched: outcome.matched,
+        missing: outcome.missing,
+        inversion_count: outcome.inversion_count,
+        inversions: outcome.inversions,
         min_score,
     }
 }
@@ -8161,64 +8215,28 @@ fn baseline_table_structure_from_text(
     expectation: &TableStructureExpectation,
 ) -> BaselineTableStructureOutput {
     let expected_rows = normalize_table_rows(&expectation.expected_rows);
-    let actual_rows = parse_table_rows(actual_text);
-    let missing_rows = missing_multiset_items(expected_rows.clone(), actual_rows.clone());
-    let extra_rows = missing_multiset_items(actual_rows.clone(), expected_rows.clone());
-    let expected_cells = table_cells(&expected_rows);
-    let actual_cells = table_cells(&actual_rows);
-    let missing_cells = missing_multiset_items(expected_cells.clone(), actual_cells.clone());
-    let extra_cells = missing_multiset_items(actual_cells.clone(), expected_cells.clone());
-    let row_recall = ratio(
-        expected_rows.len().saturating_sub(missing_rows.len()),
-        expected_rows.len(),
-    );
-    let row_precision = ratio(
-        actual_rows.len().saturating_sub(extra_rows.len()),
-        actual_rows.len(),
-    );
-    let row_f1 = f1(row_precision, row_recall);
-    let cell_recall = ratio(
-        expected_cells.len().saturating_sub(missing_cells.len()),
-        expected_cells.len(),
-    );
-    let cell_precision = ratio(
-        actual_cells.len().saturating_sub(extra_cells.len()),
-        actual_cells.len(),
-    );
-    let cell_f1 = f1(cell_precision, cell_recall);
-    let min_row_precision = expectation.min_row_precision.unwrap_or(0.0);
-    let min_row_recall = expectation.min_row_recall.unwrap_or(1.0);
-    let min_row_f1 = expectation.min_row_f1.unwrap_or(0.0);
-    let min_cell_precision = expectation.min_cell_precision.unwrap_or(0.0);
-    let min_cell_recall = expectation.min_cell_recall.unwrap_or(1.0);
-    let min_cell_f1 = expectation.min_cell_f1.unwrap_or(0.0);
-    let passed = row_precision >= min_row_precision
-        && row_recall >= min_row_recall
-        && row_f1 >= min_row_f1
-        && cell_precision >= min_cell_precision
-        && cell_recall >= min_cell_recall
-        && cell_f1 >= min_cell_f1;
+    let score = score_table_structure_rows(&expected_rows, parse_table_rows(actual_text));
 
     BaselineTableStructureOutput {
         page: expectation.page,
-        passed,
-        extracted_rows: actual_rows,
-        row_precision,
-        row_recall,
-        row_f1,
-        missing_rows,
-        extra_rows,
-        cell_precision,
-        cell_recall,
-        cell_f1,
-        missing_cells,
-        extra_cells,
-        min_row_precision,
-        min_row_recall,
-        min_row_f1,
-        min_cell_precision,
-        min_cell_recall,
-        min_cell_f1,
+        passed: table_structure_thresholds_pass(&score, expectation),
+        extracted_rows: score.actual_rows,
+        row_precision: score.row_precision,
+        row_recall: score.row_recall,
+        row_f1: score.row_f1,
+        missing_rows: score.missing_rows,
+        extra_rows: score.extra_rows,
+        cell_precision: score.cell_precision,
+        cell_recall: score.cell_recall,
+        cell_f1: score.cell_f1,
+        missing_cells: score.missing_cells,
+        extra_cells: score.extra_cells,
+        min_row_precision: expectation.min_row_precision.unwrap_or(0.0),
+        min_row_recall: expectation.min_row_recall.unwrap_or(1.0),
+        min_row_f1: expectation.min_row_f1.unwrap_or(0.0),
+        min_cell_precision: expectation.min_cell_precision.unwrap_or(0.0),
+        min_cell_recall: expectation.min_cell_recall.unwrap_or(1.0),
+        min_cell_f1: expectation.min_cell_f1.unwrap_or(0.0),
     }
 }
 
@@ -9552,12 +9570,7 @@ fn insert_required_text_check(
     required_text: &[String],
     artifact: &DocumentArtifact,
 ) {
-    let document_text = document_text(artifact);
-    let missing = required_text
-        .iter()
-        .filter(|text| !required_text_anchor_matches(&document_text, text))
-        .cloned()
-        .collect::<Vec<_>>();
+    let missing = required_text_missing(required_text, &document_text(artifact));
 
     checks.insert(
         "required_text".to_string(),
@@ -9598,34 +9611,22 @@ fn insert_text_recall_check(
     expectation: &TextRecallExpectation,
     artifact: &DocumentArtifact,
 ) {
-    let actual_text = document_text(artifact);
-    let word_recall = multiset_recall(
-        normalize_words(&expectation.expected),
-        normalize_words(&actual_text),
-    );
-    let char_recall = multiset_recall(
-        normalize_chars(&expectation.expected),
-        normalize_chars(&actual_text),
-    );
+    let score = text_recall_score(expectation, &document_text(artifact));
     let min_word_recall = expectation.min_word_recall.unwrap_or(1.0);
     let min_char_recall = expectation.min_char_recall.unwrap_or(1.0);
-    let expected_words = normalize_words(&expectation.expected);
-    let actual_words = normalize_words(&actual_text);
-    let missing_words = missing_multiset_items(expected_words, actual_words);
-    let passed = word_recall >= min_word_recall && char_recall >= min_char_recall;
 
     checks.insert(
         "text_recall".to_string(),
         EvalCheckOutput {
-            passed,
+            passed: score.passed(expectation),
             expected: json!({
                 "min_word_recall": min_word_recall,
                 "min_char_recall": min_char_recall,
             }),
             actual: json!({
-                "word_recall": word_recall,
-                "char_recall": char_recall,
-                "missing_words": missing_words,
+                "word_recall": score.word_recall,
+                "char_recall": score.char_recall,
+                "missing_words": score.missing_words,
             }),
         },
     );
@@ -9636,49 +9637,23 @@ fn insert_reading_order_check(
     expectation: &ReadingOrderExpectation,
     artifact: &DocumentArtifact,
 ) {
-    let actual_text = document_text(artifact);
-    let positions = expectation
-        .expected_sequence
-        .iter()
-        .map(|snippet| actual_text.find(snippet))
-        .collect::<Vec<_>>();
-    let matched = expectation
-        .expected_sequence
-        .iter()
-        .zip(positions.iter())
-        .filter_map(|(snippet, position)| {
-            position.map(|position| ReadingOrderMatch {
-                snippet: snippet.clone(),
-                position,
-            })
-        })
-        .collect::<Vec<_>>();
-    let missing = expectation
-        .expected_sequence
-        .iter()
-        .zip(positions.iter())
-        .filter(|(_, position)| position.is_none())
-        .map(|(snippet, _)| snippet.clone())
-        .collect::<Vec<_>>();
-    let (score, inversion_count, inversions) =
-        reading_order_score(&expectation.expected_sequence, &positions);
+    let outcome = reading_order_outcome(expectation, &document_text(artifact));
     let min_score = expectation.min_score.unwrap_or(1.0);
-    let passed = score >= min_score;
 
     checks.insert(
         "reading_order".to_string(),
         EvalCheckOutput {
-            passed,
+            passed: outcome.score >= min_score,
             expected: json!({
                 "expected_sequence": expectation.expected_sequence,
                 "min_score": min_score,
             }),
             actual: json!({
-                "score": score,
-                "matched": matched,
-                "missing": missing,
-                "inversion_count": inversion_count,
-                "inversions": inversions,
+                "score": outcome.score,
+                "matched": outcome.matched,
+                "missing": outcome.missing,
+                "inversion_count": outcome.inversion_count,
+                "inversions": outcome.inversions,
             }),
         },
     );
@@ -9972,12 +9947,6 @@ fn insert_table_structure_check(
     let min_cell_precision = expectation.min_cell_precision.unwrap_or(0.0);
     let min_cell_recall = expectation.min_cell_recall.unwrap_or(1.0);
     let min_cell_f1 = expectation.min_cell_f1.unwrap_or(0.0);
-    let passed = score.row_precision >= min_row_precision
-        && score.row_recall >= min_row_recall
-        && score.row_f1 >= min_row_f1
-        && score.cell_precision >= min_cell_precision
-        && score.cell_recall >= min_cell_recall
-        && score.cell_f1 >= min_cell_f1;
     let check_key = match expectation_index {
         Some(index) => format!(
             "table_structure.page_{:06}.expectation_{index:06}",
@@ -9989,7 +9958,7 @@ fn insert_table_structure_check(
     checks.insert(
         check_key,
         EvalCheckOutput {
-            passed,
+            passed: table_structure_thresholds_pass(&score, expectation),
             expected: json!({
                 "page": expectation.page,
                 "expected_rows": expected_rows,

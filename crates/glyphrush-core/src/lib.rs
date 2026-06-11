@@ -1789,6 +1789,128 @@ fn layout_side_by_side_positioned_table_blocks(
     (!blocks.is_empty()).then_some(blocks)
 }
 
+/// Shared column geometry for row-band grouping and body-column fit tests.
+struct ColumnModel {
+    center: f32,
+    tolerance: f32,
+    /// Spans entirely inside the center gutter are diagram labels, not body columns.
+    gutter_zone: f32,
+    /// Extraction imprecision lets spans extend slightly outside column bounds.
+    column_fit_slack: f32,
+    columns: Vec<(f32, f32)>,
+}
+
+impl ColumnModel {
+    const COLUMN_FIT_SLACK: f32 = 2.0;
+    const GUTTER_ZONE_FACTOR: f32 = 3.0;
+
+    fn from_page_dimensions(dimensions: &PageDimensions) -> Self {
+        let center = dimensions.width * 0.5;
+        let tolerance = Self::center_tolerance(dimensions);
+        Self {
+            center,
+            tolerance,
+            gutter_zone: tolerance * Self::GUTTER_ZONE_FACTOR,
+            column_fit_slack: Self::COLUMN_FIT_SLACK,
+            columns: Vec::new(),
+        }
+    }
+
+    fn from_body_columns(columns: &[(f32, f32)]) -> Self {
+        Self {
+            center: 0.0,
+            tolerance: 0.0,
+            gutter_zone: 0.0,
+            column_fit_slack: Self::COLUMN_FIT_SLACK,
+            columns: columns.to_vec(),
+        }
+    }
+
+    fn center_tolerance(dimensions: &PageDimensions) -> f32 {
+        (dimensions.width * 0.01).max(4.0)
+    }
+
+    fn span_straddles_center(&self, span: &TextSpan) -> bool {
+        span.bbox.x0 < self.center - self.tolerance && span.bbox.x1 > self.center + self.tolerance
+    }
+
+    fn span_fits_column(&self, span: &TextSpan, column_index: usize) -> bool {
+        let (column_x0, column_x1) = self.columns[column_index];
+        span.bbox.x0 >= column_x0 - self.column_fit_slack
+            && span.bbox.x1 <= column_x1 + self.column_fit_slack
+    }
+
+    fn span_fits_any_column(&self, span: &TextSpan) -> bool {
+        self.columns
+            .iter()
+            .enumerate()
+            .any(|(index, _)| self.span_fits_column(span, index))
+    }
+
+    fn column_index_for_span(&self, span: &TextSpan) -> Option<usize> {
+        self.columns.iter().position(|&(column_x0, column_x1)| {
+            span.bbox.x0 >= column_x0 - self.column_fit_slack
+                && span.bbox.x1 <= column_x1 + self.column_fit_slack
+        })
+    }
+
+    fn span_outside_gutter(&self, span: &TextSpan) -> bool {
+        span.bbox.x0 < self.center - self.gutter_zone
+            || span.bbox.x1 > self.center + self.gutter_zone
+    }
+}
+
+enum RowClass {
+    Band,
+    Columnar,
+    TwoSided,
+}
+
+impl ColumnModel {
+    fn classify_row(&self, row: &[&TextSpan]) -> RowClass {
+        if !self.columns.is_empty() {
+            if row.iter().all(|span| self.span_fits_any_column(span)) {
+                return RowClass::Columnar;
+            }
+            return RowClass::Band;
+        }
+
+        if row.iter().any(|span| self.span_straddles_center(span)) {
+            return RowClass::Band;
+        }
+
+        let has_left = row
+            .iter()
+            .any(|span| span.bbox.x1 <= self.center - self.tolerance);
+        let has_right = row
+            .iter()
+            .any(|span| span.bbox.x0 >= self.center + self.tolerance);
+        if has_left && has_right {
+            RowClass::TwoSided
+        } else {
+            RowClass::Columnar
+        }
+    }
+}
+
+fn segment_row_runs<'a>(
+    rows: &'a [Vec<&'a TextSpan>],
+    is_band: impl Fn(&[&TextSpan]) -> bool,
+) -> Vec<(bool, std::ops::Range<usize>)> {
+    let row_is_band: Vec<bool> = rows.iter().map(|row| is_band(row)).collect();
+    let mut segments = Vec::new();
+    let mut start = 0;
+    while start < rows.len() {
+        let mut end = start + 1;
+        while end < rows.len() && row_is_band[end] == row_is_band[start] {
+            end += 1;
+        }
+        segments.push((row_is_band[start], start..end));
+        start = end;
+    }
+    segments
+}
+
 type BodyColumnPartitionedRows<'a> = (
     Vec<Vec<&'a TextSpan>>,
     Vec<Vec<&'a TextSpan>>,
@@ -1799,6 +1921,7 @@ fn partition_rows_by_body_columns<'a>(
     rows: &'a [Vec<&'a TextSpan>],
     columns: &[(f32, f32)],
 ) -> BodyColumnPartitionedRows<'a> {
+    let model = ColumnModel::from_body_columns(columns);
     let mut left_rows = Vec::new();
     let mut right_rows = Vec::new();
     let mut band_rows = Vec::new();
@@ -1809,8 +1932,8 @@ fn partition_rows_by_body_columns<'a>(
         let mut has_unassigned = false;
 
         for &span in row {
-            let fits_left = span_fits_body_column(span, columns, 0);
-            let fits_right = span_fits_body_column(span, columns, 1);
+            let fits_left = model.span_fits_column(span, 0);
+            let fits_right = model.span_fits_column(span, 1);
             match (fits_left, fits_right) {
                 (true, false) => left_spans.push(span),
                 (false, true) => right_spans.push(span),
@@ -1881,11 +2004,6 @@ fn positioned_row_bottom(row: &[&TextSpan]) -> f32 {
         .unwrap_or(0.0)
 }
 
-fn span_fits_body_column(span: &TextSpan, columns: &[(f32, f32)], column_index: usize) -> bool {
-    let (column_x0, column_x1) = columns[column_index];
-    span.bbox.x0 >= column_x0 - 2.0 && span.bbox.x1 <= column_x1 + 2.0
-}
-
 fn append_positioned_text_blocks_from_rows(
     page_index: u32,
     dimensions: &PageDimensions,
@@ -1927,32 +2045,23 @@ fn split_spans_by_known_columns<'a>(
     }
 
     let rows = group_positioned_text_rows(spans.to_vec());
-    let row_is_band = rows
-        .iter()
-        .map(|row| !row.iter().all(|span| span_fits_a_column(span, columns)))
-        .collect::<Vec<_>>();
+    let model = ColumnModel::from_body_columns(columns);
+    let row_is_band = |row: &[&TextSpan]| matches!(model.classify_row(row), RowClass::Band);
 
     let mut groups = Vec::new();
-    let mut start = 0;
     let mut split_any = false;
-    while start < rows.len() {
-        let mut end = start + 1;
-        while end < rows.len() && row_is_band[end] == row_is_band[start] {
-            end += 1;
-        }
-        let segment_spans = rows[start..end]
+    for (is_band, range) in segment_row_runs(&rows, row_is_band) {
+        let segment_spans = rows[range.clone()]
             .iter()
             .flatten()
             .copied()
             .collect::<Vec<_>>();
-        if row_is_band[start] {
+        if is_band {
             groups.extend(group_span_refs_by_vertical_gaps(segment_spans));
         } else {
             let mut per_column: Vec<Vec<&TextSpan>> = vec![Vec::new(); columns.len()];
             for span in segment_spans {
-                if let Some(column_index) = columns.iter().position(|(column_x0, column_x1)| {
-                    span.bbox.x0 >= column_x0 - 2.0 && span.bbox.x1 <= column_x1 + 2.0
-                }) {
+                if let Some(column_index) = model.column_index_for_span(span) {
                     per_column[column_index].push(span);
                 }
             }
@@ -1969,16 +2078,9 @@ fn split_spans_by_known_columns<'a>(
                 }
             }
         }
-        start = end;
     }
 
     (split_any && !groups.is_empty()).then_some(groups)
-}
-
-fn span_fits_a_column(span: &TextSpan, columns: &[(f32, f32)]) -> bool {
-    columns.iter().any(|(column_x0, column_x1)| {
-        span.bbox.x0 >= column_x0 - 2.0 && span.bbox.x1 <= column_x1 + 2.0
-    })
 }
 
 /// Estimates the x-ranges of the page's body text columns from rows that do
@@ -1988,23 +2090,13 @@ fn page_body_columns(
     rows: &[Vec<&TextSpan>],
     dimensions: &PageDimensions,
 ) -> Option<Vec<(f32, f32)>> {
-    let center = dimensions.width * 0.5;
-    let tolerance = column_row_band_center_tolerance(dimensions);
-    let gutter_zone = tolerance * 3.0;
+    let model = ColumnModel::from_page_dimensions(dimensions);
     let column_spans = rows
         .iter()
-        .filter(|row| {
-            !row.iter()
-                .any(|span| span_straddles_center(span, center, tolerance))
-        })
+        .filter(|row| !row.iter().any(|span| model.span_straddles_center(span)))
         .flatten()
         .copied()
-        .filter(|span| {
-            // Drop spans living entirely inside the gutter zone (diagram
-            // labels, ornaments); they are not body-column evidence and would
-            // otherwise block the column split.
-            span.bbox.x0 < center - gutter_zone || span.bbox.x1 > center + gutter_zone
-        })
+        .filter(|span| model.span_outside_gutter(span))
         .collect::<Vec<_>>();
     if column_spans.len() < 8 {
         return None;
@@ -3242,53 +3334,32 @@ fn group_span_refs_by_column_row_bands<'a>(
         return None;
     }
 
-    let center = dimensions.width * 0.5;
-    let tolerance = column_row_band_center_tolerance(dimensions);
-    let row_is_band = rows
-        .iter()
-        .map(|row| {
-            row.iter()
-                .any(|span| span_straddles_center(span, center, tolerance))
-        })
-        .collect::<Vec<_>>();
+    let model = ColumnModel::from_page_dimensions(dimensions);
+    let row_is_band = |row: &[&TextSpan]| matches!(model.classify_row(row), RowClass::Band);
 
     let mut groups = Vec::new();
     let mut split_any = false;
-    let mut start = 0;
-    while start < rows.len() {
-        let mut end = start + 1;
-        while end < rows.len() && row_is_band[end] == row_is_band[start] {
-            end += 1;
-        }
-        let segment_spans = rows[start..end]
+    for (is_band, range) in segment_row_runs(&rows, row_is_band) {
+        let segment_spans = rows[range.clone()]
             .iter()
             .flatten()
             .copied()
             .collect::<Vec<_>>();
-        if row_is_band[start] {
+        if is_band {
             groups.extend(group_span_refs_by_vertical_gaps(segment_spans));
         } else if let Some(columns) = split_layout_columns(&segment_spans, dimensions) {
             split_any = true;
             for column in columns {
                 groups.extend(group_span_refs_by_vertical_gaps(column));
             }
-        } else if end - start <= 3 {
+        } else if range.len() <= 3 {
             groups.extend(group_span_refs_by_vertical_gaps(segment_spans));
         } else {
             return None;
         }
-        start = end;
     }
 
     split_any.then_some(groups)
-}
-
-fn column_row_band_center_tolerance(dimensions: &PageDimensions) -> f32 {
-    (dimensions.width * 0.01).max(4.0)
-}
-
-fn span_straddles_center(span: &TextSpan, center: f32, tolerance: f32) -> bool {
-    span.bbox.x0 < center - tolerance && span.bbox.x1 > center + tolerance
 }
 
 /// Detects pages that look multi-column (many rows with text on both sides of
@@ -3311,21 +3382,10 @@ fn has_unresolved_column_evidence(spans: &[TextSpan], dimensions: &PageDimension
         return false;
     }
 
-    let center = dimensions.width * 0.5;
-    let tolerance = column_row_band_center_tolerance(dimensions);
+    let model = ColumnModel::from_page_dimensions(dimensions);
     let two_sided_rows = rows
         .iter()
-        .filter(|row| {
-            if row
-                .iter()
-                .any(|span| span_straddles_center(span, center, tolerance))
-            {
-                return false;
-            }
-            let has_left = row.iter().any(|span| span.bbox.x1 <= center - tolerance);
-            let has_right = row.iter().any(|span| span.bbox.x0 >= center + tolerance);
-            has_left && has_right
-        })
+        .filter(|row| matches!(model.classify_row(row), RowClass::TwoSided))
         .count();
 
     two_sided_rows >= 6 && two_sided_rows * 2 >= rows.len()
@@ -4141,75 +4201,263 @@ fn should_keep_bullet_leader_table_open(current: &[String]) -> bool {
     pending_parameter && row_count > 0
 }
 
+type TextTableRowsPrefix = fn(&[&str]) -> Option<(Vec<Vec<String>>, usize)>;
+
+enum TextTableCaptionMode {
+    None,
+    OptionalBeforeHeader(fn(&str) -> bool),
+    EmitAtAnchor,
+}
+
+enum TextTableEmitMode {
+    JoinVerbatim,
+    ReflowBlock,
+}
+
+struct TextTablePattern {
+    min_lines: usize,
+    find_anchor: fn(&[&str]) -> Option<usize>,
+    table_line_offset: usize,
+    rows_prefix: TextTableRowsPrefix,
+    min_table_rows: Option<usize>,
+    caption: TextTableCaptionMode,
+    emit: TextTableEmitMode,
+}
+
+fn find_embedded_pin_function_table_header(refs: &[&str]) -> Option<usize> {
+    refs.iter()
+        .position(|line| is_pin_function_table_header(line))
+}
+
+fn find_pin_number_name_function_table_header(refs: &[&str]) -> Option<usize> {
+    (0..refs.len())
+        .find(|index| pin_number_name_function_table_header_len(&refs[*index..]).is_some())
+}
+
+fn find_symbol_parameter_table_header(refs: &[&str]) -> Option<usize> {
+    refs.iter()
+        .position(|line| symbol_parameter_table_header_cells(line).is_some())
+}
+
+fn find_parameter_symbol_conditions_table_header(refs: &[&str]) -> Option<usize> {
+    (0..refs.len())
+        .find(|index| parameter_symbol_conditions_table_header_len(&refs[*index..]).is_some())
+}
+
+fn find_electrical_characteristics_table_header(refs: &[&str]) -> Option<usize> {
+    (0..refs.len())
+        .find(|index| electrical_characteristics_table_header_len(&refs[*index..]).is_some())
+}
+
+fn find_parameter_test_condition_table_header(refs: &[&str]) -> Option<usize> {
+    (0..refs.len())
+        .find(|index| parameter_test_condition_table_header_len(&refs[*index..]).is_some())
+}
+
+fn find_reflow_profile_table_header(refs: &[&str]) -> Option<usize> {
+    refs.iter()
+        .position(|line| reflow_profile_table_header_cells(line).is_some())
+}
+
+fn find_classification_temperature_caption(refs: &[&str]) -> Option<usize> {
+    refs.iter()
+        .position(|line| looks_like_classification_temperature_caption(line))
+}
+
+fn find_bullet_leader_table_start(refs: &[&str]) -> Option<usize> {
+    (0..refs.len()).find(|index| bullet_leader_table_rows_prefix(&refs[*index..]).is_some())
+}
+
+fn find_package_pin_description_table_header(refs: &[&str]) -> Option<usize> {
+    refs.iter()
+        .position(|line| is_package_pin_description_table_start(line))
+}
+
+fn find_budget_projection_table_header(refs: &[&str]) -> Option<usize> {
+    (0..refs.len()).find(|index| budget_projection_table_header_len(&refs[*index..]).is_some())
+}
+
+static TEXT_TABLE_PATTERNS: [TextTablePattern; 11] = [
+    TextTablePattern {
+        min_lines: 4,
+        find_anchor: find_embedded_pin_function_table_header,
+        table_line_offset: 0,
+        rows_prefix: pin_function_table_rows_prefix,
+        min_table_rows: None,
+        caption: TextTableCaptionMode::OptionalBeforeHeader(looks_like_pin_function_table_caption),
+        emit: TextTableEmitMode::JoinVerbatim,
+    },
+    TextTablePattern {
+        min_lines: 5,
+        find_anchor: find_pin_number_name_function_table_header,
+        table_line_offset: 0,
+        rows_prefix: pin_number_name_function_table_rows_prefix,
+        min_table_rows: None,
+        caption: TextTableCaptionMode::OptionalBeforeHeader(looks_like_pin_function_table_caption),
+        emit: TextTableEmitMode::JoinVerbatim,
+    },
+    TextTablePattern {
+        min_lines: 5,
+        find_anchor: find_symbol_parameter_table_header,
+        table_line_offset: 0,
+        rows_prefix: fragmented_symbol_parameter_table_rows_prefix,
+        min_table_rows: None,
+        caption: TextTableCaptionMode::None,
+        emit: TextTableEmitMode::JoinVerbatim,
+    },
+    TextTablePattern {
+        min_lines: 4,
+        find_anchor: find_parameter_symbol_conditions_table_header,
+        table_line_offset: 0,
+        rows_prefix: parameter_symbol_conditions_table_rows_prefix,
+        min_table_rows: Some(4),
+        caption: TextTableCaptionMode::None,
+        emit: TextTableEmitMode::ReflowBlock,
+    },
+    TextTablePattern {
+        min_lines: 6,
+        find_anchor: find_electrical_characteristics_table_header,
+        table_line_offset: 0,
+        rows_prefix: electrical_characteristics_table_rows_prefix,
+        min_table_rows: None,
+        caption: TextTableCaptionMode::None,
+        emit: TextTableEmitMode::JoinVerbatim,
+    },
+    TextTablePattern {
+        min_lines: 4,
+        find_anchor: find_parameter_test_condition_table_header,
+        table_line_offset: 0,
+        rows_prefix: parameter_test_condition_table_rows_prefix,
+        min_table_rows: Some(4),
+        caption: TextTableCaptionMode::None,
+        emit: TextTableEmitMode::ReflowBlock,
+    },
+    TextTablePattern {
+        min_lines: 6,
+        find_anchor: find_reflow_profile_table_header,
+        table_line_offset: 0,
+        rows_prefix: reflow_profile_table_rows_prefix,
+        min_table_rows: None,
+        caption: TextTableCaptionMode::None,
+        emit: TextTableEmitMode::JoinVerbatim,
+    },
+    TextTablePattern {
+        min_lines: 6,
+        find_anchor: find_classification_temperature_caption,
+        table_line_offset: 1,
+        rows_prefix: classification_temperature_table_rows_prefix,
+        min_table_rows: None,
+        caption: TextTableCaptionMode::EmitAtAnchor,
+        emit: TextTableEmitMode::JoinVerbatim,
+    },
+    TextTablePattern {
+        min_lines: 3,
+        find_anchor: find_bullet_leader_table_start,
+        table_line_offset: 0,
+        rows_prefix: bullet_leader_table_rows_prefix,
+        min_table_rows: None,
+        caption: TextTableCaptionMode::None,
+        emit: TextTableEmitMode::JoinVerbatim,
+    },
+    TextTablePattern {
+        min_lines: 6,
+        find_anchor: find_package_pin_description_table_header,
+        table_line_offset: 0,
+        rows_prefix: package_pin_description_table_rows_prefix,
+        min_table_rows: None,
+        caption: TextTableCaptionMode::OptionalBeforeHeader(looks_like_pin_function_table_caption),
+        emit: TextTableEmitMode::JoinVerbatim,
+    },
+    TextTablePattern {
+        min_lines: 5,
+        find_anchor: find_budget_projection_table_header,
+        table_line_offset: 0,
+        rows_prefix: budget_projection_table_rows_prefix,
+        min_table_rows: None,
+        caption: TextTableCaptionMode::None,
+        emit: TextTableEmitMode::JoinVerbatim,
+    },
+];
+
+fn split_text_table_by_pattern(
+    lines: &[String],
+    run_table_recovery: bool,
+    pattern: &TextTablePattern,
+) -> Option<Vec<String>> {
+    if !run_table_recovery || lines.len() < pattern.min_lines {
+        return None;
+    }
+
+    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
+    let anchor_index = (pattern.find_anchor)(&refs)?;
+    let table_start = anchor_index + pattern.table_line_offset;
+    let (rows, consumed) = (pattern.rows_prefix)(&refs[table_start..])?;
+    if let Some(min_rows) = pattern.min_table_rows
+        && rows.len() < min_rows
+    {
+        return None;
+    }
+    let table_end = table_start + consumed;
+
+    let mut blocks = Vec::new();
+    match pattern.caption {
+        TextTableCaptionMode::None => {
+            if anchor_index > 0 {
+                blocks.push(reflow_text_block(
+                    &lines[..anchor_index],
+                    run_table_recovery,
+                ));
+            }
+        }
+        TextTableCaptionMode::OptionalBeforeHeader(caption_pred) => {
+            let caption_index = anchor_index
+                .checked_sub(1)
+                .filter(|index| caption_pred(refs[*index]));
+            let prefix_end = caption_index.unwrap_or(anchor_index);
+            if prefix_end > 0 {
+                blocks.push(reflow_text_block(&lines[..prefix_end], run_table_recovery));
+            }
+            if let Some(caption_index) = caption_index {
+                blocks.push(lines[caption_index].trim().to_string());
+            }
+        }
+        TextTableCaptionMode::EmitAtAnchor => {
+            if anchor_index > 0 {
+                blocks.push(reflow_text_block(
+                    &lines[..anchor_index],
+                    run_table_recovery,
+                ));
+            }
+            blocks.push(lines[anchor_index].trim().to_string());
+        }
+    }
+
+    match pattern.emit {
+        TextTableEmitMode::JoinVerbatim => {
+            blocks.push(lines[table_start..table_end].join("\n"));
+        }
+        TextTableEmitMode::ReflowBlock => {
+            blocks.push(reflow_text_block(
+                &lines[table_start..table_end],
+                run_table_recovery,
+            ));
+        }
+    }
+
+    if table_end < lines.len() {
+        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
+    }
+
+    Some(blocks)
+}
+
 fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_table_recovery: bool) {
-    if let Some(split_blocks) = split_embedded_pin_function_table_blocks(lines, run_table_recovery)
-    {
-        blocks.extend(split_blocks);
-        return;
-    }
-
-    if let Some(split_blocks) =
-        split_pin_number_name_function_table_blocks(lines, run_table_recovery)
-    {
-        blocks.extend(split_blocks);
-        return;
-    }
-
-    if let Some(split_blocks) =
-        split_fragmented_symbol_parameter_table_blocks(lines, run_table_recovery)
-    {
-        blocks.extend(split_blocks);
-        return;
-    }
-
-    if let Some(split_blocks) =
-        split_parameter_symbol_conditions_table_blocks(lines, run_table_recovery)
-    {
-        blocks.extend(split_blocks);
-        return;
-    }
-
-    if let Some(split_blocks) =
-        split_electrical_characteristics_table_blocks(lines, run_table_recovery)
-    {
-        blocks.extend(split_blocks);
-        return;
-    }
-
-    if let Some(split_blocks) =
-        split_parameter_test_condition_table_blocks(lines, run_table_recovery)
-    {
-        blocks.extend(split_blocks);
-        return;
-    }
-
-    if let Some(split_blocks) = split_reflow_profile_table_blocks(lines, run_table_recovery) {
-        blocks.extend(split_blocks);
-        return;
-    }
-
-    if let Some(split_blocks) =
-        split_classification_temperature_table_blocks(lines, run_table_recovery)
-    {
-        blocks.extend(split_blocks);
-        return;
-    }
-
-    if let Some(split_blocks) = split_bullet_leader_table_blocks(lines, run_table_recovery) {
-        blocks.extend(split_blocks);
-        return;
-    }
-
-    if let Some(split_blocks) =
-        split_package_pin_description_table_blocks(lines, run_table_recovery)
-    {
-        blocks.extend(split_blocks);
-        return;
-    }
-
-    if let Some(split_blocks) = split_budget_projection_table_blocks(lines, run_table_recovery) {
-        blocks.extend(split_blocks);
-        return;
+    for pattern in &TEXT_TABLE_PATTERNS {
+        if let Some(split_blocks) = split_text_table_by_pattern(lines, run_table_recovery, pattern)
+        {
+            blocks.extend(split_blocks);
+            return;
+        }
     }
 
     if let Some(split_blocks) = split_leading_text_table_caption_blocks(lines, run_table_recovery) {
@@ -4220,341 +4468,8 @@ fn push_reflowed_text_blocks(blocks: &mut Vec<String>, lines: &[String], run_tab
     blocks.push(reflow_text_block(lines, run_table_recovery));
 }
 
-fn split_embedded_pin_function_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 4 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let header_index = refs
-        .iter()
-        .position(|line| is_pin_function_table_header(line))?;
-    let (_, consumed_table_lines) = pin_function_table_rows_prefix(&refs[header_index..])?;
-
-    let caption_index = header_index
-        .checked_sub(1)
-        .filter(|index| looks_like_pin_function_table_caption(refs[*index]));
-    let prefix_end = caption_index.unwrap_or(header_index);
-
-    let mut blocks = Vec::new();
-    if prefix_end > 0 {
-        blocks.push(reflow_text_block(&lines[..prefix_end], run_table_recovery));
-    }
-    if let Some(caption_index) = caption_index {
-        blocks.push(lines[caption_index].trim().to_string());
-    }
-
-    let table_end = header_index + consumed_table_lines;
-    blocks.push(lines[header_index..table_end].join("\n"));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
-
-    Some(blocks)
-}
-
-fn split_pin_number_name_function_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 5 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let header_index = (0..refs.len())
-        .find(|index| pin_number_name_function_table_header_len(&refs[*index..]).is_some())?;
-    let (_, consumed_table_lines) =
-        pin_number_name_function_table_rows_prefix(&refs[header_index..])?;
-
-    let caption_index = header_index
-        .checked_sub(1)
-        .filter(|index| looks_like_pin_function_table_caption(refs[*index]));
-    let prefix_end = caption_index.unwrap_or(header_index);
-
-    let mut blocks = Vec::new();
-    if prefix_end > 0 {
-        blocks.push(reflow_text_block(&lines[..prefix_end], run_table_recovery));
-    }
-    if let Some(caption_index) = caption_index {
-        blocks.push(lines[caption_index].trim().to_string());
-    }
-
-    let table_end = header_index + consumed_table_lines;
-    blocks.push(lines[header_index..table_end].join("\n"));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
-
-    Some(blocks)
-}
-
-fn split_fragmented_symbol_parameter_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 5 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let header_index = refs
-        .iter()
-        .position(|line| symbol_parameter_table_header_cells(line).is_some())?;
-    let (_, consumed_table_lines) =
-        fragmented_symbol_parameter_table_rows_prefix(&refs[header_index..])?;
-
-    let mut blocks = Vec::new();
-    if header_index > 0 {
-        blocks.push(reflow_text_block(
-            &lines[..header_index],
-            run_table_recovery,
-        ));
-    }
-
-    let table_end = header_index + consumed_table_lines;
-    blocks.push(lines[header_index..table_end].join("\n"));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
-
-    Some(blocks)
-}
-
-fn split_electrical_characteristics_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 6 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let header_index = (0..refs.len())
-        .find(|index| electrical_characteristics_table_header_len(&refs[*index..]).is_some())?;
-    let (_, consumed_table_lines) =
-        electrical_characteristics_table_rows_prefix(&refs[header_index..])?;
-
-    let mut blocks = Vec::new();
-    if header_index > 0 {
-        blocks.push(reflow_text_block(
-            &lines[..header_index],
-            run_table_recovery,
-        ));
-    }
-
-    let table_end = header_index + consumed_table_lines;
-    blocks.push(lines[header_index..table_end].join("\n"));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
-
-    Some(blocks)
-}
-
-fn split_parameter_symbol_conditions_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 4 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let header_index = (0..refs.len())
-        .find(|index| parameter_symbol_conditions_table_header_len(&refs[*index..]).is_some())?;
-    let (rows, consumed) = parameter_symbol_conditions_table_rows_prefix(&refs[header_index..])?;
-    if rows.len() < 4 {
-        return None;
-    }
-    let table_end = header_index + consumed;
-
-    let mut blocks = Vec::new();
-    if header_index > 0 {
-        blocks.push(reflow_text_block(
-            &lines[..header_index],
-            run_table_recovery,
-        ));
-    }
-    blocks.push(reflow_text_block(
-        &lines[header_index..table_end],
-        run_table_recovery,
-    ));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
-
-    Some(blocks)
-}
-
-fn split_parameter_test_condition_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 4 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let header_index = (0..refs.len())
-        .find(|index| parameter_test_condition_table_header_len(&refs[*index..]).is_some())?;
-    let (rows, consumed) = parameter_test_condition_table_rows_prefix(&refs[header_index..])?;
-    if rows.len() < 4 {
-        return None;
-    }
-    let table_end = header_index + consumed;
-
-    let mut blocks = Vec::new();
-    if header_index > 0 {
-        blocks.push(reflow_text_block(
-            &lines[..header_index],
-            run_table_recovery,
-        ));
-    }
-    blocks.push(reflow_text_block(
-        &lines[header_index..table_end],
-        run_table_recovery,
-    ));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
-
-    Some(blocks)
-}
-
-fn split_reflow_profile_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 6 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let header_index = refs
-        .iter()
-        .position(|line| reflow_profile_table_header_cells(line).is_some())?;
-    let (_, consumed_table_lines) = reflow_profile_table_rows_prefix(&refs[header_index..])?;
-
-    let mut blocks = Vec::new();
-    if header_index > 0 {
-        blocks.push(reflow_text_block(
-            &lines[..header_index],
-            run_table_recovery,
-        ));
-    }
-
-    let table_end = header_index + consumed_table_lines;
-    blocks.push(lines[header_index..table_end].join("\n"));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
-
-    Some(blocks)
-}
-
-fn split_classification_temperature_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 6 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let caption_index = refs
-        .iter()
-        .position(|line| looks_like_classification_temperature_caption(line))?;
-    let (_, consumed_table_lines) =
-        classification_temperature_table_rows_prefix(&refs[caption_index + 1..])?;
-
-    let mut blocks = Vec::new();
-    if caption_index > 0 {
-        blocks.push(reflow_text_block(
-            &lines[..caption_index],
-            run_table_recovery,
-        ));
-    }
-
-    blocks.push(lines[caption_index].trim().to_string());
-
-    let table_start = caption_index + 1;
-    let table_end = table_start + consumed_table_lines;
-    blocks.push(lines[table_start..table_end].join("\n"));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
-
-    Some(blocks)
-}
-
-fn split_bullet_leader_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 3 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let table_start =
-        (0..refs.len()).find(|index| bullet_leader_table_rows_prefix(&refs[*index..]).is_some())?;
-    let (_, consumed_table_lines) = bullet_leader_table_rows_prefix(&refs[table_start..])?;
-
-    let mut blocks = Vec::new();
-    if table_start > 0 {
-        blocks.push(reflow_text_block(&lines[..table_start], run_table_recovery));
-    }
-
-    let table_end = table_start + consumed_table_lines;
-    blocks.push(lines[table_start..table_end].join("\n"));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
-
-    Some(blocks)
-}
-
-fn split_package_pin_description_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 6 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let header_index = refs
-        .iter()
-        .position(|line| is_package_pin_description_table_start(line))?;
-    let (_, consumed_table_lines) =
-        package_pin_description_table_rows_prefix(&refs[header_index..])?;
-
-    let caption_index = header_index
-        .checked_sub(1)
-        .filter(|index| looks_like_pin_function_table_caption(refs[*index]));
-    let prefix_end = caption_index.unwrap_or(header_index);
-
-    let mut blocks = Vec::new();
-    if prefix_end > 0 {
-        blocks.push(reflow_text_block(&lines[..prefix_end], run_table_recovery));
-    }
-    if let Some(caption_index) = caption_index {
-        blocks.push(lines[caption_index].trim().to_string());
-    }
-
-    let table_end = header_index + consumed_table_lines;
-    blocks.push(lines[header_index..table_end].join("\n"));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
-
-    Some(blocks)
-}
-
+/// Standalone: caption discovery depends on prefix context and suffix shape checks
+/// that do not fit the anchor/rows_prefix table template.
 fn split_leading_text_table_caption_blocks(
     lines: &[String],
     run_table_recovery: bool,
@@ -4582,36 +4497,6 @@ fn split_leading_text_table_caption_blocks(
         &lines[caption_index + 1..],
         run_table_recovery,
     ));
-
-    Some(blocks)
-}
-
-fn split_budget_projection_table_blocks(
-    lines: &[String],
-    run_table_recovery: bool,
-) -> Option<Vec<String>> {
-    if !run_table_recovery || lines.len() < 5 {
-        return None;
-    }
-
-    let refs = lines.iter().map(String::as_str).collect::<Vec<_>>();
-    let header_index = (0..refs.len())
-        .find(|index| budget_projection_table_header_len(&refs[*index..]).is_some())?;
-    let (_, consumed_table_lines) = budget_projection_table_rows_prefix(&refs[header_index..])?;
-    let table_end = header_index + consumed_table_lines;
-
-    let mut blocks = Vec::new();
-    if header_index > 0 {
-        blocks.push(reflow_text_block(
-            &lines[..header_index],
-            run_table_recovery,
-        ));
-    }
-
-    blocks.push(lines[header_index..table_end].join("\n"));
-    if table_end < lines.len() {
-        blocks.push(reflow_text_block(&lines[table_end..], run_table_recovery));
-    }
 
     Some(blocks)
 }
