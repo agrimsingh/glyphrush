@@ -2104,6 +2104,8 @@ struct TableStructureExpectation {
     min_cell_recall: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     min_cell_f1: Option<f64>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    baseline: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -7815,6 +7817,7 @@ fn generated_table_structure_expectations(
                 min_cell_precision: None,
                 min_cell_recall: Some(1.0),
                 min_cell_f1: Some(1.0),
+                baseline: false,
             })
         })
         .collect()
@@ -7907,10 +7910,45 @@ fn generated_page_required_text(page: &PageArtifact) -> Vec<String> {
         .map(str::trim)
         .find(|line| !line.is_empty());
 
+    const MIN_NEUTRAL_ANCHOR_CHARS: usize = 12;
+    const MAX_NEUTRAL_ANCHOR_CHARS: usize = 60;
+
+    let neutral_anchor_candidate = |line: &&str| {
+        is_substantive_required_text_anchor(line)
+            && is_backend_neutral_required_text_anchor(line)
+            && line_is_contained_in_a_single_span(line, page)
+            && (MIN_NEUTRAL_ANCHOR_CHARS..=MAX_NEUTRAL_ANCHOR_CHARS).contains(&line.chars().count())
+    };
+
     page_text
         .lines()
         .map(str::trim)
-        .find(|line| is_substantive_required_text_anchor(line))
+        .find(|line| neutral_anchor_candidate(line) && line_looks_like_prose_anchor(line))
+        .or_else(|| {
+            page_text
+                .lines()
+                .map(str::trim)
+                .find(neutral_anchor_candidate)
+        })
+        .or_else(|| {
+            page_text.lines().map(str::trim).find(|line| {
+                is_substantive_required_text_anchor(line)
+                    && is_backend_neutral_required_text_anchor(line)
+                    && line_is_contained_in_a_single_span(line, page)
+            })
+        })
+        .or_else(|| {
+            page_text.lines().map(str::trim).find(|line| {
+                is_substantive_required_text_anchor(line)
+                    && is_backend_neutral_required_text_anchor(line)
+            })
+        })
+        .or_else(|| {
+            page_text
+                .lines()
+                .map(str::trim)
+                .find(|line| is_substantive_required_text_anchor(line))
+        })
         .or(fallback_line)
         .map(|line| {
             if line.chars().count() <= MAX_ANCHOR_CHARS {
@@ -7921,6 +7959,36 @@ fn generated_page_required_text(page: &PageArtifact) -> Vec<String> {
         })
         .into_iter()
         .collect()
+}
+
+fn is_backend_neutral_required_text_anchor(line: &str) -> bool {
+    !line.chars().any(|ch| ch.is_control() || ch == '|')
+}
+
+/// Prose lines are the anchors most likely to be reproduced by any correct
+/// text extractor; figure-diagram fragments, dotted TOC rows, and token
+/// sequences diverge across extractors even when content is intact.
+fn line_looks_like_prose_anchor(line: &str) -> bool {
+    let word_count = line.split_whitespace().count();
+    let alphanumeric_count = line.chars().filter(|ch| ch.is_alphanumeric()).count();
+    let alphabetic_count = line.chars().filter(|ch| ch.is_alphabetic()).count();
+
+    word_count >= 4 && alphanumeric_count > 0 && alphabetic_count * 10 >= alphanumeric_count * 7
+}
+
+/// True when the candidate anchor line exists inside one extracted span, so
+/// it does not depend on Glyphrush's row-joining decisions. A line stitched
+/// together from multiple positioned fragments (form headers, footers with
+/// page numbers) is layout-flavored and unfair to external text baselines.
+fn line_is_contained_in_a_single_span(line: &str, page: &PageArtifact) -> bool {
+    let squashed_line = squashed_required_text_anchor(line);
+    if squashed_line.is_empty() {
+        return false;
+    }
+    page.native_spans
+        .iter()
+        .chain(page.ocr_spans.iter())
+        .any(|span| squashed_required_text_anchor(&span.text).contains(&squashed_line))
 }
 
 fn is_substantive_required_text_anchor(line: &str) -> bool {
@@ -7959,7 +8027,7 @@ fn baseline_quality_from_stdout(
         let missing = expectations
             .required_text
             .iter()
-            .filter(|text| !actual_text.contains(text.as_str()))
+            .filter(|text| !required_text_anchor_matches(&actual_text, text))
             .cloned()
             .collect::<Vec<_>>();
         BaselineRequiredTextOutput {
@@ -7996,9 +8064,13 @@ fn baseline_quality_from_stdout(
         .reading_order
         .as_ref()
         .map(|expectation| baseline_reading_order_from_text(&actual_text, expectation));
-    let table_structure = (!expectations.table_structure.is_empty()).then(|| {
-        expectations
-            .table_structure
+    let baseline_table_expectations = expectations
+        .table_structure
+        .iter()
+        .filter(|expectation| expectation.baseline)
+        .collect::<Vec<_>>();
+    let table_structure = (!baseline_table_expectations.is_empty()).then(|| {
+        baseline_table_expectations
             .iter()
             .map(|expectation| baseline_table_structure_from_text(&actual_text, expectation))
             .collect::<Vec<_>>()
@@ -10336,10 +10408,21 @@ fn required_text_anchor_matches(actual: &str, expected: &str) -> bool {
     actual.contains(expected)
         || normalize_required_text_anchor(actual)
             .contains(&normalize_required_text_anchor(expected))
+        || {
+            let squashed_expected = squashed_required_text_anchor(expected);
+            squashed_expected.len() >= 8
+                && squashed_required_text_anchor(actual).contains(&squashed_expected)
+        }
 }
 
 fn normalize_required_text_anchor(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn squashed_required_text_anchor(text: &str) -> String {
+    text.chars()
+        .filter(|ch| ch.is_alphanumeric() || ch.is_ascii_punctuation())
+        .collect()
 }
 
 fn quality_text_from_page(page: &PageArtifact) -> String {

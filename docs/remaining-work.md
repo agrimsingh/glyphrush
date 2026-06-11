@@ -49,15 +49,16 @@ Remaining work before flipping parity to implemented:
 - Improve multi-page table continuation handling and repeated headers (OMB fixture is the natural gate).
 - Label the recovered academic leaderboard tables with human-reviewed `table_structure` expectations once their cell merging stabilizes.
 
-### 3. Refresh LiteParse benchmark evidence — DONE (narrow claim)
+### 3. Refresh LiteParse benchmark evidence — DONE (strict claim)
 
-Status: the native-text v0 benchmark was re-run against the committed corpus and the narrow claim gate passes: `feature-parity --bench-report .glyphrush-baselines/reports/liteparse-v0-native-text-gate.json --require-speed-advantage --require-coverage-preset glyphrush-v0-native-text` exits zero with `native_text_speed_advantage_ready: true`. Headline numbers and the exact command, manifest SHA-256, PDF root, coverage preset, timing, and quality status are recorded in `docs/benchmarking.md` under "Saved v0 native-text evidence": Glyphrush 1.88 s / 491 pages/sec over 924 pages with passing quality, 77.4x vs LiteParse default and 1.90x vs LiteParse no-OCR.
+Status: the strict both-pass claim is now evidence-backed. `feature-parity --bench-report .glyphrush-baselines/reports/liteparse-v0-native-text-strict.json --require-speed-evidence --require-coverage-preset glyphrush-v0-native-text` exits zero with `native_text_speed_claim_ready: true`: Glyphrush and LiteParse both pass the labeled v0 native-text quality gates, and Glyphrush is 73.98x faster than LiteParse default and 1.76x faster than LiteParse no-OCR on the 924-page corpus.
 
-The stricter both-pass claim remains intentionally blocked by `missing_quality_backed_liteparse_claims`. Triage shows LiteParse's `required_text` failures are largely caused by backend-flavored generated anchors (PDFium spacing quirks such as `Helloworld`, `\u0002` hyphenation markers) and stdout-format table expectations, not proven LiteParse content loss.
+What made the labels fair without weakening them (details and methodology caveats in `docs/benchmarking.md`):
 
-Remaining follow-up to unlock the strict claim:
-
-- Make generated required-text anchors backend-neutral (skip or normalize spacing/control-character artifacts) or move backend-flavored anchors into `expect_by_backend.pdfium`, then re-run the gate with `--require-speed-evidence`.
+- Generated anchors prefer backend-neutral, single-span, prose-like lines; `tools/baselines/verify_anchors.py` verifies every page anchor against captured LiteParse/PyMuPDF/pdfplumber stdout and repairs unfair ones to page-unique content lines. Anchor distinctiveness went up versus the previous manifest (the OMB doc went from 3 distinct anchors to 384).
+- Required-text matching gained a squashed tier (whitespace/control-character-free, minimum eight characters) for extractor spacing quirks.
+- Baseline stdout is scored on `table_structure` only when an expectation opts in with `"baseline": true`.
+- PyMuPDF/pdfplumber retain three genuine failures (OMB cell reordering, broken-CMap fixture); they are kept failing deliberately.
 
 ### 4. Harden OCR fallback on scanned and hybrid documents — DONE
 

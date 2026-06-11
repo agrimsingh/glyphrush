@@ -8655,7 +8655,8 @@ fn bench_with_eval_manifest_scores_baseline_table_structure() {
                     "expected_rows": [["Part", "Value"], ["A", "1"]],
                     "min_row_recall": 1.0,
                     "min_cell_recall": 1.0,
-                    "min_cell_f1": 1.0
+                    "min_cell_f1": 1.0,
+                    "baseline": true
                   }
                 ]
               }
@@ -8706,6 +8707,152 @@ fn bench_with_eval_manifest_scores_baseline_table_structure() {
             {"row": 1, "column": 1, "text": "1"}
         ])
     );
+}
+
+#[test]
+fn bench_with_eval_manifest_skips_non_baseline_table_structure() {
+    let dir = temp_dir("bench-eval-baseline-table-structure-skipped");
+    let pdf_path = dir.join("table.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream(
+            "BT /F1 12 Tf 72 720 Td 24 TL (| Part | Value |) Tj T* (| A | 1 |) Tj ET",
+        ),
+    )
+    .unwrap();
+    let table_baseline = write_baseline_script(
+        "baseline-table-non-baseline-expectation",
+        "printf 'Part\\tValue\\nB\\t2'",
+    );
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "table.pdf",
+              "expect": {
+                "baseline_required_text": ["Part"],
+                "table_structure": [
+                  {
+                    "page": 0,
+                    "expected_rows": [["Part", "Value"], ["A", "1"]],
+                    "min_row_recall": 1.0,
+                    "min_cell_recall": 1.0,
+                    "min_cell_f1": 1.0
+                  }
+                ]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("table={}", table_baseline.display()),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush bench with non-baseline table structure expectation");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+    let baseline_quality = &json["baselines"][0]["quality"];
+
+    assert_eq!(json["baselines"][0]["quality_status"], "checked");
+    assert_eq!(baseline_quality["passed"], true);
+    assert_eq!(baseline_quality["failed_checks"], 0);
+    assert!(baseline_quality.get("table_structure").is_none());
+}
+
+#[test]
+fn bench_with_eval_manifest_scores_opted_in_baseline_table_structure() {
+    let dir = temp_dir("bench-eval-baseline-table-structure-opted-in");
+    let pdf_path = dir.join("table.pdf");
+    fs::write(
+        &pdf_path,
+        minimal_pdf_with_stream(
+            "BT /F1 12 Tf 72 720 Td 24 TL (| Part | Value |) Tj T* (| A | 1 |) Tj ET",
+        ),
+    )
+    .unwrap();
+    let table_baseline = write_baseline_script(
+        "baseline-table-opted-in-good",
+        "printf '| Part | Value |\\n| --- | --- |\\n| A | 1 |'",
+    );
+    let wrong_table_baseline = write_baseline_script(
+        "baseline-table-opted-in-bad",
+        "printf 'Part\\tValue\\nB\\t2'",
+    );
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "table.pdf",
+              "expect": {
+                "table_structure": [
+                  {
+                    "page": 0,
+                    "expected_rows": [["Part", "Value"], ["A", "1"]],
+                    "min_row_recall": 1.0,
+                    "min_cell_recall": 1.0,
+                    "min_cell_f1": 1.0,
+                    "baseline": true
+                  }
+                ]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "bench",
+            pdf_path.to_str().unwrap(),
+            "--baseline",
+            &format!("table={}", table_baseline.display()),
+            "--baseline",
+            &format!("wrong={}", wrong_table_baseline.display()),
+            "--eval-manifest",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush bench with opted-in baseline table structure");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("bench output is json");
+    let table = &json["baselines"][0]["quality"];
+    let wrong = &json["baselines"][1]["quality"];
+
+    assert_eq!(table["passed"], true);
+    assert_eq!(table["failed_checks"], 0);
+    assert_eq!(table["table_structure"][0]["passed"], true);
+    assert_eq!(table["table_structure"][0]["cell_recall"], 1.0);
+    assert_eq!(wrong["passed"], false);
+    assert_eq!(wrong["failed_checks"], 1);
+    assert_eq!(wrong["table_structure"][0]["passed"], false);
 }
 
 #[test]
@@ -10843,7 +10990,8 @@ fn bench_directory_baseline_quality_summary_counts_failed_check_types() {
                   {
                     "page": 0,
                     "expected_rows": [["First", "Second"], ["A", "B"]],
-                    "min_cell_recall": 1.0
+                    "min_cell_recall": 1.0,
+                    "baseline": true
                   }
                 ]
               }
@@ -10865,7 +11013,8 @@ fn bench_directory_baseline_quality_summary_counts_failed_check_types() {
                   {
                     "page": 0,
                     "expected_rows": [["First", "Second"], ["A", "B"]],
-                    "min_cell_recall": 1.0
+                    "min_cell_recall": 1.0,
+                    "baseline": true
                   }
                 ]
               }
@@ -12872,6 +13021,52 @@ fn eval_manifest_passes_when_counts_and_required_text_match() {
         fs::metadata(&pdf_path).unwrap().len()
     );
     assert_eq!(json["documents"][0]["checks"]["page_count"]["actual"], 1);
+    assert_eq!(
+        json["documents"][0]["checks"]["required_text"]["actual"]["missing"],
+        Value::Array(vec![])
+    );
+}
+
+#[test]
+fn eval_manifest_passes_when_required_text_anchor_differs_only_by_whitespace() {
+    let dir = temp_dir("eval-pass-squashed-anchor");
+    let pdf_path = dir.join("sample.pdf");
+    fs::write(&pdf_path, minimal_pdf("Hello world anchor")).unwrap();
+    let manifest_path = dir.join("corpus.json");
+    fs::write(
+        &manifest_path,
+        r#"{
+          "documents": [
+            {
+              "path": "sample.pdf",
+              "expect": {
+                "required_text": ["Helloworld anchor"]
+              }
+            }
+          ]
+        }"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_glyphrush"))
+        .args([
+            "--backend",
+            "lopdf",
+            "eval",
+            manifest_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run glyphrush eval");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: Value = serde_json::from_slice(&output.stdout).expect("eval output is json");
+
+    assert_eq!(json["passed"], true);
+    assert_eq!(json["quality_passed"], true);
     assert_eq!(
         json["documents"][0]["checks"]["required_text"]["actual"]["missing"],
         Value::Array(vec![])
@@ -15541,7 +15736,8 @@ fn eval_manifest_reports_table_structure_scores() {
                     "expected_rows": [["Part", "Value"], ["A", "1"]],
                     "min_row_recall": 1.0,
                     "min_cell_recall": 1.0,
-                    "min_cell_f1": 1.0
+                    "min_cell_f1": 1.0,
+                    "baseline": true
                   }
                 ]
               }
