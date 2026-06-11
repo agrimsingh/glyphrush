@@ -41,13 +41,25 @@ Progress in this pass (false-positive hardening):
 - Body-column inference requires prose-line medians per column so clusters of short table cells are never mistaken for text columns (protects datasheet grids from the new rejection).
 - Regression-tested by `table_routed_two_column_prose_is_not_recovered_as_fake_tables` and the existing positioned-table fixtures.
 
+Progress in this pass (ruled-grid recovery from vector metadata):
+
+- PDFium extraction now exposes positioned ruling lines (`ExtractedRulingLine`, page-local top-left coordinates, composed through nested form XObject transforms; the untransformed-coordinate bug was caught against the real SF-1035 voucher and fixed).
+- New column-ruled grid recovery: vertical ruling clusters define column boundaries, text rows define row structure, blank cells are preserved, wrapped descriptor lines merge, and diagram lattices (architecture figures with token-cloud cells) are rejected by cell-density checks.
+- New invoice-class fixture: `test/v0/forms/gsa-sf1035-filled-voucher.pdf`, generated reproducibly by `tools/baselines/make_invoice_fixture.py` from the public-domain GSA SF-1035 (real invoices are rarely redistributable). Hand-labeled 18-row `table_structure` (quantities, unit prices, units, amounts in distinct ruled columns) passes in `test/corpus.v0.layout.json`.
+- The IRS f1095-C "Covered Individuals" ruled month-grid now produces structured cells (Jan..Dec as columns).
+
+Labeled-fixture scorecard against the exit criteria (datasheet, invoice/form, budget, academic):
+
+- datasheet: passing (extensive synthetic positioned/text fixtures).
+- invoice/form: passing (SF-1035 voucher hand label; f1095-C month grid).
+- budget: passing (OMB hand label).
+- academic: NOT passing. BERT's side-by-side SQuAD leaderboard tables are recovered as one mashed grid instead of two adjacent tables, so they cannot honestly be labeled. This is the remaining blocker for flipping `table_recovery` to implemented.
+
 Remaining work before flipping parity to implemented:
 
-- Add labeled invoice/receipt fixtures; the v0 corpus covers budget (OMB, labeled `table_structure`), forms (IRS), academic (BERT), and clean-digital schema tables, but no invoice-class fixture.
-- Residual small fake tables remain on figure-diagram pages and label-margin appendix pages (BERT p2/p4/p14); these pages stay flagged `table_uncertain`, so the uncertainty is visible, but the windows should eventually be suppressed or recovered correctly.
-- Use vector line/ruling metadata for cell boundaries instead of only the `table_line_density` routing signal.
-- Improve multi-page table continuation handling and repeated headers (OMB fixture is the natural gate).
-- Label the recovered academic leaderboard tables with human-reviewed `table_structure` expectations once their cell merging stabilizes.
+- Split side-by-side adjacent tables (BERT leaderboards) instead of mashing them into one grid, then hand-label them.
+- Residual small fake tables remain on figure-diagram and label-margin appendix pages (BERT p2/p4/p14), still flagged `table_uncertain`.
+- Multi-page table continuation handling and repeated headers (OMB fixture is the natural gate).
 
 ### 3. Refresh LiteParse benchmark evidence — DONE (strict claim)
 

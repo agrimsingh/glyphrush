@@ -28,12 +28,15 @@ use glyphrush_core::{
     PageQuality, PageQualityReport, PageRoute, PageSignals, PageTimings, SpanProvenance, TextSpan,
     classify_page, parse_extracted_pages,
 };
+#[cfg(feature = "pdfium")]
+use glyphrush_core::{ExtractedRulingLine, RulingOrientation};
 use lopdf::{Dictionary, Document, Object, ObjectId, content::Content};
 #[cfg(feature = "pdfium")]
 use pdfium_render::prelude::{
-    PdfBitmapFormat, PdfDocument, PdfPage, PdfPageObject, PdfPageObjectCommon,
-    PdfPageObjectsCommon, PdfPageText, PdfPageXObjectFormObject, PdfPathSegmentType,
-    PdfPathSegments, PdfQuadPoints, PdfRect, PdfRenderConfig, Pdfium, PdfiumError,
+    PdfBitmapFormat, PdfDocument, PdfMatrix as PdfiumMatrix, PdfPage, PdfPageObject,
+    PdfPageObjectCommon, PdfPageObjectsCommon, PdfPageText, PdfPageXObjectFormObject,
+    PdfPathSegmentType, PdfPathSegments, PdfQuadPoints, PdfRect, PdfRenderConfig, Pdfium,
+    PdfiumError,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -63,7 +66,7 @@ const MAX_PDFIUM_TEXT_SEGMENT_NATIVE_TEXT_BYTES: u32 = 256 * 1024;
 const MAX_BBOX_OVERLAP_COMPARISONS: usize = 16_384;
 const RULED_TABLE_SATURATION_SEGMENTS: u32 = 20;
 const TABLE_ROUTE_DENSITY_THRESHOLD: f32 = 0.25;
-const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v41";
+const CACHE_SCHEMA_VERSION: &str = "glyphrush-cache-v42";
 const CACHE_SNAPSHOT_VERSION: &str = "glyphrush-cache-snapshot-v1";
 const DEFAULT_BASELINE_TIMEOUT_MS: u64 = 120_000;
 const DEFAULT_OCR_TIMEOUT_MS: u64 = 120_000;
@@ -3073,7 +3076,7 @@ fn liteparse_feature_parity_capabilities(
             glyphrush_status: FeatureParityStatus::Partial,
             hot_path: false,
             quality_guard: "table_uncertain_flag_and_table_structure_eval",
-            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, key-value metadata rows, embedded pin/function tables, number-first pin-description tables, fragmented symbol/rating tables, bullet/leader spec tables, electrical-characteristics min/typ/max tables, AWINIC parameter/test-condition electrical tables with split frequency ranges, split ppm/degree-C units, ohm values, thermal shutdown rows, and footer exclusion, parameter/symbol/conditions electrical tables with condition continuations and thermal/EN threshold tail rows, reflow-profile Sn-Pb/Pb-free assembly tables, classification-temperature package/volume tables, package pin-description tables, part-number ordering tables, OMB-style budget projection tables, header-guided whitespace rows with table-header cues, same-line or wrapped multi-word descriptor cells, two-column descriptor/value rows, trailing descriptor continuations, header-guided trailing blank cells, header-guided section rows, and prefixed leading delimited/text-table captions outside table grids, aligned whitespace and positioned interior section rows, keeps positioned captions outside table grids, rejects routed description prose without table-header cues, rejects positioned-table windows that are really the page's own two-column prose lines so figure-ruling-routed academic pages keep column reading order instead of fake parallel-prose tables, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, fragmented first-column positioned section rows, interior positioned condition/note rows, multi-cell wrapped continuations, and same-column wrapped header rows when table recovery is routed, and exposes structured grids to eval text anchors.",
+            notes: "Current table support is conservative, tied to explicit uncertainty flags, preserves blank cells for delimited text, fixed-width whitespace, fixed-width wrapped descriptor fragments, key-value metadata rows, embedded pin/function tables, number-first pin-description tables, fragmented symbol/rating tables, bullet/leader spec tables, electrical-characteristics min/typ/max tables, AWINIC parameter/test-condition electrical tables with split frequency ranges, split ppm/degree-C units, ohm values, thermal shutdown rows, and footer exclusion, parameter/symbol/conditions electrical tables with condition continuations and thermal/EN threshold tail rows, reflow-profile Sn-Pb/Pb-free assembly tables, classification-temperature package/volume tables, package pin-description tables, part-number ordering tables, OMB-style budget projection tables, header-guided whitespace rows with table-header cues, same-line or wrapped multi-word descriptor cells, two-column descriptor/value rows, trailing descriptor continuations, header-guided trailing blank cells, header-guided section rows, and prefixed leading delimited/text-table captions outside table grids, aligned whitespace and positioned interior section rows, keeps positioned captions outside table grids, rejects routed description prose without table-header cues, rejects positioned-table windows that are really the page's own two-column prose lines so figure-ruling-routed academic pages keep column reading order instead of fake parallel-prose tables, recovers column-ruled grids from extracted vector ruling lines (composed through nested form XObject transforms) with text-row row structure, blank-cell preservation, wrapped-descriptor merges, and diagram-lattice rejection so filled vouchers and ruled month-grid forms produce structured cells, and aligned positioned rows including same-line fragmented positioned cells, first-column positioned section rows, fragmented first-column positioned section rows, interior positioned condition/note rows, multi-cell wrapped continuations, and same-column wrapped header rows when table recovery is routed, and exposes structured grids to eval text anchors.",
         },
         FeatureParityCapability {
             id: "artifact_cache_snapshots",
@@ -11283,12 +11286,30 @@ fn extract_pdfium_loaded_page(
     };
     let (ocr_text, render_us, ocr_us) =
         load_pdfium_ocr_if_needed(source_path, ocr, &signals, &page)?;
+    let ruling_lines = if signals.table_line_density > 0.0 {
+        pdfium_ruling_lines(&page, &dimensions)
+    } else {
+        Vec::new()
+    };
+    if std::env::var_os("GLYPHRUSH_DEBUG_RULINGS").is_some() {
+        eprintln!(
+            "debug-rulings p{page_index}: density={table_line_density} lines={}",
+            ruling_lines.len()
+        );
+        for line in &ruling_lines {
+            eprintln!(
+                "debug-rulings p{page_index}:   {:?} pos={:.1} extent={:.1}..{:.1}",
+                line.orientation, line.position, line.start, line.end
+            );
+        }
+    }
 
     Ok(ExtractedPage {
         page_index,
         dimensions,
         native_text,
         native_spans,
+        ruling_lines,
         image_artifacts,
         signals,
         ocr_text,
@@ -11600,6 +11621,178 @@ fn pdfium_bounds_look_like_ruling(bounds: PdfQuadPoints) -> bool {
 }
 
 #[cfg(feature = "pdfium")]
+const MAX_EXTRACTED_RULING_LINES: usize = 512;
+
+/// Row-vector affine transform (a, b, c, d, e, f): x' = a*x + c*y + e,
+/// y' = b*x + d*y + f. Path segment coordinates are in object space; the
+/// object matrix, composed through nested form XObjects, maps them to page
+/// space.
+#[cfg(feature = "pdfium")]
+type PdfiumRulingTransform = [f32; 6];
+
+#[cfg(feature = "pdfium")]
+const PDFIUM_RULING_IDENTITY: PdfiumRulingTransform = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+
+/// Collects positioned horizontal/vertical stroked ruling segments in
+/// page-local top-left coordinates, bounded by `MAX_EXTRACTED_RULING_LINES`.
+/// Cheap metadata for ruled-grid table recovery; never rendered.
+#[cfg(feature = "pdfium")]
+fn pdfium_ruling_lines(
+    page: &PdfPage<'_>,
+    dimensions: &PageDimensions,
+) -> Vec<ExtractedRulingLine> {
+    let mut ruling_lines = Vec::new();
+
+    for object in page.objects().iter() {
+        pdfium_collect_object_ruling_lines(
+            &object,
+            &PDFIUM_RULING_IDENTITY,
+            dimensions,
+            &mut ruling_lines,
+        );
+        if ruling_lines.len() >= MAX_EXTRACTED_RULING_LINES {
+            ruling_lines.truncate(MAX_EXTRACTED_RULING_LINES);
+            break;
+        }
+    }
+
+    ruling_lines
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_compose_ruling_transform(
+    parent: &PdfiumRulingTransform,
+    matrix: &PdfiumMatrix,
+) -> PdfiumRulingTransform {
+    let [pa, pb, pc, pd, pe, pf] = *parent;
+    let (ma, mb, mc, md, me, mf) = (
+        matrix.a(),
+        matrix.b(),
+        matrix.c(),
+        matrix.d(),
+        matrix.e(),
+        matrix.f(),
+    );
+
+    [
+        ma * pa + mb * pc,
+        ma * pb + mb * pd,
+        mc * pa + md * pc,
+        mc * pb + md * pd,
+        me * pa + mf * pc + pe,
+        me * pb + mf * pd + pf,
+    ]
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_apply_ruling_transform(transform: &PdfiumRulingTransform, x: f32, y: f32) -> (f32, f32) {
+    let [a, b, c, d, e, f] = *transform;
+    (a * x + c * y + e, b * x + d * y + f)
+}
+
+#[cfg(feature = "pdfium")]
+fn pdfium_collect_object_ruling_lines(
+    object: &PdfPageObject<'_>,
+    parent_transform: &PdfiumRulingTransform,
+    dimensions: &PageDimensions,
+    ruling_lines: &mut Vec<ExtractedRulingLine>,
+) {
+    let transform = match object.matrix() {
+        Ok(matrix) => pdfium_compose_ruling_transform(parent_transform, &matrix),
+        Err(_) => *parent_transform,
+    };
+
+    if let Some(path) = object.as_path_object()
+        && path.is_stroked().unwrap_or(true)
+    {
+        let collected_before = ruling_lines.len();
+        let mut current = None;
+        for segment in path.segments().iter() {
+            match segment.segment_type() {
+                PdfPathSegmentType::MoveTo => {
+                    current = Some(pdfium_apply_ruling_transform(
+                        &transform,
+                        segment.x().value,
+                        segment.y().value,
+                    ));
+                }
+                PdfPathSegmentType::LineTo => {
+                    let end = pdfium_apply_ruling_transform(
+                        &transform,
+                        segment.x().value,
+                        segment.y().value,
+                    );
+                    if let Some(start) = current
+                        && is_ruling_segment(start, end)
+                        && let Some(line) = ruling_line_from_segment(start, end, dimensions)
+                    {
+                        ruling_lines.push(line);
+                    }
+                    current = Some(end);
+                }
+                PdfPathSegmentType::BezierTo | PdfPathSegmentType::Unknown => {
+                    current = None;
+                }
+            }
+        }
+
+        // Object bounds are already in page space; no transform needed.
+        if ruling_lines.len() == collected_before
+            && let Ok(bounds) = object.bounds()
+            && pdfium_bounds_look_like_ruling(bounds)
+            && let Some(line) = ruling_line_from_segment(
+                (bounds.left().value, bounds.bottom().value),
+                (bounds.right().value, bounds.top().value),
+                dimensions,
+            )
+        {
+            ruling_lines.push(line);
+        }
+    }
+
+    if let Some(form) = object.as_x_object_form_object() {
+        for child in form.iter() {
+            pdfium_collect_object_ruling_lines(&child, &transform, dimensions, ruling_lines);
+            if ruling_lines.len() >= MAX_EXTRACTED_RULING_LINES {
+                break;
+            }
+        }
+    }
+}
+
+/// Converts a PDF bottom-left-origin segment into a page-local top-left
+/// ruling line. Thin rectangles report their midline as the position.
+#[cfg(feature = "pdfium")]
+fn ruling_line_from_segment(
+    start: (f32, f32),
+    end: (f32, f32),
+    dimensions: &PageDimensions,
+) -> Option<ExtractedRulingLine> {
+    let dx = (start.0 - end.0).abs();
+    let dy = (start.1 - end.1).abs();
+
+    if dy <= dx {
+        let y = dimensions.height - (start.1 + end.1) / 2.0;
+        Some(ExtractedRulingLine {
+            orientation: RulingOrientation::Horizontal,
+            position: y,
+            start: start.0.min(end.0),
+            end: start.0.max(end.0),
+        })
+    } else {
+        let x = (start.0 + end.0) / 2.0;
+        let y0 = dimensions.height - start.1.max(end.1);
+        let y1 = dimensions.height - start.1.min(end.1);
+        Some(ExtractedRulingLine {
+            orientation: RulingOrientation::Vertical,
+            position: x,
+            start: y0,
+            end: y1,
+        })
+    }
+}
+
+#[cfg(feature = "pdfium")]
 fn pdfium_collect_image_artifact(
     object: &PdfPageObject<'_>,
     dimensions: &PageDimensions,
@@ -11837,6 +12030,7 @@ fn extract_lopdf_page(
         dimensions,
         native_text,
         native_spans,
+        ruling_lines: Vec::new(),
         image_artifacts,
         signals,
         ocr_text,

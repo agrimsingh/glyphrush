@@ -11,7 +11,7 @@
     "ocr_http_url": false,
     "ocr_timeout_ms": 120000
   },
-  "corpus_fingerprint": "eb0849339b79dab0e605f60af8f8f17384fb0cbfb26b2f95fbabca7d737c75d4",
+  "corpus_fingerprint": "e3751c671f1cae11758b2820e35d9672ffe01b775b034e6950478bf40c6b2c99",
   "documents": [
     {
       "path": "v0/academic_columns/acl-bert-naacl-2019.pdf",
@@ -276,7 +276,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "word based only on its context. Unlike left-to\u0002"
+              "jective enables the representation to fuse the left"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -303,7 +303,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "NSP Mask LM Mask LM"
+              "tion of the model architecture and refer readers to"
             ],
             "image_artifact_count": 1,
             "layout_block_counts": {
@@ -335,7 +335,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Input/Output Representations To make BERT"
+              "handle a variety of down-stream tasks, our input"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -362,7 +362,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Input [CLS] my dog is cute [SEP] he likes play ##ing [SEP]"
+              "tion embeddings and the position embeddings."
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -394,7 +394,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "System MNLI-(m/mm) QQP QNLI SST-2 CoLA STS-B MRPC RTE Average"
+              "The analogous formula is used for the end of the"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -423,7 +423,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "| System Dev Test | System Dev Test |"
+              "BiDAF+ELMo (Single) - 85.6 - 85.8"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -455,7 +455,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "Dev Set"
+              "Tasks MNLI-m QNLI MRPC SST-2 SQuAD"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -511,7 +511,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "References"
+              "Alan Akbik, Duncan Blythe, and Roland Vollgraf."
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -565,7 +565,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "for natural language understanding. In Proceedings"
+              "granularity hierarchical attention fusion networks"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -592,7 +592,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "BERT (Ours) OpenAI GPT ELMo"
+              "to-right model (which predicts every token), but"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -621,7 +621,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "\u2022 Learning rate (Adam): 5e-5, 3e-5, 2e-5"
+              "We also observed that large data sets (e.g.,"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -648,7 +648,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "| Class | Class |"
+              "a binary single-sentence classification task, where"
             ],
             "image_artifact_count": 1,
             "layout_block_counts": {
@@ -716,6 +716,274 @@
           ],
           "min_score": 1.0
         }
+      }
+    },
+    {
+      "path": "v0/forms/gsa-sf1035-filled-voucher.pdf",
+      "category": "forms",
+      "document_fingerprint": "fc3503bc9ecc051933926f780a5fca592f005f7810693404e8f4b9d2bde13e4e",
+      "source_size_bytes": 758740,
+      "expect": {
+        "page_count": 1,
+        "fallback_pages": 1,
+        "ocr_required_pages": 0,
+        "ocr_applied_pages": 0,
+        "image_artifact_count": 0,
+        "warnings_count": 0,
+        "required_warnings": [],
+        "route_counts": {
+          "native_fast_path": 0,
+          "needs_fallback": 1,
+          "ocr_fallback": 0,
+          "unsupported": 0
+        },
+        "route_reason_counts": {
+          "table_line_density": 1
+        },
+        "quality_flag_counts": {
+          "requires_ocr": 0,
+          "low_confidence_text": 0,
+          "broken_encoding": 0,
+          "layout_uncertain": 0,
+          "table_uncertain": 1,
+          "unsupported_feature": 0
+        },
+        "ocr_required_classification": {
+          "expected_pages": [],
+          "min_precision": 1.0,
+          "min_recall": 1.0
+        },
+        "quality_flag_classification": [
+          {
+            "flag": "table_uncertain",
+            "expected_pages": [
+              0
+            ],
+            "min_precision": 1.0,
+            "min_recall": 1.0
+          }
+        ],
+        "table_structure": [
+          {
+            "page": 0,
+            "expected_rows": [
+              [
+                "INV-2026-0117",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "Network switch, 24-port managed",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "2026-01-05",
+                "",
+                "4",
+                "385.00",
+                "EA",
+                "1,540.00"
+              ],
+              [
+                "INV-2026-0117",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "Cat6 patch cable, 3 meter",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "2026-01-05",
+                "",
+                "60",
+                "8.25",
+                "EA",
+                "495.00"
+              ],
+              [
+                "INV-2026-0118",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "Rack installation labor",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "2026-01-12",
+                "",
+                "16",
+                "95.00",
+                "HR",
+                "1,520.00"
+              ],
+              [
+                "INV-2026-0118",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "Cable management tray",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "2026-01-12",
+                "",
+                "8",
+                "27.50",
+                "EA",
+                "220.00"
+              ],
+              [
+                "INV-2026-0121",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "Network configuration services",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "2026-01-19",
+                "",
+                "12",
+                "110.00",
+                "HR",
+                "1,320.00"
+              ],
+              [
+                "INV-2026-0121",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "On-site acceptance testing",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "2026-01-26",
+                "",
+                "6",
+                "120.00",
+                "HR",
+                "720.00"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0
+          }
+        ],
+        "span_bbox": [
+          {
+            "page": 0,
+            "text": "PUBLIC VOUCHER FOR PURCHASES AND",
+            "provenance": "native",
+            "min_x0": 196.036,
+            "max_x0": 197.036,
+            "min_y0": 69.925964,
+            "max_y0": 70.925964,
+            "min_x1": 398.696,
+            "max_x1": 399.696,
+            "min_y1": 77.32599,
+            "max_y1": 78.32599
+          }
+        ],
+        "silent_failures": {
+          "max_count": 0
+        },
+        "pages": [
+          {
+            "index": 0,
+            "artifact_id": "fc3503bc9ecc051933926f780a5fca592f005f7810693404e8f4b9d2bde13e4e:p000000:81436f20cd87",
+            "page_fingerprint": "81436f20cd872113f91a1bced5b02ea14728a63e4b3cb39fd5087e08979be472",
+            "route": "needs_fallback",
+            "empty_text_output": false,
+            "required_text": [
+              "Designed using Perform Pro, WHS/DIOR, Aug 96"
+            ],
+            "image_artifact_count": 0,
+            "layout_block_counts": {
+              "block_count": 2,
+              "paragraph_blocks": 1,
+              "heading_blocks": 0,
+              "list_blocks": 0,
+              "table_blocks": 1,
+              "table_rows": 31,
+              "table_cells": 217,
+              "table_cells_with_bbox": 72,
+              "figure_blocks": 0,
+              "header_blocks": 0,
+              "footer_blocks": 0
+            },
+            "required_flags": [
+              "table_uncertain"
+            ],
+            "required_reasons": [
+              "table_line_density"
+            ]
+          }
+        ]
       }
     },
     {
@@ -899,7 +1167,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "WATSON v. MARYLAND. 173"
+              "MARYLAND."
             ],
             "image_artifact_count": 1,
             "layout_block_counts": {
@@ -983,7 +1251,7 @@
             "route": "needs_fallback",
             "empty_text_output": false,
             "required_text": [
-              "176 OCTOBER TERM, 1909."
+              "terms."
             ],
             "image_artifact_count": 1,
             "layout_block_counts": {
@@ -1091,7 +1359,7 @@
             "route": "needs_fallback",
             "empty_text_output": false,
             "required_text": [
-              "180 OCTOBER TERM, 1909."
+              "firmed."
             ],
             "image_artifact_count": 1,
             "layout_block_counts": {
@@ -1230,6 +1498,90 @@
             "min_row_recall": 1.0,
             "min_cell_recall": 1.0,
             "min_cell_f1": 1.0
+          },
+          {
+            "page": 2,
+            "expected_rows": [
+              [
+                "Part III",
+                "Covered Individuals",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "If employer-provided, self-insured coverage, check the box and enter the information for each individual enrolled in coverage, including the employee.",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "(a)",
+                "Name of covered individual(s)",
+                "",
+                "(b) SSN or other TIN",
+                "(c) DOB (if SSN or other",
+                "(d) Covered",
+                "",
+                "",
+                "",
+                "",
+                "(e)",
+                "",
+                "Months of coverage",
+                "",
+                "",
+                "",
+                ""
+              ],
+              [
+                "",
+                "First name, middle initial, last name",
+                "",
+                "",
+                "TIN is not available)",
+                "all 12 months",
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "June",
+                "July",
+                "Aug",
+                "Sept",
+                "Oct",
+                "Nov"
+              ]
+            ],
+            "min_row_recall": 1.0,
+            "min_cell_recall": 1.0,
+            "min_cell_f1": 1.0
           }
         ],
         "span_bbox": [
@@ -1297,7 +1649,7 @@
             "route": "unsupported",
             "empty_text_output": false,
             "required_text": [
-              "1095-C Form"
+              "Employer-Provided Health Insurance Offer and Coverage"
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1329,7 +1681,7 @@
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Form 1095-C (2025)"
+              "see Pub. 974, Premium Tax Credit (PTC)."
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
@@ -1356,11 +1708,14 @@
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {
-              "block_count": 20,
-              "paragraph_blocks": 20,
+              "block_count": 18,
+              "paragraph_blocks": 17,
               "heading_blocks": 0,
               "list_blocks": 0,
-              "table_blocks": 0,
+              "table_blocks": 1,
+              "table_rows": 4,
+              "table_cells": 68,
+              "table_cells_with_bbox": 24,
               "figure_blocks": 0,
               "header_blocks": 0,
               "footer_blocks": 0
@@ -1381,7 +1736,7 @@
             "route": "native_fast_path",
             "empty_text_output": false,
             "required_text": [
-              "Form 1095-C (2025)"
+              "reported on line 15, visit IRS.gov."
             ],
             "image_artifact_count": 0,
             "layout_block_counts": {

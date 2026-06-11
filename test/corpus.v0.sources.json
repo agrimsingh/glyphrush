@@ -35,6 +35,16 @@
       "selection_note": "Small, stable form fixture for unsupported-form flags and text extraction behavior."
     },
     {
+      "path": "v0/forms/gsa-sf1035-filled-voucher.pdf",
+      "category": "forms",
+      "title": "GSA SF-1035 Public Voucher continuation sheet, filled invoice fixture",
+      "direct_url": "https://www.gsa.gov/system/files/SF1035-73.pdf",
+      "source_page": "https://www.gsa.gov/reference/forms/public-voucher-for-services-other-than-personal-continuation-sheet",
+      "license_note": "GSA / US federal standard form; generally public domain. Line items are synthetic data filled into the official form.",
+      "expected_shape": "Column-ruled line-item voucher (invoice class) with order numbers, dates, descriptions, quantities, unit prices, and amounts in a vertical-ruled grid.",
+      "selection_note": "Invoice-class ruled-table fixture. Generated reproducibly by tools/baselines/make_invoice_fixture.py, which fills the blank public-domain form with deterministic line items and flattens the fields; real-world invoices are rarely redistributable."
+    },
+    {
       "path": "v0/hybrid/govinfo-usreports-218-173-watson.pdf",
       "category": "hybrid",
       "title": "Watson v. Maryland, 218 U.S. 173",

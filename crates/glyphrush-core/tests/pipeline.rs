@@ -12,6 +12,7 @@ fn native_text_input_becomes_a_native_span_with_fast_path_quality() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "Glyphrush reads native text first.".to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 page_index: 0,
@@ -63,6 +64,7 @@ fn extracted_page_signals_are_preserved_in_page_artifact() {
             dimensions: PageDimensions::new(300.0, 400.0),
             native_text: "Signal text".to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 page_index: 2,
@@ -126,6 +128,7 @@ fn backend_native_spans_are_preserved_with_bounding_boxes() {
                     },
                 },
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 page_index: 0,
@@ -173,6 +176,7 @@ fn extracted_image_artifacts_are_preserved_without_pixel_payloads() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "Image-backed page".to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: vec![ExtractedImage {
                 bbox: BBox {
                     x0: 0.0,
@@ -222,6 +226,7 @@ fn image_only_pages_expose_figure_layout_without_faking_text() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text: String::new(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: vec![ExtractedImage {
                 bbox: BBox {
                     x0: 12.0,
@@ -276,6 +281,7 @@ fn page_fingerprint_changes_when_native_span_geometry_changes() {
         dimensions: PageDimensions::new(612.0, 792.0),
         native_text: "Same text".to_string(),
         native_spans: Vec::new(),
+        ruling_lines: Vec::new(),
         image_artifacts: Vec::new(),
         signals: PageSignals {
             page_index: 0,
@@ -365,6 +371,7 @@ fn positioned_native_spans_split_layout_blocks_by_geometry_gaps() {
                     },
                 },
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 page_index: 0,
@@ -414,6 +421,7 @@ fn scanned_like_input_is_flagged_for_ocr_without_faking_text_success() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text: String::new(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 page_index: 0,
@@ -462,6 +470,7 @@ fn ocr_text_is_merged_with_provenance_for_required_pages() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text: String::new(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 page_index: 0,

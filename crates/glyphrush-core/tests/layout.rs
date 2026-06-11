@@ -21,6 +21,7 @@ fn native_text_is_split_into_deterministic_layout_blocks() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -57,6 +58,7 @@ fn pipe_table_payload_preserves_empty_cells_and_column_indexes() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -89,6 +91,7 @@ fn pipe_table_payload_ignores_markdown_separator_rows() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text: concat!("| Part | Value |\n", "| --- | --- |\n", "| A | 1 |").to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -123,6 +126,7 @@ fn pipe_table_recovery_keeps_leading_caption_outside_table_grid() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -179,6 +183,7 @@ fn pipe_table_recovery_keeps_leading_caption_for_two_row_table() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -228,6 +233,7 @@ fn pipe_table_recovery_splits_prefix_caption_and_table() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -281,6 +287,7 @@ fn aligned_whitespace_table_payload_preserves_empty_cells_and_column_indexes() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -326,6 +333,7 @@ fn aligned_whitespace_table_payload_preserves_section_rows() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -382,6 +390,7 @@ fn aligned_whitespace_table_payload_merges_wrapped_descriptor_rows() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -436,6 +445,7 @@ fn key_value_table_payload_preserves_multi_word_labels() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -485,6 +495,7 @@ fn ocr_text_can_produce_layout_blocks_when_native_text_is_missing() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text: String::new(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 native_span_count: 0,
@@ -515,6 +526,7 @@ fn applied_ocr_replaces_low_confidence_native_text_for_layout() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text: "x".to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 native_span_count: 1,
@@ -564,6 +576,7 @@ fn layout_reflows_short_pdf_fragments_inside_paragraph_blocks() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -609,6 +622,7 @@ fn layout_reflows_adjacent_short_fragment_blocks() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -644,6 +658,7 @@ fn positioned_native_spans_preserve_two_column_reading_order() {
                 span("Left column continues", 72.0, 118.0, 248.0, 132.0),
                 span("Right column continues", 330.0, 118.0, 520.0, 132.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -688,6 +703,7 @@ fn positioned_native_spans_preserve_three_column_reading_order() {
                 span("Middle column continues", 230.0, 118.0, 370.0, 132.0),
                 span("Right column continues", 430.0, 118.0, 570.0, 132.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -743,6 +759,7 @@ fn positioned_native_spans_preserve_five_column_reading_order() {
                 span("Column four continues", 580.0, 118.0, 668.0, 132.0),
                 span("Column five continues", 760.0, 118.0, 848.0, 132.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -795,6 +812,7 @@ fn positioned_native_spans_preserve_trailing_cross_column_note_after_two_columns
                     186.0,
                 ),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -839,6 +857,7 @@ fn positioned_native_spans_preserve_leading_cross_column_subtitle_before_two_col
                 span("Left column continues", 72.0, 138.0, 248.0, 152.0),
                 span("Right column continues", 330.0, 138.0, 520.0, 152.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -880,6 +899,7 @@ fn positioned_native_spans_preserve_full_width_heading_before_two_columns() {
                 span("Left column continues", 72.0, 138.0, 248.0, 152.0),
                 span("Right column continues", 330.0, 138.0, 520.0, 152.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -925,6 +945,7 @@ fn positioned_native_spans_preserve_fragmented_full_width_heading_before_two_col
                 span("Left column continues", 72.0, 138.0, 248.0, 152.0),
                 span("Right column continues", 330.0, 138.0, 520.0, 152.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -977,6 +998,7 @@ fn positioned_native_spans_preserve_short_section_heading_between_two_column_reg
                 span("Left specs continues", 72.0, 256.0, 248.0, 270.0),
                 span("Right specs continues", 330.0, 256.0, 520.0, 270.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -1029,6 +1051,7 @@ fn positioned_native_spans_preserve_fragmented_short_section_heading_between_two
                 span("Left specs continues", 72.0, 256.0, 248.0, 270.0),
                 span("Right specs continues", 330.0, 256.0, 520.0, 270.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -1078,6 +1101,7 @@ fn positioned_native_spans_preserve_middle_cross_column_caption_between_two_colu
                 span("Left details continues", 72.0, 256.0, 248.0, 270.0),
                 span("Right details continues", 330.0, 256.0, 520.0, 270.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -1134,6 +1158,7 @@ fn positioned_native_spans_preserve_fragmented_middle_cross_column_caption_betwe
                 span("Left details continues", 72.0, 256.0, 248.0, 270.0),
                 span("Right details continues", 330.0, 256.0, 520.0, 270.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -1184,6 +1209,7 @@ fn positioned_native_spans_preserve_narrow_gutter_columns_before_centered_page_n
                 span("Right column second line", 306.0, 80.0, 524.0, 90.0),
                 span("Right column third line", 306.0, 94.0, 520.0, 104.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -1249,6 +1275,7 @@ fn positioned_character_spans_reflow_into_readable_words() {
                 span("e", 117.0, 131.1, 124.0, 139.0),
                 span("s", 125.0, 131.1, 132.0, 139.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 native_span_count: 35,
@@ -1294,6 +1321,7 @@ fn positioned_overlapping_fragments_do_not_duplicate_prefix_text() {
                 span("for ", 300.5, 101.0, 314.0, 113.0),
                 span("load", 318.0, 100.0, 338.0, 112.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 native_span_count: 10,
@@ -1335,6 +1363,7 @@ fn positioned_table_spans_preserve_rows_when_table_recovery_runs() {
                 span("Beta", 72.0, 164.0, 132.0, 178.0),
                 span("20", 220.0, 164.0, 246.0, 178.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -1376,6 +1405,7 @@ fn positioned_table_spans_preserve_empty_cells_when_rows_omit_blank_columns() {
                 span("B", 72.0, 164.0, 92.0, 178.0),
                 span("2", 220.0, 164.0, 240.0, 178.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -1455,6 +1485,7 @@ fn positioned_table_recovery_merges_same_line_fragmented_cells() {
                 span("60", 360.0, 164.0, 378.0, 178.0),
                 span("uA", 420.0, 164.0, 440.0, 178.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -1545,6 +1576,7 @@ fn positioned_table_recovery_merges_wrapped_descriptor_cells() {
                 span("uA", 420.0, 188.0, 440.0, 202.0),
                 span("current", 72.0, 204.0, 124.0, 218.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -1625,6 +1657,7 @@ fn positioned_table_recovery_merges_multi_cell_wrapped_continuations() {
                 span("voltage", 72.0, 148.0, 126.0, 162.0),
                 span("load", 260.0, 148.0, 294.0, 162.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -1716,6 +1749,7 @@ fn positioned_table_recovery_preserves_interior_condition_note_rows() {
                 span("0.1", 380.0, 228.0, 406.0, 242.0),
                 span("1.0", 440.0, 228.0, 466.0, 242.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -1813,6 +1847,7 @@ fn positioned_table_recovery_merges_same_column_wrapped_header_rows() {
                 span("100", 300.0, 184.0, 330.0, 198.0),
                 span("mA", 420.0, 184.0, 442.0, 198.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -1882,6 +1917,7 @@ fn positioned_table_recovery_does_not_merge_compact_text_data_rows_into_header()
                 span("Beta", 72.0, 148.0, 112.0, 162.0),
                 span("Better", 220.0, 148.0, 270.0, 162.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -1978,6 +2014,7 @@ fn positioned_table_recovery_preserves_cross_column_section_rows() {
                 span("175", 360.0, 220.0, 386.0, 234.0),
                 span("C", 420.0, 220.0, 430.0, 234.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -2085,6 +2122,7 @@ fn positioned_table_recovery_preserves_first_column_section_rows() {
                 span("175", 360.0, 220.0, 386.0, 234.0),
                 span("C", 420.0, 220.0, 430.0, 234.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -2194,6 +2232,7 @@ fn positioned_table_recovery_preserves_fragmented_first_column_section_rows() {
                 span("175", 360.0, 220.0, 386.0, 234.0),
                 span("C", 420.0, 220.0, 430.0, 234.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -2265,6 +2304,7 @@ fn positioned_table_recovery_preserves_surrounding_text_blocks() {
                 span("20", 220.0, 172.0, 246.0, 186.0),
                 span("Source note", 72.0, 230.0, 190.0, 244.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -2336,6 +2376,7 @@ fn positioned_table_recovery_keeps_top_caption_outside_table_grid() {
                 span("900", 360.0, 184.0, 386.0, 198.0),
                 span("mA", 420.0, 184.0, 440.0, 198.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -2400,6 +2441,7 @@ fn text_table_recovery_keeps_leading_caption_outside_table_grid() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -2456,6 +2498,7 @@ fn text_table_recovery_merges_leading_descriptor_cells_from_header_columns() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -2515,6 +2558,7 @@ fn text_table_recovery_extracts_embedded_pin_function_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -2607,6 +2651,7 @@ fn text_table_recovery_merges_split_pin_function_rows_from_pdfium_text() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -2694,6 +2739,7 @@ fn text_table_recovery_extracts_split_pin_number_name_function_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -2789,6 +2835,7 @@ fn text_table_recovery_extracts_fragmented_symbol_rating_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.38,
@@ -2882,6 +2929,7 @@ fn text_table_recovery_extracts_bullet_leader_spec_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.46,
@@ -2994,6 +3042,7 @@ fn text_table_recovery_extracts_electrical_characteristics_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.52,
@@ -3206,6 +3255,7 @@ fn text_table_recovery_extracts_parameter_symbol_conditions_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.50,
@@ -3418,6 +3468,7 @@ fn text_table_recovery_extracts_awinic_parameter_test_condition_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.50,
@@ -3622,6 +3673,7 @@ fn text_table_recovery_extracts_reflow_profile_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.50,
@@ -3740,6 +3792,7 @@ fn text_table_recovery_extracts_classification_temperature_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.50,
@@ -3830,6 +3883,7 @@ fn text_table_recovery_extracts_package_pin_description_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -3909,6 +3963,7 @@ fn text_table_recovery_extracts_part_number_ordering_tables() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -3963,6 +4018,7 @@ fn text_table_recovery_merges_two_column_descriptor_value_rows() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4017,6 +4073,7 @@ fn text_table_recovery_merges_wrapped_descriptor_lines_from_header_columns() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4071,6 +4128,7 @@ fn text_table_recovery_preserves_header_guided_section_rows() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4126,6 +4184,7 @@ fn text_table_recovery_merges_trailing_descriptor_continuations_from_header_colu
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4185,6 +4244,7 @@ fn text_table_recovery_preserves_trailing_blank_cells_from_header_columns() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4247,6 +4307,7 @@ fn text_table_recovery_extracts_budget_projection_rows() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4340,6 +4401,7 @@ fn text_table_recovery_does_not_treat_wrapped_prose_as_header_guided_table() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4374,6 +4436,7 @@ fn text_table_recovery_does_not_treat_datasheet_description_prose_as_table() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4418,6 +4481,7 @@ fn positioned_bullet_list_rows_are_not_recovered_as_tables() {
                 span("·", 72.0, 474.0, 78.0, 485.0),
                 span("Notebook and Personal Computers", 96.0, 476.0, 244.0, 485.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4463,6 +4527,7 @@ fn positioned_bullet_marker_rows_absorb_following_text_rows() {
                 span("Portable and Battery", 96.0, 154.0, 178.0, 162.0),
                 span("Powered Equipment", 96.0, 166.0, 190.0, 175.0),
             ],
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4504,6 +4569,7 @@ fn marker_only_list_lines_are_normalized_into_list_items() {
             )
             .to_string(),
             native_spans: Vec::new(),
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4541,6 +4607,7 @@ fn repeated_margin_blocks_are_classified_as_headers_and_footers() {
                     span("First page body", 72.0, 120.0, 260.0, 134.0),
                     span("CONFIDENTIAL FOOTER", 72.0, 754.0, 260.0, 768.0),
                 ],
+                ruling_lines: Vec::new(),
                 image_artifacts: Vec::new(),
                 signals: native_signals(0),
                 ocr_text: None,
@@ -4555,6 +4622,7 @@ fn repeated_margin_blocks_are_classified_as_headers_and_footers() {
                     span("Second page body", 72.0, 120.0, 280.0, 134.0),
                     span("CONFIDENTIAL FOOTER", 72.0, 754.0, 260.0, 768.0),
                 ],
+                ruling_lines: Vec::new(),
                 image_artifacts: Vec::new(),
                 signals: native_signals(1),
                 ocr_text: None,
@@ -4620,6 +4688,7 @@ fn two_column_page_with_banner_and_centered_page_number_preserves_column_reading
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text,
             native_spans,
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -4697,6 +4766,7 @@ fn unresolved_two_column_evidence_flags_layout_uncertain() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text,
             native_spans,
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -4744,6 +4814,7 @@ fn single_column_page_is_not_split_or_flagged_by_column_row_bands() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text,
             native_spans,
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: native_signals(0),
             ocr_text: None,
@@ -4793,6 +4864,7 @@ fn table_routed_two_column_prose_is_not_recovered_as_fake_tables() {
             dimensions: PageDimensions::new(612.0, 792.0),
             native_text,
             native_spans,
+            ruling_lines: Vec::new(),
             image_artifacts: Vec::new(),
             signals: PageSignals {
                 table_line_density: 0.42,
@@ -4830,6 +4902,352 @@ fn table_routed_two_column_prose_is_not_recovered_as_fake_tables() {
             .unwrap_or_else(|| panic!("missing {needle:?} in {page_text:?}"))
     };
     assert!(position(&left_lines[11]) < position(&right_lines[0]));
+}
+
+fn invoice_style_ruling_lines() -> Vec<glyphrush_core::ExtractedRulingLine> {
+    use glyphrush_core::{ExtractedRulingLine, RulingOrientation};
+    let mut lines = Vec::new();
+    for y in [100.0, 190.0] {
+        lines.push(ExtractedRulingLine {
+            orientation: RulingOrientation::Horizontal,
+            position: y,
+            start: 50.0,
+            end: 500.0,
+        });
+    }
+    for x in [50.0, 200.0, 350.0, 500.0] {
+        lines.push(ExtractedRulingLine {
+            orientation: RulingOrientation::Vertical,
+            position: x,
+            start: 100.0,
+            end: 190.0,
+        });
+    }
+    lines
+}
+
+#[test]
+fn ruled_grid_recovers_invoice_style_table() {
+    let artifact = parse_extracted_pages(
+        "doc-ruled-grid-invoice".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: String::new(),
+            native_spans: vec![
+                span("Invoice summary", 60.0, 35.0, 200.0, 50.0),
+                span("Item", 60.0, 105.0, 120.0, 115.0),
+                span("Qty", 210.0, 105.0, 240.0, 115.0),
+                span("Amount", 360.0, 105.0, 420.0, 115.0),
+                span("Widget A", 60.0, 135.0, 140.0, 155.0),
+                span("2", 210.0, 135.0, 230.0, 155.0),
+                span("$10.00", 360.0, 135.0, 420.0, 155.0),
+                span("Widget B", 60.0, 165.0, 140.0, 185.0),
+                span("1", 210.0, 165.0, 230.0, 185.0),
+                span("$5.00", 360.0, 165.0, 420.0, 185.0),
+                span("Thank you for your business.", 60.0, 395.0, 300.0, 410.0),
+            ],
+            ruling_lines: invoice_style_ruling_lines(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 11,
+                native_text_bytes: 120,
+                glyph_count: 90,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_blocks: Vec<_> = page
+        .layout_blocks
+        .iter()
+        .filter(|block| block.kind == LayoutBlockKind::Table)
+        .collect();
+    assert_eq!(table_blocks.len(), 1);
+
+    let table = table_blocks[0].table.as_ref().expect("table payload");
+    assert_eq!(table.rows.len(), 3);
+    assert_eq!(table.rows[0].cells[0].text, "Item");
+    assert_eq!(table.rows[0].cells[1].text, "Qty");
+    assert_eq!(table.rows[0].cells[2].text, "Amount");
+    assert_eq!(table.rows[1].cells[0].text, "Widget A");
+    assert_eq!(table.rows[1].cells[1].text, "2");
+    assert_eq!(table.rows[1].cells[2].text, "$10.00");
+    assert_eq!(table.rows[2].cells[0].text, "Widget B");
+    assert_eq!(table.rows[2].cells[1].text, "1");
+    assert_eq!(table.rows[2].cells[2].text, "$5.00");
+
+    for row in &table.rows {
+        for cell in &row.cells {
+            if !cell.text.is_empty() {
+                assert!(cell.bbox.is_some(), "expected bbox for {:?}", cell.text);
+            }
+        }
+    }
+
+    let table_block_index = page
+        .layout_blocks
+        .iter()
+        .position(|block| block.kind == LayoutBlockKind::Table)
+        .expect("table block");
+    assert!(table_block_index > 0);
+    assert!(page.layout_blocks[0].text.contains("Invoice summary"));
+    assert!(table_block_index < page.layout_blocks.len() - 1);
+    assert!(
+        page.layout_blocks[page.layout_blocks.len() - 1]
+            .text
+            .contains("Thank you")
+    );
+}
+
+#[test]
+fn ruled_grid_preserves_blank_cells() {
+    let artifact = parse_extracted_pages(
+        "doc-ruled-grid-blank-cell".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: String::new(),
+            native_spans: vec![
+                span("Item", 60.0, 105.0, 120.0, 115.0),
+                span("Qty", 210.0, 105.0, 240.0, 115.0),
+                span("Amount", 360.0, 105.0, 420.0, 115.0),
+                span("Widget A", 60.0, 135.0, 140.0, 155.0),
+                span("$10.00", 360.0, 135.0, 420.0, 155.0),
+                span("Widget B", 60.0, 165.0, 140.0, 185.0),
+                span("1", 210.0, 165.0, 230.0, 185.0),
+                span("$5.00", 360.0, 165.0, 420.0, 185.0),
+            ],
+            ruling_lines: invoice_style_ruling_lines(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 8,
+                native_text_bytes: 80,
+                glyph_count: 60,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let table = artifact.pages[0].layout_blocks[0]
+        .table
+        .as_ref()
+        .expect("table payload");
+    assert_eq!(table.rows[1].cells[1].text, "");
+    assert_eq!(table.rows[1].cells[1].bbox, None);
+}
+
+#[test]
+fn scattered_form_boxes_do_not_form_a_ruled_grid() {
+    use glyphrush_core::{ExtractedRulingLine, RulingOrientation};
+    let artifact = parse_extracted_pages(
+        "doc-scattered-form-boxes".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: String::new(),
+            native_spans: vec![
+                span("Name:", 72.0, 100.0, 130.0, 114.0),
+                span("Date:", 72.0, 200.0, 130.0, 214.0),
+            ],
+            ruling_lines: vec![
+                ExtractedRulingLine {
+                    orientation: RulingOrientation::Horizontal,
+                    position: 100.0,
+                    start: 72.0,
+                    end: 200.0,
+                },
+                ExtractedRulingLine {
+                    orientation: RulingOrientation::Horizontal,
+                    position: 130.0,
+                    start: 300.0,
+                    end: 420.0,
+                },
+                ExtractedRulingLine {
+                    orientation: RulingOrientation::Vertical,
+                    position: 72.0,
+                    start: 100.0,
+                    end: 130.0,
+                },
+                ExtractedRulingLine {
+                    orientation: RulingOrientation::Vertical,
+                    position: 400.0,
+                    start: 200.0,
+                    end: 230.0,
+                },
+            ],
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 2,
+                native_text_bytes: 20,
+                glyph_count: 12,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    assert!(
+        !page
+            .layout_blocks
+            .iter()
+            .any(|block| block.kind == LayoutBlockKind::Table)
+    );
+}
+
+#[test]
+fn wrapped_cell_text_joins_within_a_ruled_cell() {
+    let artifact = parse_extracted_pages(
+        "doc-ruled-grid-wrapped-cell".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: String::new(),
+            native_spans: vec![
+                span("Item", 60.0, 105.0, 120.0, 115.0),
+                span("Qty", 210.0, 105.0, 240.0, 115.0),
+                span("Amount", 360.0, 105.0, 420.0, 115.0),
+                span("long description", 60.0, 135.0, 170.0, 145.0),
+                span("continued here", 60.0, 148.0, 170.0, 158.0),
+                span("2", 210.0, 140.0, 230.0, 155.0),
+                span("$10.00", 360.0, 135.0, 420.0, 155.0),
+                span("Widget B", 60.0, 165.0, 140.0, 185.0),
+                span("1", 210.0, 165.0, 230.0, 185.0),
+                span("$5.00", 360.0, 165.0, 420.0, 185.0),
+            ],
+            ruling_lines: invoice_style_ruling_lines(),
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 10,
+                native_text_bytes: 100,
+                glyph_count: 80,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let table = artifact.pages[0]
+        .layout_blocks
+        .iter()
+        .find(|block| block.kind == LayoutBlockKind::Table)
+        .and_then(|block| block.table.as_ref())
+        .expect("table payload");
+    assert_eq!(
+        table.rows[1].cells[0].text,
+        "long description continued here"
+    );
+}
+
+#[test]
+fn column_ruled_table_without_row_rules_recovers_rows_from_text() {
+    use glyphrush_core::{ExtractedRulingLine, RulingOrientation};
+    let ruling_lines = {
+        let mut lines = Vec::new();
+        for y in [100.0, 300.0] {
+            lines.push(ExtractedRulingLine {
+                orientation: RulingOrientation::Horizontal,
+                position: y,
+                start: 50.0,
+                end: 500.0,
+            });
+        }
+        for x in [50.0, 150.0, 350.0, 500.0] {
+            lines.push(ExtractedRulingLine {
+                orientation: RulingOrientation::Vertical,
+                position: x,
+                start: 100.0,
+                end: 300.0,
+            });
+        }
+        lines
+    };
+
+    let artifact = parse_extracted_pages(
+        "doc-column-ruled-no-row-rules".to_string(),
+        vec![ExtractedPage {
+            page_index: 0,
+            dimensions: PageDimensions::new(612.0, 792.0),
+            native_text: String::new(),
+            native_spans: vec![
+                span("Preamble text above the table.", 60.0, 40.0, 300.0, 55.0),
+                span("Date", 60.0, 110.0, 100.0, 120.0),
+                span("Description", 170.0, 110.0, 260.0, 120.0),
+                span("Amount", 370.0, 110.0, 430.0, 120.0),
+                span("2026-01-05", 60.0, 140.0, 130.0, 150.0),
+                span("Consulting services", 170.0, 140.0, 310.0, 150.0),
+                span("$1,200.00", 370.0, 140.0, 440.0, 150.0),
+                span("2026-01-12", 60.0, 180.0, 130.0, 190.0),
+                span("Design review", 170.0, 180.0, 280.0, 190.0),
+                span("$800.00", 370.0, 180.0, 430.0, 190.0),
+                span("2026-01-19", 60.0, 220.0, 130.0, 230.0),
+                span("Implementation", 170.0, 220.0, 290.0, 230.0),
+                span("$2,400.00", 370.0, 220.0, 440.0, 230.0),
+                span("Closing text below the table.", 60.0, 340.0, 300.0, 355.0),
+            ],
+            ruling_lines,
+            image_artifacts: Vec::new(),
+            signals: PageSignals {
+                table_line_density: 0.42,
+                native_span_count: 14,
+                native_text_bytes: 200,
+                glyph_count: 150,
+                ..native_signals(0)
+            },
+            ocr_text: None,
+            timings: PageTimings::default(),
+        }],
+    );
+
+    let page = &artifact.pages[0];
+    let table_blocks: Vec<_> = page
+        .layout_blocks
+        .iter()
+        .filter(|block| block.kind == LayoutBlockKind::Table)
+        .collect();
+    assert_eq!(table_blocks.len(), 1);
+
+    let table = table_blocks[0].table.as_ref().expect("table payload");
+    assert_eq!(table.rows.len(), 4);
+    assert_eq!(table.rows[0].cells.len(), 3);
+    assert_eq!(table.rows[0].cells[0].text, "Date");
+    assert_eq!(table.rows[0].cells[1].text, "Description");
+    assert_eq!(table.rows[0].cells[2].text, "Amount");
+    assert_eq!(table.rows[1].cells[0].text, "2026-01-05");
+    assert_eq!(table.rows[1].cells[1].text, "Consulting services");
+    assert_eq!(table.rows[1].cells[2].text, "$1,200.00");
+    assert_eq!(table.rows[2].cells[0].text, "2026-01-12");
+    assert_eq!(table.rows[2].cells[1].text, "Design review");
+    assert_eq!(table.rows[2].cells[2].text, "$800.00");
+    assert_eq!(table.rows[3].cells[0].text, "2026-01-19");
+    assert_eq!(table.rows[3].cells[1].text, "Implementation");
+    assert_eq!(table.rows[3].cells[2].text, "$2,400.00");
+
+    let table_block_index = page
+        .layout_blocks
+        .iter()
+        .position(|block| block.kind == LayoutBlockKind::Table)
+        .expect("table block");
+    assert!(table_block_index > 0);
+    assert!(page.layout_blocks[0].text.contains("Preamble"));
+    assert!(table_block_index < page.layout_blocks.len() - 1);
+    assert!(
+        page.layout_blocks[page.layout_blocks.len() - 1]
+            .text
+            .contains("Closing")
+    );
 }
 
 fn span(text: &str, x0: f32, y0: f32, x1: f32, y1: f32) -> ExtractedTextSpan {
