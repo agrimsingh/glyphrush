@@ -14,30 +14,30 @@
   <text x="10" y="24" class="title">Native-text extraction throughput, quality-gated (925-page v0 corpus)</text>
   <text x="10" y="42" class="sub">pages per second, longer is better; every run must pass the same labeled content checks</text>
 
-  <!-- Glyphrush 430.2 -->
+  <!-- Glyphrush 416.9 (liteparse-v0-native-text-strict.json, LiteParse 2.0.8 run) -->
   <text x="10" y="84" class="label">Glyphrush (PDFium)</text>
   <rect x="160" y="70" width="520" height="20" rx="4" fill="#2da44e"/>
-  <text x="688" y="85" class="value">430 pages/s</text>
+  <text x="688" y="85" class="value">417 pages/s</text>
 
-  <!-- LiteParse no-ocr 264.3 -->
+  <!-- LiteParse no-ocr 184.7 -->
   <text x="10" y="124" class="label">LiteParse --no-ocr</text>
-  <rect x="160" y="110" width="319" height="20" rx="4" fill="#8b949e"/>
-  <text x="487" y="125" class="value">264 pages/s</text>
+  <rect x="160" y="110" width="230" height="20" rx="4" fill="#8b949e"/>
+  <text x="398" y="125" class="value">185 pages/s</text>
 
-  <!-- PyMuPDF 146.8 -->
+  <!-- PyMuPDF 134.9 -->
   <text x="10" y="164" class="label">PyMuPDF</text>
-  <rect x="160" y="150" width="177" height="20" rx="4" fill="#8b949e"/>
-  <text x="345" y="165" class="value">147 pages/s</text>
+  <rect x="160" y="150" width="168" height="20" rx="4" fill="#8b949e"/>
+  <text x="336" y="165" class="value">135 pages/s</text>
 
-  <!-- pdfplumber 11.6 -->
+  <!-- pdfplumber 10.9 -->
   <text x="10" y="204" class="label">pdfplumber</text>
   <rect x="160" y="190" width="14" height="20" rx="4" fill="#8b949e"/>
-  <text x="182" y="205" class="value">11.6 pages/s</text>
+  <text x="182" y="205" class="value">10.9 pages/s</text>
 
-  <!-- LiteParse default 6.4 -->
+  <!-- LiteParse default 3.8 -->
   <text x="10" y="244" class="label">LiteParse (default)</text>
-  <rect x="160" y="230" width="8" height="20" rx="4" fill="#8b949e"/>
-  <text x="176" y="245" class="value">6.4 pages/s</text>
+  <rect x="160" y="230" width="5" height="20" rx="4" fill="#8b949e"/>
+  <text x="173" y="245" class="value">3.8 pages/s</text>
 
   <text x="10" y="284" class="sub">Reproduce: GLYPHRUSH_BENCH_CATEGORY=native-text GLYPHRUSH_BENCH_MANIFEST=test/corpus.v0.json scripts/bench-liteparse.sh</text>
 </svg>
