@@ -50,5 +50,5 @@ jobs:
           files: |
             glyphrush-*.tar.gz
             glyphrush-*.tar.gz.sha256
-          draft: true
+          draft: false
           generate_release_notes: true
