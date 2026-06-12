@@ -30,6 +30,8 @@ On the quality-gated corpus, Glyphrush is **110× faster** than LiteParse's defa
 
 ## Quickstart
 
+Prebuilt binaries for Linux (x86_64, arm64) and macOS (arm64, x86_64) with SHA-256 checksums are on the [releases page](https://github.com/agrimsingh/glyphrush/releases). Or build from source:
+
 ```sh
 git clone https://github.com/agrimsingh/glyphrush && cd glyphrush
 cargo build --release -p glyphrush-cli --features pdfium   # fast path; PDFium runtime auto-downloads on first use
