@@ -60,11 +60,11 @@ const md = parseMarkdown("your.pdf", { binary: "target/release/glyphrush" });
 ```
 
 ```js
-import { parse_pdf_bytes } from "./bindings/wasm/pkg/glyphrush_wasm.js";   // bash bindings/wasm/build.sh
+import { parse_pdf_bytes } from "glyphrush-wasm";   // npm install glyphrush-wasm
 const artifact = JSON.parse(parse_pdf_bytes(pdfBytes, false));
 ```
 
-Set `GLYPHRUSH_BIN=/path/to/glyphrush` to skip the `binary` argument. PyPI and npm packages are on the roadmap (the wasm package is publish-ready pending an npm automation token); the supported installs today are cargo, release binaries, and source.
+Set `GLYPHRUSH_BIN=/path/to/glyphrush` to skip the `binary` argument. The WASM package is on npm as [`glyphrush-wasm`](https://www.npmjs.com/package/glyphrush-wasm); a PyPI package is on the roadmap. The supported installs today are cargo, npm (wasm), release binaries, and source.
 
 ## Why it's fast
 

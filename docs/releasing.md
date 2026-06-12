@@ -21,7 +21,7 @@ bash bindings/wasm/build.sh     # builds wasm + generates pkg/package.json
 cd bindings/wasm/pkg && npm publish --access public
 ```
 
-`npm pack --dry-run` is verified: 5 files, ~822 KB packed. Requires an npm token with publish rights.
+Published: [`glyphrush-wasm@0.1.0`](https://www.npmjs.com/package/glyphrush-wasm) (2026-06-12), verified end-to-end with a fresh `npm install glyphrush-wasm` parsing an 80-page corpus PDF. Requires a granular npm token with publish rights (and 2FA bypass if account 2FA is on).
 
 ## GitHub release binaries
 
