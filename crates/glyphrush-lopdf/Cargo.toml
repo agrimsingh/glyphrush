@@ -2,11 +2,15 @@
 name = "glyphrush-lopdf"
 version = "0.1.0"
 edition.workspace = true
+description = "Dependency-light lopdf extraction backend for the Glyphrush PDF parser"
+keywords = ["pdf", "parser", "extraction", "lopdf"]
+categories = ["parser-implementations", "text-processing"]
+readme = "../../README.md"
 license.workspace = true
 repository.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-glyphrush-core = { path = "../glyphrush-core" }
+glyphrush-core = { version = "0.1.0", path = "../glyphrush-core" }
 lopdf.workspace = true
 web-time.workspace = true

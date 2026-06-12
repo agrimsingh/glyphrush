@@ -163,7 +163,7 @@ Use `scripts/bench-liteparse.sh` for the repeatable local speed gate: by default
 
 ### Head-to-head vs LiteParse v2 and its baseline lineup (2026-06-11)
 
-LiteParse v2 (the Rust rewrite, `@llamaindex/liteparse` 2.0.7, self-described "world's fastest PDF parser") was measured head-to-head on this machine in both harness modes, on a corpus matching its published benchmark shape (1 / 40 / 114 / 467-page public-domain documents) and against its own comparison lineup. Warm = in-process library calls after warmup runs (what a service pays); cold = full process invocations (what a shell user pays). 5 timed runs per cell (3 on the 467-page document), medians reported; pymupdf4llm/markitdown single-run on the 467-page document because their runtimes are minutes.
+LiteParse v2 (the Rust rewrite, self-described "world's fastest PDF parser") was measured head-to-head at 2.0.7 and re-verified at 2.0.8 the following day (2.0.8 measured equal or slower in every cell; Glyphrush stays faster in all of them, and the quality-gated v0 claims below improved to 110.19x default / 2.26x no-OCR against 2.0.8) on this machine in both harness modes, on a corpus matching its published benchmark shape (1 / 40 / 114 / 467-page public-domain documents) and against its own comparison lineup. Warm = in-process library calls after warmup runs (what a service pays); cold = full process invocations (what a shell user pays). 5 timed runs per cell (3 on the 467-page document), medians reported; pymupdf4llm/markitdown single-run on the 467-page document because their runtimes are minutes.
 
 | Parser (mode) | 1 page | 40 pages | 114 pages | 467 pages |
 |---|---|---|---|---|

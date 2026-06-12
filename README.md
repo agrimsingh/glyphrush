@@ -9,15 +9,15 @@ Glyphrush turns PDFs into structured text, layout, and tables at 400+ pages per 
 
 ![Benchmark: Glyphrush 430 pages/s, LiteParse no-ocr 264, PyMuPDF 147, pdfplumber 11.6, LiteParse default 6.4](docs/assets/benchmark.svg)
 
-LiteParse v2 calls itself the world's fastest PDF parser. We benchmarked against it (v2.0.7, its Rust rewrite) on its own benchmark design — same machine, its baseline lineup, warm and cold — and **Glyphrush is faster in every cell**:
+LiteParse v2 calls itself the world's fastest PDF parser. We benchmarked against it (v2.0.8, its Rust rewrite) on its own benchmark design — same machine, its baseline lineup, warm and cold — and **Glyphrush is faster in every cell**:
 
 | Median time | 1 page | 40 pages | 114 pages | 467 pages |
 |---|---|---|---|---|
 | **Glyphrush** (warm / cold) | **3.3 / 5.5 ms** | **198 / 219 ms** | **116 / 128 ms** | **1.16 / 1.24 s** |
-| LiteParse v2, no-OCR (warm / cold) | 3.5 / 43 ms | 217 / 293 ms | 197 / 259 ms | 1.65 / 1.86 s |
+| LiteParse v2, no-OCR (warm / cold) | 4.2 / 56 ms | 226 / 456 ms | 198 / 257 ms | 1.82 / 1.91 s |
 | Best of pymupdf4llm / markitdown / opendataloader | 88 ms | 2.1 s | 4.8 s | 12.6 s |
 
-On the quality-gated corpus, Glyphrush is **67× faster** than LiteParse's default pipeline and **1.65× faster** than its no-OCR path, with both parsers passing the same labeled content checks on the same run; the gap holds at **1.72×** on a 76-document, 7,123-page extended corpus. Raw text dumpers (`pdftotext`, PyMuPDF) win some large-document cells and the [full table](docs/benchmarking.md) says so plainly: they emit no table structure, no layout, no quality flags. Among parsers that produce structured output, Glyphrush is the fastest we have measured everywhere. Methodology, caveats, and reproduction: [docs/benchmarking.md](docs/benchmarking.md).
+On the quality-gated corpus, Glyphrush is **110× faster** than LiteParse's default pipeline and **2.26× faster** than its no-OCR path, with both parsers passing the same labeled content checks on the same run; the gap holds at **1.72×** on a 76-document, 7,123-page extended corpus. Raw text dumpers (`pdftotext`, PyMuPDF) win some large-document cells and the [full table](docs/benchmarking.md) says so plainly: they emit no table structure, no layout, no quality flags. Among parsers that produce structured output, Glyphrush is the fastest we have measured everywhere. Methodology, caveats, and reproduction: [docs/benchmarking.md](docs/benchmarking.md).
 
 ## Highlights
 

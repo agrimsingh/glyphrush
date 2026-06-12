@@ -2,6 +2,10 @@
 name = "glyphrush-core"
 version = "0.1.0"
 edition.workspace = true
+description = "Deterministic PDF document artifact model, page classifier, layout reconstruction, and table recovery for the Glyphrush parser"
+keywords = ["pdf", "parser", "layout", "extraction"]
+categories = ["parser-implementations", "text-processing"]
+readme = "../../README.md"
 license.workspace = true
 repository.workspace = true
 
