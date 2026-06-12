@@ -113,6 +113,8 @@ glyphrush parse invoice.pdf --format json --span-geometry
 
 Same input, same options, same artifact: page order, span order, flags, and artifact IDs are deterministic, which is what makes the output cacheable (`--cache-dir`) and diffable in CI.
 
+Full committed samples from the corpus are in [`examples/`](examples/): a two-column paper as markdown, a filled government voucher's recovered table as JSON, and a scanned patent showing the `requires_ocr` honesty contract. CI regenerates them and fails on drift.
+
 ## Commands
 
 | Command | Purpose |
@@ -139,6 +141,7 @@ v0. The feature-parity matrix reports **11 of 13 LiteParse capabilities implemen
 | `crates/glyphrush-cli` | The `glyphrush` binary; PDFium backend behind `--features pdfium` |
 | `bindings/{python,node,wasm}` | Thin wrappers over the native core |
 | `test/v0/` + `test/corpus.v0*.json` | Committed benchmark corpus and labeled quality gates |
+| `examples/` | Committed parser output samples, regenerated and drift-checked by CI |
 
 ## Contributing
 

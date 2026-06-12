@@ -1,0 +1,577 @@
+{
+ "document_fingerprint": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca",
+ "metadata": {
+  "parser_name": "glyphrush",
+  "parser_version": "0.1.0",
+  "backend": "pdfium",
+  "backend_version": "pdfium-adapter-v1",
+  "source_size_bytes": 371164,
+  "source_modified_unix_ms": 0
+ },
+ "pages": [
+  {
+   "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000000:b24593259d36",
+   "page_index": 0,
+   "dimensions": {
+    "width": 2320.0,
+    "height": 3408.0
+   },
+   "fingerprint": {
+    "hash_hex": "b24593259d36866d80b91462b019d2e9c29f3f4f12d4d29a2e8166a020cf4287"
+   },
+   "signals": {
+    "page_index": 0,
+    "dimensions": {
+     "width": 2320.0,
+     "height": 3408.0
+    },
+    "native_span_count": 0,
+    "native_text_bytes": 0,
+    "glyph_count": 0,
+    "image_area_ratio": 1.0,
+    "duplicate_char_ratio": 0.0,
+    "bbox_overlap_ratio": 0.0,
+    "broken_encoding_ratio": 0.0,
+    "rotation_degrees": 0,
+    "table_line_density": 0.0,
+    "annotation_count": 0,
+    "form_field_count": 0,
+    "huge_object_count": 0,
+    "span_geometry_capped": false
+   },
+   "native_spans": [],
+   "ocr_spans": [],
+   "image_artifacts": [
+    {
+     "image_id": "p000000:im000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "area_ratio": 1.0,
+     "source_name": "pdfium-image-000000"
+    }
+   ],
+   "layout_blocks": [
+    {
+     "block_id": "p000000:b000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "text": "",
+     "kind": "figure"
+    }
+   ],
+   "layout_strategy": "text_fallback",
+   "route": {
+    "route": "ocr_fallback",
+    "run_ocr": true,
+    "run_heavy_layout": false,
+    "run_table_recovery": false,
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "reasons": [
+     "high_image_coverage_without_native_text"
+    ]
+   },
+   "quality": {
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "text_confidence": 25,
+    "layout_confidence": 85
+   },
+   "timings": {
+    "open_us": 0,
+    "classify_us": 0,
+    "native_extract_us": 0,
+    "layout_us": 0,
+    "table_us": 0,
+    "render_us": 0,
+    "ocr_us": 0,
+    "merge_us": 0
+   }
+  },
+  {
+   "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000001:9c4b69581d9b",
+   "page_index": 1,
+   "dimensions": {
+    "width": 2320.0,
+    "height": 3408.0
+   },
+   "fingerprint": {
+    "hash_hex": "9c4b69581d9b23668fbd3311d3cd93c75cc9d23f79b68ddfd9d732efeb3b4b7e"
+   },
+   "signals": {
+    "page_index": 1,
+    "dimensions": {
+     "width": 2320.0,
+     "height": 3408.0
+    },
+    "native_span_count": 0,
+    "native_text_bytes": 0,
+    "glyph_count": 0,
+    "image_area_ratio": 1.0,
+    "duplicate_char_ratio": 0.0,
+    "bbox_overlap_ratio": 0.0,
+    "broken_encoding_ratio": 0.0,
+    "rotation_degrees": 0,
+    "table_line_density": 0.0,
+    "annotation_count": 0,
+    "form_field_count": 0,
+    "huge_object_count": 0,
+    "span_geometry_capped": false
+   },
+   "native_spans": [],
+   "ocr_spans": [],
+   "image_artifacts": [
+    {
+     "image_id": "p000001:im000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "area_ratio": 1.0,
+     "source_name": "pdfium-image-000000"
+    }
+   ],
+   "layout_blocks": [
+    {
+     "block_id": "p000001:b000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "text": "",
+     "kind": "figure"
+    }
+   ],
+   "layout_strategy": "text_fallback",
+   "route": {
+    "route": "ocr_fallback",
+    "run_ocr": true,
+    "run_heavy_layout": false,
+    "run_table_recovery": false,
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "reasons": [
+     "high_image_coverage_without_native_text"
+    ]
+   },
+   "quality": {
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "text_confidence": 25,
+    "layout_confidence": 85
+   },
+   "timings": {
+    "open_us": 0,
+    "classify_us": 0,
+    "native_extract_us": 0,
+    "layout_us": 0,
+    "table_us": 0,
+    "render_us": 0,
+    "ocr_us": 0,
+    "merge_us": 0
+   }
+  },
+  {
+   "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000002:6f844575b96b",
+   "page_index": 2,
+   "dimensions": {
+    "width": 2320.0,
+    "height": 3408.0
+   },
+   "fingerprint": {
+    "hash_hex": "6f844575b96be01c4ef58efe197f74630b46cb5b0391580f3c6e61d885149e5e"
+   },
+   "signals": {
+    "page_index": 2,
+    "dimensions": {
+     "width": 2320.0,
+     "height": 3408.0
+    },
+    "native_span_count": 0,
+    "native_text_bytes": 0,
+    "glyph_count": 0,
+    "image_area_ratio": 1.0,
+    "duplicate_char_ratio": 0.0,
+    "bbox_overlap_ratio": 0.0,
+    "broken_encoding_ratio": 0.0,
+    "rotation_degrees": 0,
+    "table_line_density": 0.0,
+    "annotation_count": 0,
+    "form_field_count": 0,
+    "huge_object_count": 0,
+    "span_geometry_capped": false
+   },
+   "native_spans": [],
+   "ocr_spans": [],
+   "image_artifacts": [
+    {
+     "image_id": "p000002:im000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "area_ratio": 1.0,
+     "source_name": "pdfium-image-000000"
+    }
+   ],
+   "layout_blocks": [
+    {
+     "block_id": "p000002:b000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "text": "",
+     "kind": "figure"
+    }
+   ],
+   "layout_strategy": "text_fallback",
+   "route": {
+    "route": "ocr_fallback",
+    "run_ocr": true,
+    "run_heavy_layout": false,
+    "run_table_recovery": false,
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "reasons": [
+     "high_image_coverage_without_native_text"
+    ]
+   },
+   "quality": {
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "text_confidence": 25,
+    "layout_confidence": 85
+   },
+   "timings": {
+    "open_us": 0,
+    "classify_us": 0,
+    "native_extract_us": 0,
+    "layout_us": 0,
+    "table_us": 0,
+    "render_us": 0,
+    "ocr_us": 0,
+    "merge_us": 0
+   }
+  },
+  {
+   "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000003:47371167165c",
+   "page_index": 3,
+   "dimensions": {
+    "width": 2320.0,
+    "height": 3408.0
+   },
+   "fingerprint": {
+    "hash_hex": "47371167165cf7716e1f1227a5d0d80a170e6522aa0f129731babbdc6eea4e31"
+   },
+   "signals": {
+    "page_index": 3,
+    "dimensions": {
+     "width": 2320.0,
+     "height": 3408.0
+    },
+    "native_span_count": 0,
+    "native_text_bytes": 0,
+    "glyph_count": 0,
+    "image_area_ratio": 1.0,
+    "duplicate_char_ratio": 0.0,
+    "bbox_overlap_ratio": 0.0,
+    "broken_encoding_ratio": 0.0,
+    "rotation_degrees": 0,
+    "table_line_density": 0.0,
+    "annotation_count": 0,
+    "form_field_count": 0,
+    "huge_object_count": 0,
+    "span_geometry_capped": false
+   },
+   "native_spans": [],
+   "ocr_spans": [],
+   "image_artifacts": [
+    {
+     "image_id": "p000003:im000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "area_ratio": 1.0,
+     "source_name": "pdfium-image-000000"
+    }
+   ],
+   "layout_blocks": [
+    {
+     "block_id": "p000003:b000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "text": "",
+     "kind": "figure"
+    }
+   ],
+   "layout_strategy": "text_fallback",
+   "route": {
+    "route": "ocr_fallback",
+    "run_ocr": true,
+    "run_heavy_layout": false,
+    "run_table_recovery": false,
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "reasons": [
+     "high_image_coverage_without_native_text"
+    ]
+   },
+   "quality": {
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "text_confidence": 25,
+    "layout_confidence": 85
+   },
+   "timings": {
+    "open_us": 0,
+    "classify_us": 0,
+    "native_extract_us": 0,
+    "layout_us": 0,
+    "table_us": 0,
+    "render_us": 0,
+    "ocr_us": 0,
+    "merge_us": 0
+   }
+  },
+  {
+   "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000004:72ddc5348416",
+   "page_index": 4,
+   "dimensions": {
+    "width": 2320.0,
+    "height": 3408.0
+   },
+   "fingerprint": {
+    "hash_hex": "72ddc5348416814118ee9611de78b36ca0b60527c46b572c97b720016a6465bf"
+   },
+   "signals": {
+    "page_index": 4,
+    "dimensions": {
+     "width": 2320.0,
+     "height": 3408.0
+    },
+    "native_span_count": 0,
+    "native_text_bytes": 0,
+    "glyph_count": 0,
+    "image_area_ratio": 1.0,
+    "duplicate_char_ratio": 0.0,
+    "bbox_overlap_ratio": 0.0,
+    "broken_encoding_ratio": 0.0,
+    "rotation_degrees": 0,
+    "table_line_density": 0.0,
+    "annotation_count": 0,
+    "form_field_count": 0,
+    "huge_object_count": 0,
+    "span_geometry_capped": false
+   },
+   "native_spans": [],
+   "ocr_spans": [],
+   "image_artifacts": [
+    {
+     "image_id": "p000004:im000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "area_ratio": 1.0,
+     "source_name": "pdfium-image-000000"
+    }
+   ],
+   "layout_blocks": [
+    {
+     "block_id": "p000004:b000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "text": "",
+     "kind": "figure"
+    }
+   ],
+   "layout_strategy": "text_fallback",
+   "route": {
+    "route": "ocr_fallback",
+    "run_ocr": true,
+    "run_heavy_layout": false,
+    "run_table_recovery": false,
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "reasons": [
+     "high_image_coverage_without_native_text"
+    ]
+   },
+   "quality": {
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "text_confidence": 25,
+    "layout_confidence": 85
+   },
+   "timings": {
+    "open_us": 0,
+    "classify_us": 0,
+    "native_extract_us": 0,
+    "layout_us": 0,
+    "table_us": 0,
+    "render_us": 0,
+    "ocr_us": 0,
+    "merge_us": 0
+   }
+  },
+  {
+   "artifact_id": "9da6a3a82c1642585fd974fcb5f43ebd63df60cdc2bd78b90e9b8a7e44737cca:p000005:b3b6c80dd364",
+   "page_index": 5,
+   "dimensions": {
+    "width": 2320.0,
+    "height": 3408.0
+   },
+   "fingerprint": {
+    "hash_hex": "b3b6c80dd364a1d63284c1e99391e5b22087b50c803c8484cb854a3dfc9711ef"
+   },
+   "signals": {
+    "page_index": 5,
+    "dimensions": {
+     "width": 2320.0,
+     "height": 3408.0
+    },
+    "native_span_count": 0,
+    "native_text_bytes": 0,
+    "glyph_count": 0,
+    "image_area_ratio": 1.0,
+    "duplicate_char_ratio": 0.0,
+    "bbox_overlap_ratio": 0.0,
+    "broken_encoding_ratio": 0.0,
+    "rotation_degrees": 0,
+    "table_line_density": 0.0,
+    "annotation_count": 0,
+    "form_field_count": 0,
+    "huge_object_count": 0,
+    "span_geometry_capped": false
+   },
+   "native_spans": [],
+   "ocr_spans": [],
+   "image_artifacts": [
+    {
+     "image_id": "p000005:im000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "area_ratio": 1.0,
+     "source_name": "pdfium-image-000000"
+    }
+   ],
+   "layout_blocks": [
+    {
+     "block_id": "p000005:b000000",
+     "bbox": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "x1": 2320.0,
+      "y1": 3408.0
+     },
+     "text": "",
+     "kind": "figure"
+    }
+   ],
+   "layout_strategy": "text_fallback",
+   "route": {
+    "route": "ocr_fallback",
+    "run_ocr": true,
+    "run_heavy_layout": false,
+    "run_table_recovery": false,
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "reasons": [
+     "high_image_coverage_without_native_text"
+    ]
+   },
+   "quality": {
+    "flags": [
+     "requires_ocr",
+     "low_confidence_text"
+    ],
+    "text_confidence": 25,
+    "layout_confidence": 85
+   },
+   "timings": {
+    "open_us": 0,
+    "classify_us": 0,
+    "native_extract_us": 0,
+    "layout_us": 0,
+    "table_us": 0,
+    "render_us": 0,
+    "ocr_us": 0,
+    "merge_us": 0
+   }
+  }
+ ],
+ "global_diagnostics": {
+  "fallback_pages": 6,
+  "ocr_pages": 6,
+  "ocr_required_pages": 6,
+  "ocr_applied_pages": 0,
+  "worker_count": 1,
+  "cache_status": "disabled",
+  "cache_key": null,
+  "total_stage_time_us": 0,
+  "warnings": [
+   "p000000: requires_ocr_without_ocr_output",
+   "p000001: requires_ocr_without_ocr_output",
+   "p000002: requires_ocr_without_ocr_output",
+   "p000003: requires_ocr_without_ocr_output",
+   "p000004: requires_ocr_without_ocr_output",
+   "p000005: requires_ocr_without_ocr_output"
+  ]
+ }
+}

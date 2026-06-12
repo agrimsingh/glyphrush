@@ -67,6 +67,8 @@ if ((${#v0_corpus[@]} > 0)); then
     else
       echo "Skipping rendered-image OCR check: tesseract not installed."
     fi
+    run bash examples/regenerate.sh
+    run git diff --exit-code examples/
   else
     echo "Skipping v0 eval: set GLYPHRUSH_VERIFY_PDFIUM=1 to evaluate PDFium-generated test/corpus.v0.json."
   fi

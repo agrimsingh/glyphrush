@@ -1,0 +1,2561 @@
+{
+ "document_fingerprint": "fc3503bc9ecc051933926f780a5fca592f005f7810693404e8f4b9d2bde13e4e",
+ "metadata": {
+  "parser_name": "glyphrush",
+  "parser_version": "0.1.0",
+  "backend": "pdfium",
+  "backend_version": "pdfium-adapter-v1",
+  "source_size_bytes": 758740,
+  "source_modified_unix_ms": 0
+ },
+ "pages": [
+  {
+   "artifact_id": "fc3503bc9ecc051933926f780a5fca592f005f7810693404e8f4b9d2bde13e4e:p000000:81436f20cd87",
+   "page_index": 0,
+   "dimensions": {
+    "width": 612.0,
+    "height": 792.0
+   },
+   "fingerprint": {
+    "hash_hex": "81436f20cd872113f91a1bced5b02ea14728a63e4b3cb39fd5087e08979be472"
+   },
+   "signals": {
+    "page_index": 0,
+    "dimensions": {
+     "width": 612.0,
+     "height": 792.0
+    },
+    "native_span_count": 73,
+    "native_text_bytes": 1021,
+    "glyph_count": 857,
+    "image_area_ratio": 0.0,
+    "duplicate_char_ratio": 0.03850642,
+    "bbox_overlap_ratio": 0.0,
+    "broken_encoding_ratio": 0.0009794319,
+    "rotation_degrees": 0,
+    "table_line_density": 0.9,
+    "annotation_count": 0,
+    "form_field_count": 0,
+    "huge_object_count": 0,
+    "span_geometry_capped": false
+   },
+   "native_spans": [
+    {
+     "text": "PUBLIC VOUCHER FOR PURCHASES AND",
+     "bbox": {
+      "x0": 196.536,
+      "y0": 70.425964,
+      "x1": 399.196,
+      "y1": 77.82599
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "SERVICES OTHER THAN PERSONAL",
+     "bbox": {
+      "x0": 209.496,
+      "y0": 82.425964,
+      "x1": 386.076,
+      "y1": 89.82599
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "Standard Form 1035 (EG)",
+     "bbox": {
+      "x0": 25.968,
+      "y0": 67.880005,
+      "x1": 126.39,
+      "y1": 75.77301
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "September 1973",
+     "bbox": {
+      "x0": 50.523003,
+      "y0": 78.44501,
+      "x1": 101.571,
+      "y1": 85.70099
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "4 Treasury FRM 2000",
+     "bbox": {
+      "x0": 40.586998,
+      "y0": 88.188965,
+      "x1": 111.49899,
+      "y1": 95.316956
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "1035-110",
+     "bbox": {
+      "x0": 61.731003,
+      "y0": 97.789,
+      "x1": 91.171005,
+      "y1": 103.285034
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "QUAN\u0002",
+     "bbox": {
+      "x0": 360.56302,
+      "y0": 152.58905,
+      "x1": 386.37903,
+      "y1": 158.98102
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "TITY",
+     "bbox": {
+      "x0": 364.82703,
+      "y0": 162.28497,
+      "x1": 382.00302,
+      "y1": 168.013
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "CONTINUATION SHEET",
+     "bbox": {
+      "x0": 246.41899,
+      "y0": 107.966,
+      "x1": 351.409,
+      "y1": 114.87604
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "VOUCHER NO.",
+     "bbox": {
+      "x0": 464.485,
+      "y0": 53.325012,
+      "x1": 513.394,
+      "y1": 58.498047
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "SCHEDULE NO.",
+     "bbox": {
+      "x0": 464.737,
+      "y0": 76.57202,
+      "x1": 516.894,
+      "y1": 81.752014
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "SHEET NO.",
+     "bbox": {
+      "x0": 464.737,
+      "y0": 101.289,
+      "x1": 501.732,
+      "y1": 106.468994
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "U.S. DEPARTMENT, BUREAU, OR ESTABLISHMENT",
+     "bbox": {
+      "x0": 22.217989,
+      "y0": 124.92804,
+      "x1": 195.40498,
+      "y1": 131.13702
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "NUMBER",
+     "bbox": {
+      "x0": 28.405998,
+      "y0": 147.11694,
+      "x1": 62.878002,
+      "y1": 152.93298
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "AND DATE",
+     "bbox": {
+      "x0": 24.702,
+      "y0": 156.71692,
+      "x1": 65.630005,
+      "y1": 162.44495
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "OF ORDER",
+     "bbox": {
+      "x0": 24.598,
+      "y0": 166.22101,
+      "x1": 66.437996,
+      "y1": 172.133
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "DATE OF",
+     "bbox": {
+      "x0": 86.89399,
+      "y0": 147.021,
+      "x1": 121.05399,
+      "y1": 152.93298
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "DELIVERY",
+     "bbox": {
+      "x0": 84.44599,
+      "y0": 156.71692,
+      "x1": 123.886,
+      "y1": 162.44495
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "OR SERVICE",
+     "bbox": {
+      "x0": 79.549995,
+      "y0": 166.22101,
+      "x1": 128.15,
+      "y1": 172.14099
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "ARTICLES OR SERVICES",
+     "bbox": {
+      "x0": 196.05399,
+      "y0": 147.38898,
+      "x1": 292.56598,
+      "y1": 153.30896
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "(Enter description, item number of contract or Federal supply",
+     "bbox": {
+      "x0": 145.622,
+      "y0": 157.22095,
+      "x1": 343.90198,
+      "y1": 164.49292
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "schedule, and other information deemed necessary)",
+     "bbox": {
+      "x0": 161.79799,
+      "y0": 166.82098,
+      "x1": 326.622,
+      "y1": 174.09296
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "UNIT PRICE ",
+     "bbox": {
+      "x0": 419.34995,
+      "y0": 148.005,
+      "x1": 463.70996,
+      "y1": 153.91699
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "AMOUNT",
+     "bbox": {
+      "x0": 525.574,
+      "y0": 148.005,
+      "x1": 560.51,
+      "y1": 153.91699
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "COST ",
+     "bbox": {
+      "x0": 413.51794,
+      "y0": 164.88501,
+      "x1": 435.19794,
+      "y1": 170.805
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "PER",
+     "bbox": {
+      "x0": 468.20596,
+      "y0": 165.29297,
+      "x1": 484.02994,
+      "y1": 171.021
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "Designed using Perform Pro, WHS/DIOR, Aug 96",
+     "bbox": {
+      "x0": 438.971,
+      "y0": 737.211,
+      "x1": 591.774,
+      "y1": 743.777
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "V-100482 ",
+     "bbox": {
+      "x0": 466.685,
+      "y0": 63.03601,
+      "x1": 509.35498,
+      "y1": 70.395996
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "SCH-77 ",
+     "bbox": {
+      "x0": 466.97498,
+      "y0": 87.224,
+      "x1": 501.715,
+      "y1": 94.77399
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "2",
+     "bbox": {
+      "x0": 466.745,
+      "y0": 110.80798,
+      "x1": 471.555,
+      "y1": 117.83801
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "GENERAL SERVICES ADMINISTRATION, REGION 5, CHICAGO, IL ",
+     "bbox": {
+      "x0": 24.192999,
+      "y0": 131.50098,
+      "x1": 332.483,
+      "y1": 140.331
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "2026-01-05 ",
+     "bbox": {
+      "x0": 83.095,
+      "y0": 196.61798,
+      "x1": 123.463,
+      "y1": 202.38599
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "2026-01-05 ",
+     "bbox": {
+      "x0": 83.095,
+      "y0": 222.81598,
+      "x1": 123.463,
+      "y1": 228.58398
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "2026-01-12 ",
+     "bbox": {
+      "x0": 83.095,
+      "y0": 249.01398,
+      "x1": 123.407,
+      "y1": 254.78198
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "2026-01-12 ",
+     "bbox": {
+      "x0": 83.095,
+      "y0": 275.21198,
+      "x1": 123.407,
+      "y1": 280.98
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "2026-01-19 ",
+     "bbox": {
+      "x0": 83.095,
+      "y0": 301.41,
+      "x1": 123.463,
+      "y1": 307.178
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "2026-01-26 ",
+     "bbox": {
+      "x0": 83.095,
+      "y0": 327.61002,
+      "x1": 123.494995,
+      "y1": 333.37802
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "INV-2026-0117",
+     "bbox": {
+      "x0": 20.250505,
+      "y0": 183.39996,
+      "x1": 73.5065,
+      "y1": 189.28796
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "Network switch, 24-port managed ",
+     "bbox": {
+      "x0": 141.602,
+      "y0": 188.34698,
+      "x1": 259.68997,
+      "y1": 195.84302
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "Cat6 patch cable, 3 meter ",
+     "bbox": {
+      "x0": 141.34601,
+      "y0": 214.393,
+      "x1": 232.58598,
+      "y1": 221.93701
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "Rack installation labor ",
+     "bbox": {
+      "x0": 141.698,
+      "y0": 242.0965,
+      "x1": 219.234,
+      "y1": 247.95251
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "Cable management tray ",
+     "bbox": {
+      "x0": 141.34601,
+      "y0": 268.14252,
+      "x1": 226.27399,
+      "y1": 275.79053
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "Network configuration services ",
+     "bbox": {
+      "x0": 141.602,
+      "y0": 294.41248,
+      "x1": 249.62598,
+      "y1": 301.9885
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "On-site acceptance testing ",
+     "bbox": {
+      "x0": 141.306,
+      "y0": 320.5405,
+      "x1": 235.24998,
+      "y1": 328.1885
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "INV-2026-0117",
+     "bbox": {
+      "x0": 20.250505,
+      "y0": 209.59698,
+      "x1": 73.5065,
+      "y1": 215.48499
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "INV-2026-0118",
+     "bbox": {
+      "x0": 20.250505,
+      "y0": 235.79498,
+      "x1": 73.4585,
+      "y1": 241.68298
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "INV-2026-0118",
+     "bbox": {
+      "x0": 20.250505,
+      "y0": 261.99298,
+      "x1": 73.4585,
+      "y1": 267.88098
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "INV-2026-0121",
+     "bbox": {
+      "x0": 20.250505,
+      "y0": 288.19403,
+      "x1": 72.1945,
+      "y1": 294.08203
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "INV-2026-0121 ",
+     "bbox": {
+      "x0": 20.250505,
+      "y0": 314.389,
+      "x1": 72.1945,
+      "y1": 320.277
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "1,540.00 ",
+     "bbox": {
+      "x0": 557.701,
+      "y0": 196.61798,
+      "x1": 587.725,
+      "y1": 203.41003
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "495.00 ",
+     "bbox": {
+      "x0": 563.765,
+      "y0": 222.81598,
+      "x1": 587.725,
+      "y1": 228.58398
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "1,520.00 ",
+     "bbox": {
+      "x0": 557.701,
+      "y0": 249.01398,
+      "x1": 587.725,
+      "y1": 255.80603
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "220.00 ",
+     "bbox": {
+      "x0": 563.773,
+      "y0": 275.21198,
+      "x1": 587.725,
+      "y1": 280.98
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "1,320.00 ",
+     "bbox": {
+      "x0": 557.701,
+      "y0": 301.41,
+      "x1": 587.725,
+      "y1": 308.202
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "720.00 ",
+     "bbox": {
+      "x0": 563.861,
+      "y0": 327.61002,
+      "x1": 587.725,
+      "y1": 333.37802
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "EA",
+     "bbox": {
+      "x0": 471.19348,
+      "y0": 196.49799,
+      "x1": 481.0735,
+      "y1": 202.242
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "EA",
+     "bbox": {
+      "x0": 471.19348,
+      "y0": 222.69598,
+      "x1": 481.0735,
+      "y1": 228.44
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "HR",
+     "bbox": {
+      "x0": 470.6815,
+      "y0": 248.89398,
+      "x1": 481.31348,
+      "y1": 254.638
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "EA",
+     "bbox": {
+      "x0": 471.19348,
+      "y0": 275.09198,
+      "x1": 481.0735,
+      "y1": 280.836
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "HR",
+     "bbox": {
+      "x0": 470.6815,
+      "y0": 301.29,
+      "x1": 481.31348,
+      "y1": 307.034
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "HR ",
+     "bbox": {
+      "x0": 470.6815,
+      "y0": 327.49002,
+      "x1": 481.31348,
+      "y1": 333.234
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "385.00 ",
+     "bbox": {
+      "x0": 429.65903,
+      "y0": 196.61798,
+      "x1": 453.54703,
+      "y1": 202.38599
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "8.25 ",
+     "bbox": {
+      "x0": 438.587,
+      "y0": 222.81598,
+      "x1": 453.515,
+      "y1": 228.58398
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "95.00 ",
+     "bbox": {
+      "x0": 434.17102,
+      "y0": 249.01398,
+      "x1": 453.54703,
+      "y1": 254.78198
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "27.50 ",
+     "bbox": {
+      "x0": 434.04303,
+      "y0": 275.21198,
+      "x1": 453.54703,
+      "y1": 280.98
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "110.00 ",
+     "bbox": {
+      "x0": 430.19504,
+      "y0": 301.41,
+      "x1": 453.54703,
+      "y1": 307.178
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "120.00 ",
+     "bbox": {
+      "x0": 430.19504,
+      "y0": 327.61002,
+      "x1": 453.54703,
+      "y1": 333.37802
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "4",
+     "bbox": {
+      "x0": 369.64752,
+      "y0": 196.61798,
+      "x1": 373.6315,
+      "y1": 202.242
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "60",
+     "bbox": {
+      "x0": 367.5275,
+      "y0": 222.81598,
+      "x1": 375.81552,
+      "y1": 228.58398
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "16",
+     "bbox": {
+      "x0": 368.03152,
+      "y0": 249.01398,
+      "x1": 375.81552,
+      "y1": 254.78198
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "8",
+     "bbox": {
+      "x0": 369.7515,
+      "y0": 275.21198,
+      "x1": 373.5835,
+      "y1": 280.98
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "12",
+     "bbox": {
+      "x0": 368.03152,
+      "y0": 301.41,
+      "x1": 375.7275,
+      "y1": 307.034
+     },
+     "confidence": 90,
+     "provenance": "native"
+    },
+    {
+     "text": "6",
+     "bbox": {
+      "x0": 369.7515,
+      "y0": 327.61002,
+      "x1": 373.59152,
+      "y1": 333.37802
+     },
+     "confidence": 90,
+     "provenance": "native"
+    }
+   ],
+   "ocr_spans": [],
+   "image_artifacts": [],
+   "layout_blocks": [
+    {
+     "block_id": "p000000:b000000",
+     "bbox": {
+      "x0": 20.250505,
+      "y0": 53.325012,
+      "x1": 587.725,
+      "y1": 333.37802
+     },
+     "text": "VOUCHER NO.\nV-100482\nStandard Form 1035 (EG) PUBLIC VOUCHER FOR PURCHASES AND\nSeptember 1973 SCHEDULE NO.\nSERVICES OTHER THAN PERSONAL\n4 Treasury FRM 2000 SCH-77\n1035-110 SHEET NO.\nCONTINUATION SHEET 2\nU.S. DEPARTMENT, BUREAU, OR ESTABLISHMENT\nGENERAL SERVICES ADMINISTRATION, REGION 5, CHICAGO, IL\nNUMBER DATE OF ARTICLES OR SERVICES UNIT PRICE AMOUNT\nAND DATE DELIVERY (Enter description, item number of contract or Federal supply QUAN\u0002\nOF ORDER OR SERVICE schedule, and other information deemed necessary) TITY COST PER\nINV-2026-0117\nNetwork switch, 24-port managed\n2026-01-05 4 385.00 EA 1,540.00\nINV-2026-0117\nCat6 patch cable, 3 meter\n2026-01-05 60 8.25 EA 495.00\nINV-2026-0118\nRack installation labor\n2026-01-12 16 95.00 HR 1,520.00\nINV-2026-0118\nCable management tray\n2026-01-12 8 27.50 EA 220.00\nINV-2026-0121\nNetwork configuration services\n2026-01-19 12 110.00 HR 1,320.00\nINV-2026-0121\nOn-site acceptance testing\n2026-01-26 6 120.00 HR 720.00",
+     "kind": "table",
+     "table": {
+      "rows": [
+       {
+        "row_index": 0,
+        "bbox": {
+         "x0": 464.485,
+         "y0": 53.325012,
+         "x1": 513.394,
+         "y1": 58.498047
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": "VOUCHER NO.",
+          "bbox": {
+           "x0": 464.485,
+           "y0": 53.325012,
+           "x1": 513.394,
+           "y1": 58.498047
+          }
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 1,
+        "bbox": {
+         "x0": 466.685,
+         "y0": 63.03601,
+         "x1": 509.35498,
+         "y1": 70.395996
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": "V-100482",
+          "bbox": {
+           "x0": 466.685,
+           "y0": 63.03601,
+           "x1": 509.35498,
+           "y1": 70.395996
+          }
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 2,
+        "bbox": {
+         "x0": 25.968,
+         "y0": 67.880005,
+         "x1": 399.196,
+         "y1": 77.82599
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "Standard Form 1035 (EG)",
+          "bbox": {
+           "x0": 25.968,
+           "y0": 67.880005,
+           "x1": 126.39,
+           "y1": 75.77301
+          }
+         },
+         {
+          "column_index": 2,
+          "text": "PUBLIC VOUCHER FOR PURCHASES AND",
+          "bbox": {
+           "x0": 196.536,
+           "y0": 70.425964,
+           "x1": 399.196,
+           "y1": 77.82599
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 3,
+        "bbox": {
+         "x0": 50.523003,
+         "y0": 76.57202,
+         "x1": 516.894,
+         "y1": 85.70099
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "September 1973",
+          "bbox": {
+           "x0": 50.523003,
+           "y0": 78.44501,
+           "x1": 101.571,
+           "y1": 85.70099
+          }
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": "SCHEDULE NO.",
+          "bbox": {
+           "x0": 464.737,
+           "y0": 76.57202,
+           "x1": 516.894,
+           "y1": 81.752014
+          }
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 4,
+        "bbox": {
+         "x0": 209.496,
+         "y0": 82.425964,
+         "x1": 386.076,
+         "y1": 89.82599
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": "SERVICES OTHER THAN PERSONAL",
+          "bbox": {
+           "x0": 209.496,
+           "y0": 82.425964,
+           "x1": 386.076,
+           "y1": 89.82599
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 5,
+        "bbox": {
+         "x0": 40.586998,
+         "y0": 87.224,
+         "x1": 501.715,
+         "y1": 95.316956
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "4 Treasury FRM 2000",
+          "bbox": {
+           "x0": 40.586998,
+           "y0": 88.188965,
+           "x1": 111.49899,
+           "y1": 95.316956
+          }
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": "SCH-77",
+          "bbox": {
+           "x0": 466.97498,
+           "y0": 87.224,
+           "x1": 501.715,
+           "y1": 94.77399
+          }
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 6,
+        "bbox": {
+         "x0": 61.731003,
+         "y0": 97.789,
+         "x1": 501.732,
+         "y1": 106.468994
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "1035-110",
+          "bbox": {
+           "x0": 61.731003,
+           "y0": 97.789,
+           "x1": 91.171005,
+           "y1": 103.285034
+          }
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": "SHEET NO.",
+          "bbox": {
+           "x0": 464.737,
+           "y0": 101.289,
+           "x1": 501.732,
+           "y1": 106.468994
+          }
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 7,
+        "bbox": {
+         "x0": 246.41899,
+         "y0": 107.966,
+         "x1": 471.555,
+         "y1": 117.83801
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": "CONTINUATION SHEET",
+          "bbox": {
+           "x0": 246.41899,
+           "y0": 107.966,
+           "x1": 351.409,
+           "y1": 114.87604
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": "2",
+          "bbox": {
+           "x0": 466.745,
+           "y0": 110.80798,
+           "x1": 471.555,
+           "y1": 117.83801
+          }
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 8,
+        "bbox": {
+         "x0": 22.217989,
+         "y0": 124.92804,
+         "x1": 195.40498,
+         "y1": 131.13702
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "U.S. DEPARTMENT, BUREAU, OR ESTABLISHMENT",
+          "bbox": {
+           "x0": 22.217989,
+           "y0": 124.92804,
+           "x1": 195.40498,
+           "y1": 131.13702
+          }
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 9,
+        "bbox": {
+         "x0": 24.192999,
+         "y0": 131.50098,
+         "x1": 332.483,
+         "y1": 140.331
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": "GENERAL SERVICES ADMINISTRATION, REGION 5, CHICAGO, IL",
+          "bbox": {
+           "x0": 24.192999,
+           "y0": 131.50098,
+           "x1": 332.483,
+           "y1": 140.331
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 10,
+        "bbox": {
+         "x0": 28.405998,
+         "y0": 147.021,
+         "x1": 560.51,
+         "y1": 153.91699
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": "NUMBER",
+          "bbox": {
+           "x0": 28.405998,
+           "y0": 147.11694,
+           "x1": 62.878002,
+           "y1": 152.93298
+          }
+         },
+         {
+          "column_index": 1,
+          "text": "DATE OF",
+          "bbox": {
+           "x0": 86.89399,
+           "y0": 147.021,
+           "x1": 121.05399,
+           "y1": 152.93298
+          }
+         },
+         {
+          "column_index": 2,
+          "text": "ARTICLES OR SERVICES",
+          "bbox": {
+           "x0": 196.05399,
+           "y0": 147.38898,
+           "x1": 292.56598,
+           "y1": 153.30896
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": "UNIT PRICE",
+          "bbox": {
+           "x0": 419.34995,
+           "y0": 148.005,
+           "x1": 463.70996,
+           "y1": 153.91699
+          }
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": "AMOUNT",
+          "bbox": {
+           "x0": 525.574,
+           "y0": 148.005,
+           "x1": 560.51,
+           "y1": 153.91699
+          }
+         }
+        ]
+       },
+       {
+        "row_index": 11,
+        "bbox": {
+         "x0": 24.702,
+         "y0": 152.58905,
+         "x1": 386.37903,
+         "y1": 164.49292
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": "AND DATE",
+          "bbox": {
+           "x0": 24.702,
+           "y0": 156.71692,
+           "x1": 65.630005,
+           "y1": 162.44495
+          }
+         },
+         {
+          "column_index": 1,
+          "text": "DELIVERY",
+          "bbox": {
+           "x0": 84.44599,
+           "y0": 156.71692,
+           "x1": 123.886,
+           "y1": 162.44495
+          }
+         },
+         {
+          "column_index": 2,
+          "text": "(Enter description, item number of contract or Federal supply",
+          "bbox": {
+           "x0": 145.622,
+           "y0": 157.22095,
+           "x1": 343.90198,
+           "y1": 164.49292
+          }
+         },
+         {
+          "column_index": 3,
+          "text": "QUAN\u0002",
+          "bbox": {
+           "x0": 360.56302,
+           "y0": 152.58905,
+           "x1": 386.37903,
+           "y1": 158.98102
+          }
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 12,
+        "bbox": {
+         "x0": 24.598,
+         "y0": 162.28497,
+         "x1": 484.02994,
+         "y1": 174.09296
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": "OF ORDER",
+          "bbox": {
+           "x0": 24.598,
+           "y0": 166.22101,
+           "x1": 66.437996,
+           "y1": 172.133
+          }
+         },
+         {
+          "column_index": 1,
+          "text": "OR SERVICE",
+          "bbox": {
+           "x0": 79.549995,
+           "y0": 166.22101,
+           "x1": 128.15,
+           "y1": 172.14099
+          }
+         },
+         {
+          "column_index": 2,
+          "text": "schedule, and other information deemed necessary)",
+          "bbox": {
+           "x0": 161.79799,
+           "y0": 166.82098,
+           "x1": 326.622,
+           "y1": 174.09296
+          }
+         },
+         {
+          "column_index": 3,
+          "text": "TITY",
+          "bbox": {
+           "x0": 364.82703,
+           "y0": 162.28497,
+           "x1": 382.00302,
+           "y1": 168.013
+          }
+         },
+         {
+          "column_index": 4,
+          "text": "COST",
+          "bbox": {
+           "x0": 413.51794,
+           "y0": 164.88501,
+           "x1": 435.19794,
+           "y1": 170.805
+          }
+         },
+         {
+          "column_index": 5,
+          "text": "PER",
+          "bbox": {
+           "x0": 468.20596,
+           "y0": 165.29297,
+           "x1": 484.02994,
+           "y1": 171.021
+          }
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 13,
+        "bbox": {
+         "x0": 20.250505,
+         "y0": 183.39996,
+         "x1": 73.5065,
+         "y1": 189.28796
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": "INV-2026-0117",
+          "bbox": {
+           "x0": 20.250505,
+           "y0": 183.39996,
+           "x1": 73.5065,
+           "y1": 189.28796
+          }
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 14,
+        "bbox": {
+         "x0": 141.602,
+         "y0": 188.34698,
+         "x1": 259.68997,
+         "y1": 195.84302
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": "Network switch, 24-port managed",
+          "bbox": {
+           "x0": 141.602,
+           "y0": 188.34698,
+           "x1": 259.68997,
+           "y1": 195.84302
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 15,
+        "bbox": {
+         "x0": 83.095,
+         "y0": 196.49799,
+         "x1": 587.725,
+         "y1": 203.41003
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "2026-01-05",
+          "bbox": {
+           "x0": 83.095,
+           "y0": 196.61798,
+           "x1": 123.463,
+           "y1": 202.38599
+          }
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": "4",
+          "bbox": {
+           "x0": 369.64752,
+           "y0": 196.61798,
+           "x1": 373.6315,
+           "y1": 202.242
+          }
+         },
+         {
+          "column_index": 4,
+          "text": "385.00",
+          "bbox": {
+           "x0": 429.65903,
+           "y0": 196.61798,
+           "x1": 453.54703,
+           "y1": 202.38599
+          }
+         },
+         {
+          "column_index": 5,
+          "text": "EA",
+          "bbox": {
+           "x0": 471.19348,
+           "y0": 196.49799,
+           "x1": 481.0735,
+           "y1": 202.242
+          }
+         },
+         {
+          "column_index": 6,
+          "text": "1,540.00",
+          "bbox": {
+           "x0": 557.701,
+           "y0": 196.61798,
+           "x1": 587.725,
+           "y1": 203.41003
+          }
+         }
+        ]
+       },
+       {
+        "row_index": 16,
+        "bbox": {
+         "x0": 20.250505,
+         "y0": 209.59698,
+         "x1": 73.5065,
+         "y1": 215.48499
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": "INV-2026-0117",
+          "bbox": {
+           "x0": 20.250505,
+           "y0": 209.59698,
+           "x1": 73.5065,
+           "y1": 215.48499
+          }
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 17,
+        "bbox": {
+         "x0": 141.34601,
+         "y0": 214.393,
+         "x1": 232.58598,
+         "y1": 221.93701
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": "Cat6 patch cable, 3 meter",
+          "bbox": {
+           "x0": 141.34601,
+           "y0": 214.393,
+           "x1": 232.58598,
+           "y1": 221.93701
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 18,
+        "bbox": {
+         "x0": 83.095,
+         "y0": 222.69598,
+         "x1": 587.725,
+         "y1": 228.58398
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "2026-01-05",
+          "bbox": {
+           "x0": 83.095,
+           "y0": 222.81598,
+           "x1": 123.463,
+           "y1": 228.58398
+          }
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": "60",
+          "bbox": {
+           "x0": 367.5275,
+           "y0": 222.81598,
+           "x1": 375.81552,
+           "y1": 228.58398
+          }
+         },
+         {
+          "column_index": 4,
+          "text": "8.25",
+          "bbox": {
+           "x0": 438.587,
+           "y0": 222.81598,
+           "x1": 453.515,
+           "y1": 228.58398
+          }
+         },
+         {
+          "column_index": 5,
+          "text": "EA",
+          "bbox": {
+           "x0": 471.19348,
+           "y0": 222.69598,
+           "x1": 481.0735,
+           "y1": 228.44
+          }
+         },
+         {
+          "column_index": 6,
+          "text": "495.00",
+          "bbox": {
+           "x0": 563.765,
+           "y0": 222.81598,
+           "x1": 587.725,
+           "y1": 228.58398
+          }
+         }
+        ]
+       },
+       {
+        "row_index": 19,
+        "bbox": {
+         "x0": 20.250505,
+         "y0": 235.79498,
+         "x1": 73.4585,
+         "y1": 241.68298
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": "INV-2026-0118",
+          "bbox": {
+           "x0": 20.250505,
+           "y0": 235.79498,
+           "x1": 73.4585,
+           "y1": 241.68298
+          }
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 20,
+        "bbox": {
+         "x0": 141.698,
+         "y0": 242.0965,
+         "x1": 219.234,
+         "y1": 247.95251
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": "Rack installation labor",
+          "bbox": {
+           "x0": 141.698,
+           "y0": 242.0965,
+           "x1": 219.234,
+           "y1": 247.95251
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 21,
+        "bbox": {
+         "x0": 83.095,
+         "y0": 248.89398,
+         "x1": 587.725,
+         "y1": 255.80603
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "2026-01-12",
+          "bbox": {
+           "x0": 83.095,
+           "y0": 249.01398,
+           "x1": 123.407,
+           "y1": 254.78198
+          }
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": "16",
+          "bbox": {
+           "x0": 368.03152,
+           "y0": 249.01398,
+           "x1": 375.81552,
+           "y1": 254.78198
+          }
+         },
+         {
+          "column_index": 4,
+          "text": "95.00",
+          "bbox": {
+           "x0": 434.17102,
+           "y0": 249.01398,
+           "x1": 453.54703,
+           "y1": 254.78198
+          }
+         },
+         {
+          "column_index": 5,
+          "text": "HR",
+          "bbox": {
+           "x0": 470.6815,
+           "y0": 248.89398,
+           "x1": 481.31348,
+           "y1": 254.638
+          }
+         },
+         {
+          "column_index": 6,
+          "text": "1,520.00",
+          "bbox": {
+           "x0": 557.701,
+           "y0": 249.01398,
+           "x1": 587.725,
+           "y1": 255.80603
+          }
+         }
+        ]
+       },
+       {
+        "row_index": 22,
+        "bbox": {
+         "x0": 20.250505,
+         "y0": 261.99298,
+         "x1": 73.4585,
+         "y1": 267.88098
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": "INV-2026-0118",
+          "bbox": {
+           "x0": 20.250505,
+           "y0": 261.99298,
+           "x1": 73.4585,
+           "y1": 267.88098
+          }
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 23,
+        "bbox": {
+         "x0": 141.34601,
+         "y0": 268.14252,
+         "x1": 226.27399,
+         "y1": 275.79053
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": "Cable management tray",
+          "bbox": {
+           "x0": 141.34601,
+           "y0": 268.14252,
+           "x1": 226.27399,
+           "y1": 275.79053
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 24,
+        "bbox": {
+         "x0": 83.095,
+         "y0": 275.09198,
+         "x1": 587.725,
+         "y1": 280.98
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "2026-01-12",
+          "bbox": {
+           "x0": 83.095,
+           "y0": 275.21198,
+           "x1": 123.407,
+           "y1": 280.98
+          }
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": "8",
+          "bbox": {
+           "x0": 369.7515,
+           "y0": 275.21198,
+           "x1": 373.5835,
+           "y1": 280.98
+          }
+         },
+         {
+          "column_index": 4,
+          "text": "27.50",
+          "bbox": {
+           "x0": 434.04303,
+           "y0": 275.21198,
+           "x1": 453.54703,
+           "y1": 280.98
+          }
+         },
+         {
+          "column_index": 5,
+          "text": "EA",
+          "bbox": {
+           "x0": 471.19348,
+           "y0": 275.09198,
+           "x1": 481.0735,
+           "y1": 280.836
+          }
+         },
+         {
+          "column_index": 6,
+          "text": "220.00",
+          "bbox": {
+           "x0": 563.773,
+           "y0": 275.21198,
+           "x1": 587.725,
+           "y1": 280.98
+          }
+         }
+        ]
+       },
+       {
+        "row_index": 25,
+        "bbox": {
+         "x0": 20.250505,
+         "y0": 288.19403,
+         "x1": 72.1945,
+         "y1": 294.08203
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": "INV-2026-0121",
+          "bbox": {
+           "x0": 20.250505,
+           "y0": 288.19403,
+           "x1": 72.1945,
+           "y1": 294.08203
+          }
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 26,
+        "bbox": {
+         "x0": 141.602,
+         "y0": 294.41248,
+         "x1": 249.62598,
+         "y1": 301.9885
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": "Network configuration services",
+          "bbox": {
+           "x0": 141.602,
+           "y0": 294.41248,
+           "x1": 249.62598,
+           "y1": 301.9885
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 27,
+        "bbox": {
+         "x0": 83.095,
+         "y0": 301.29,
+         "x1": 587.725,
+         "y1": 308.202
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "2026-01-19",
+          "bbox": {
+           "x0": 83.095,
+           "y0": 301.41,
+           "x1": 123.463,
+           "y1": 307.178
+          }
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": "12",
+          "bbox": {
+           "x0": 368.03152,
+           "y0": 301.41,
+           "x1": 375.7275,
+           "y1": 307.034
+          }
+         },
+         {
+          "column_index": 4,
+          "text": "110.00",
+          "bbox": {
+           "x0": 430.19504,
+           "y0": 301.41,
+           "x1": 453.54703,
+           "y1": 307.178
+          }
+         },
+         {
+          "column_index": 5,
+          "text": "HR",
+          "bbox": {
+           "x0": 470.6815,
+           "y0": 301.29,
+           "x1": 481.31348,
+           "y1": 307.034
+          }
+         },
+         {
+          "column_index": 6,
+          "text": "1,320.00",
+          "bbox": {
+           "x0": 557.701,
+           "y0": 301.41,
+           "x1": 587.725,
+           "y1": 308.202
+          }
+         }
+        ]
+       },
+       {
+        "row_index": 28,
+        "bbox": {
+         "x0": 20.250505,
+         "y0": 314.389,
+         "x1": 72.1945,
+         "y1": 320.277
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": "INV-2026-0121",
+          "bbox": {
+           "x0": 20.250505,
+           "y0": 314.389,
+           "x1": 72.1945,
+           "y1": 320.277
+          }
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 29,
+        "bbox": {
+         "x0": 141.306,
+         "y0": 320.5405,
+         "x1": 235.24998,
+         "y1": 328.1885
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": ""
+         },
+         {
+          "column_index": 2,
+          "text": "On-site acceptance testing",
+          "bbox": {
+           "x0": 141.306,
+           "y0": 320.5405,
+           "x1": 235.24998,
+           "y1": 328.1885
+          }
+         },
+         {
+          "column_index": 3,
+          "text": ""
+         },
+         {
+          "column_index": 4,
+          "text": ""
+         },
+         {
+          "column_index": 5,
+          "text": ""
+         },
+         {
+          "column_index": 6,
+          "text": ""
+         }
+        ]
+       },
+       {
+        "row_index": 30,
+        "bbox": {
+         "x0": 83.095,
+         "y0": 327.49002,
+         "x1": 587.725,
+         "y1": 333.37802
+        },
+        "cells": [
+         {
+          "column_index": 0,
+          "text": ""
+         },
+         {
+          "column_index": 1,
+          "text": "2026-01-26",
+          "bbox": {
+           "x0": 83.095,
+           "y0": 327.61002,
+           "x1": 123.494995,
+           "y1": 333.37802
+          }
+         },
+         {
+          "column_index": 2,
+          "text": ""
+         },
+         {
+          "column_index": 3,
+          "text": "6",
+          "bbox": {
+           "x0": 369.7515,
+           "y0": 327.61002,
+           "x1": 373.59152,
+           "y1": 333.37802
+          }
+         },
+         {
+          "column_index": 4,
+          "text": "120.00",
+          "bbox": {
+           "x0": 430.19504,
+           "y0": 327.61002,
+           "x1": 453.54703,
+           "y1": 333.37802
+          }
+         },
+         {
+          "column_index": 5,
+          "text": "HR",
+          "bbox": {
+           "x0": 470.6815,
+           "y0": 327.49002,
+           "x1": 481.31348,
+           "y1": 333.234
+          }
+         },
+         {
+          "column_index": 6,
+          "text": "720.00",
+          "bbox": {
+           "x0": 563.861,
+           "y0": 327.61002,
+           "x1": 587.725,
+           "y1": 333.37802
+          }
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "block_id": "p000000:b000001",
+     "bbox": {
+      "x0": 438.971,
+      "y0": 737.211,
+      "x1": 591.774,
+      "y1": 743.777
+     },
+     "text": "Designed using Perform Pro, WHS/DIOR, Aug 96",
+     "kind": "paragraph"
+    }
+   ],
+   "layout_strategy": "positioned_table_runs",
+   "route": {
+    "route": "needs_fallback",
+    "run_ocr": false,
+    "run_heavy_layout": false,
+    "run_table_recovery": true,
+    "flags": [
+     "table_uncertain"
+    ],
+    "reasons": [
+     "table_line_density"
+    ]
+   },
+   "quality": {
+    "flags": [
+     "table_uncertain"
+    ],
+    "text_confidence": 90,
+    "layout_confidence": 40
+   },
+   "timings": {
+    "open_us": 0,
+    "classify_us": 0,
+    "native_extract_us": 0,
+    "layout_us": 0,
+    "table_us": 0,
+    "render_us": 0,
+    "ocr_us": 0,
+    "merge_us": 0
+   }
+  }
+ ],
+ "global_diagnostics": {
+  "fallback_pages": 1,
+  "ocr_pages": 0,
+  "ocr_required_pages": 0,
+  "ocr_applied_pages": 0,
+  "worker_count": 1,
+  "cache_status": "disabled",
+  "cache_key": null,
+  "total_stage_time_us": 0,
+  "warnings": []
+ }
+}
