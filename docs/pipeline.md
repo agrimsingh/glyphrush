@@ -5,7 +5,7 @@ The v0 pipeline is intentionally narrow:
 1. Load PDF bytes and compute a document fingerprint.
 2. If `--cache-dir` is provided, compute a cache key from parser version, backend name/version, document fingerprint, OCR adapter state, and span-geometry mode.
 3. Return a cached artifact on cache hit. If the snapshot cannot be read, decoded, or validated against the requested key/parser/backend/source envelope, ignore it as a cache miss and emit a `cache_snapshot_ignored` warning instead of failing the parse.
-4. Select a PDF backend. The only enabled backend today is `lopdf`, but command logic now talks to a backend interface rather than direct `lopdf` calls.
+4. Select a PDF backend. Plain builds enable `lopdf` only; builds with `--features pdfium` also enable `pdfium` and select it by default under `--backend auto`. Command logic talks to a backend interface rather than direct backend calls.
 5. Open the document with the selected backend.
 6. Enumerate pages in PDF order. Page-debug paths can request one page directly instead of extracting the full document.
 7. Extract native text for each selected page.
