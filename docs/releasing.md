@@ -10,7 +10,7 @@ cargo publish -p glyphrush-lopdf
 cargo publish -p glyphrush-cli
 ```
 
-`cargo publish --dry-run -p glyphrush-core` is verified green. Requires a crates.io API token (`cargo login`). After publishing, `cargo install glyphrush-cli --features pdfium` becomes the supported install path; update the README install section accordingly.
+All three crates are published (v0.1.0, 2026-06-12); `cargo install glyphrush-cli --features pdfium` is verified working from the live registry. Future releases bump versions in dependency order with the same three commands.
 
 The `glyphrush-wasm` crate is `publish = false`; it ships through npm instead.
 

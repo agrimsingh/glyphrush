@@ -30,6 +30,10 @@ On the quality-gated corpus, Glyphrush is **110× faster** than LiteParse's defa
 
 ## Quickstart
 
+```sh
+cargo install glyphrush-cli --features pdfium   # the `glyphrush` binary, fast path
+```
+
 Prebuilt binaries for Linux (x86_64, arm64) and macOS (arm64, x86_64) with SHA-256 checksums are on the [releases page](https://github.com/agrimsingh/glyphrush/releases). Or build from source:
 
 ```sh
@@ -60,7 +64,7 @@ import { parse_pdf_bytes } from "./bindings/wasm/pkg/glyphrush_wasm.js";   // ba
 const artifact = JSON.parse(parse_pdf_bytes(pdfBytes, false));
 ```
 
-Set `GLYPHRUSH_BIN=/path/to/glyphrush` to skip the `binary` argument. Package-manager installs (crates.io, PyPI, npm) are on the roadmap; today Glyphrush builds from source in one command.
+Set `GLYPHRUSH_BIN=/path/to/glyphrush` to skip the `binary` argument. PyPI and npm packages are on the roadmap (the wasm package is publish-ready pending an npm automation token); the supported installs today are cargo, release binaries, and source.
 
 ## Why it's fast
 
